@@ -1,0 +1,76 @@
+<?php
+
+use App\Http\Controllers\AcademicManagementController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\CareerController;
+use App\Http\Controllers\ManagementExtensionController;
+use App\Http\Controllers\PeriodController;
+use App\Http\Controllers\ResponsibleController;
+
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+Route::controller(UserController::class)->prefix('user')->group(function(){
+    Route::post("/save","saveuser");
+    Route::get("/list", "create");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+    Route::post("/unsubscribe/{id}", 'unsubscribe');
+});
+
+Route::controller(UnitController::class)->prefix('unit')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+    Route::post("/unsubscribe/{id}", 'unsubscribe');
+});
+
+Route::controller(CareerController::class)->prefix('career')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+    Route::post("/assignManagement",'assignManagement');
+    Route::post("/unsubscribe/{id}", 'unsubscribe');
+});
+
+Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+    Route::post("/unsubscribe/{id}", 'unsubscribe');
+});
+
+Route::controller(ManagementExtensionController::class)->prefix('management_extension')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+});
+
+Route::controller(PeriodController::class)->prefix('periods')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+});
+
+
+
+
