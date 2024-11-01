@@ -31,6 +31,7 @@ class ValidationManagementExtension extends FormRequest
     {
         return[
             'date_extension.required' => 'La fecha de extension es obligatorio',
+            'date_extension.date' => 'la fecha extension debe ser una fecha',
             'date_extension.date_format' => 'La fecha debe estar en formato:Y-m-d.',
             'academic_management_id.required' => 'El id de la gestion academica es obligatorio',
             'academic_management_id.exists' => 'No existe el id de la gestion academica'

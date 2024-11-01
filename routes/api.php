@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcademicManagementController;
+use App\Http\Controllers\AcademicManagementPeriodController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
+use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\ResponsibleController;
 
 
@@ -47,7 +49,7 @@ Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
     Route::post("/assignManagement",'assignManagement');
-    Route::post("/unsubscribe/{id}", 'unsubscribe');
+    Route::get("/findAsign", 'findAssignManagement');
 });
 
 Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
@@ -69,6 +71,17 @@ Route::controller(PeriodController::class)->prefix('periods')->group(function(){
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
+});
+Route::controller(AcademicManagementPeriodController::class)->prefix('academic_management_period')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+});
+Route::controller(PeriodExtensionController::class)->prefix('period_extension')->group(function(){
+    Route::post("/save","create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
 });
 
 

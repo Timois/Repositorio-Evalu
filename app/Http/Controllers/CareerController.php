@@ -79,6 +79,11 @@ class CareerController extends Controller
         $academicManagementCareer->save();
         return ["message:", "Gestion asignado exitosamente"];
     }
+    
+    public function findAssignManagement(){
+        $assign = AcademicManagementCareer::get();
+        return $assign;
+    }
 
     /**
      * Remove the specified resource from storage.
