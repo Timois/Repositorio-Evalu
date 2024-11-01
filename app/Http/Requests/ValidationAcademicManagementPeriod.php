@@ -58,10 +58,12 @@ class ValidationAcademicManagementPeriod extends FormRequest
         if ($management)
             return [
                 'initial_date.required' => 'La fecha inicio es obligatorio',
+                'initial_date.date' => 'La fecha de inicio tiene que ser una fecha',
                 'initial_date.date_format' => 'La fecha debe estar en formato:Y-m-d.',
                 'initial_date.before_or_equal' => 'La fecha inicio tiene que estar en el rango de: ' . $management->initial_date . ' - ' . $management->end_date,
                 'initial_date.after_or_equal' => 'La fecha inicio tiene que estar en el rango de: ' . $management->initial_date . ' - ' . $management->end_date,
                 'end_date.required' => 'La fecha fin es obligatorio',
+                'end_date.date' => 'La fecha fin tiene que ser una fecha',
                 'end_date.date_format' => 'La fecha debe estar en formato:Y-m-d.',
                 'end_date.after' => 'La fecha fin no puede ser antes de la fecha de inicio de gestion academica',
                 'end_date.before_or_equal' => 'La fecha fin tiene que estar en el rango de: ' . $management->initial_date . ' - ' . $management->end_date,

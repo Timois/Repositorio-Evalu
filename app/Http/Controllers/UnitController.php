@@ -28,7 +28,7 @@ class UnitController extends Controller
      */
     public function find()
     {
-        $units = Unit::get();
+        $units = Unit::with("careers")->get();
         return $units;
     }
 

@@ -42,9 +42,11 @@ class ValidationsAcademicManagement extends FormRequest
             'year.date_equals'=> 'El año debe ser igual al año de fecha inicio',
             'year.unique' => 'El año ya ha sido registrado. Por favor, elige otro.',
             'initial_date.required' => 'La fecha inicio es obligatorio',
+            'initial_date.date' => 'La fecha de inicio tiene que ser una fecha',
             'initial_date.date_format' => 'La fecha debe estar en formato:Y-m-d.',
             'initial_date.after_or_equal' => 'La fecha inicio no puede ser antes de hoy.',
             'end_date.required' => 'La fecha fin es obligatorio',
+            'end_date.date' => 'La fecha fin tiene que ser una fecha',
             'end_date.date_format' => 'La fecha debe estar en formato:Y-m-d.',
             'end_date.after' => 'La fecha fin no puede ser antes de la fecha de inicio'
         ];

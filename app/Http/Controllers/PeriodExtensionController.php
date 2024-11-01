@@ -13,6 +13,8 @@ class PeriodExtensionController extends Controller
         $period_extension->initial_date = $request->initial_date;
         $period_extension->end_date = $request->end_date;
         $period_extension->academic_management_period_id = $request->academic_management_period_id;
+        $period_extension->save();
+        return $period_extension;
     }
     public function find(){
         $period = PeriodExtension::get();
@@ -22,8 +24,10 @@ class PeriodExtensionController extends Controller
         $period_extension = PeriodExtension::find($id);
         if(!$period_extension)
             return ["message:", "La extension del periodo con el id:" . $id . " no existe."];
-            $period_extension->initial_date = $request->initial_date;
-            $period_extension->end_date = $request->end_date;
+        $period_extension->initial_date = $request->initial_date;
+        $period_extension->end_date = $request->end_date;
         $period_extension->academic_management_period_id = $request->academic_management_period_id;
+        $period_extension->save();
+        return $period_extension;
     }
 }
