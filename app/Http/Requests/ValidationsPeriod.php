@@ -24,41 +24,45 @@ class ValidationsPeriod extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route("id");
+
         return [
-            'period' => 'required|string|max:20',
-            'level' => 'required|in:1,2,3,4,5',
+            'period' => ['required_if:id,null','regex:/^[A-Za-zñÑáéíóúÁÉÍÓÚ0-9\s]*$/' , 'max:20', 'unique:periods,period,' . ($id ?? 'NULL')],
+            'level' => ['required_if:id,null', 'in:1,2,3,4,5'],
         ];
     }
     public function messages()
     {
         return [
             'period.required' => 'El periodo es obligatorio.',
+            'period.regex' => 'El periodo tiene que ser numeros y letras',
             'period.unique' => 'El nombre del periodo ya esta en uso. Por favor, elige otro.',
             'level.required' => 'El nivel del periodo es obligatorio',
             'level.in' => 'el nivel debe estar en el rango del numero 1 al 5',
         ];
     }
-    public function withValidator($validator){
+    public function withValidator($validator)
+    {
         $validator->after(
-            function($validator){
+            function ($validator) {
                 $period = $this->period;
                 $level = $this->level;
-                $exists = Period::where('period','=', $period,'and')
+                $exists = Period::where('period', '=', $period, 'and')
                     ->where('level', '=', $level)->exists();
-                if($exists){
-                    $validator->errors()->add('period','Ya existe ese periodo y nivel', );
+                if ($exists) {
+                    $validator->errors()->add('period', 'Ya existe ese periodo y nivel',);
                 }
-                 // Validar que si el periodo se llama "semestre", el nivel solo puede ser 1 o 2
+                // Validar que si el periodo se llama "semestre", el nivel solo puede ser 1 o 2
                 if ($period === 'semestre' && !in_array($level, [1, 2])) {
                     $validator->errors()->add('level', 'El semestre solo puede registrase en los niveles 1 o 2.');
                 }
-                if($period === 'anual' && !in_array($level,[1])){
+                if ($period === 'anual' && !in_array($level, [1])) {
                     $validator->errors()->add('level', 'El año solo puede registrase en los niveles 1.');
                 }
-                if($period === 'mesa' && !in_array($level, [4,5])){
+                if ($period === 'mesa' && !in_array($level, [4, 5])) {
                     $validator->errors()->add('level', 'La mesa solo puede registrase en los niveles 4 o 5.');
                 }
-                if($period === 'verano' && !in_array($level, [3])){
+                if ($period === 'verano' && !in_array($level, [3])) {
                     $validator->errors()->add('level', 'El verano solo puede registrase en el nivel 3.');
                 }
             }

@@ -30,17 +30,21 @@ class ValidationsUnit extends FormRequest
         // dd($this);
         $validationName = 'required|string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name';
         $validationSigla = 'required|string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials';
+        $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
+        $validationType = 'required|in:facultad,unidad';
         $unit = $this->route("id");
         if ($unit) {
-            $validationName = 'required|string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name,' . $unit;
-            $validationSigla = 'required|string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials,' . $unit;
+            $validationName = 'string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name,' . $unit;
+            $validationSigla = 'string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials,' . $unit;
+            $validationLogo = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
+            $validationType = 'in:facultad,unidad';
         }
 
         return [
             'name' => $validationName,
             'initials' => $validationSigla,
-            'logo' => 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
-            'type' => 'required|in:facultad,unidad',
+            'logo' => $validationLogo,
+            'type' => $validationType,
         ];
     }
 
@@ -66,10 +70,11 @@ class ValidationsUnit extends FormRequest
         return [
             'name.required' => 'El nombre es obligatorio.',
             'name.regex' => 'Solo debe contener letras.',
-            "El nombre de la carrera ya existe. ID de la carrera existente: " . (($unit_name) ? $unit_name->id:0),
+            'name.unique' => "El nombre de la carrera ya existe. ID de la carrera existente: " . (($unit_name) ? $unit_name->id:0),
             'initials.required' => 'La sigla es obligatorio.',
             'initials.unique' => "La sigla de la carrera ya existe. ID de la carrera existente: " . (($unit_sigla) ? $unit_sigla->id:0),
             'initials.regex' => 'Solo debe contener letras.',
+            'initial.max' => 'Las siglas no deben pasar de 10 letras. ',
             'logo.required' => 'La imagen es obligatoria.',
             'logo.image' => 'El archivo debe ser una imagen.',
             'logo.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, webp, o svg.',

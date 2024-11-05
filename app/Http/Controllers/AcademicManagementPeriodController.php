@@ -29,8 +29,10 @@ class AcademicManagementPeriodController extends Controller
         $update = AcademicManagementPeriod::find($id);
         if (!$update)
             return ["message:", "El periodo de la gestion academica no existe con el id:" . $id . " no existe."];
-        $update->initial_date = $request->initial_date;
-        $update->end_date = $request->end_date;
+        if ($request->initial_date)
+            $update->initial_date = $request->initial_date;
+        if ($request->end_date)
+            $update->end_date = $request->end_date;
         $update->academic_management_career_id = $request->academic_management_career_id;
         $update->period_id = $request->period_id;
         $update->save();

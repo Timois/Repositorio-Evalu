@@ -50,17 +50,27 @@ class CareerController extends Controller
      */
     public function findAndUpdate(ValidationsCareer $request, string $id)
     {
-        $image = $request->file('logo');
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $imagePath = asset('images/careers/' . $imageName);
-        $image->move(public_path('images/careers'), $imageName);
+        
 
         $career = Career::find($id);
         if (!$career)
             return ["message:", "La carrera con id:" . $id . " no existe."];
-        $career->name = strtolower($request->name);
+        if($request->name)
+            $career->name = strtolower($request->name);
+        if($request)
+            $career->initials = strtoupper($request->initials);
+
+       $image = $request->file('logo');
+        if(!$image){
+            $career->save();
+            return $career;
+        }
+            
+        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $imagePath = asset('images/units/' . $imageName);
+        $image->move(public_path('images/units'), $imageName);
         $career->logo = $imagePath;
-        $career->initials = strtoupper($request->initials);
+
         $career->save();
         return $career;
     }
@@ -85,12 +95,4 @@ class CareerController extends Controller
         return $assign;
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function unsubscribe(string $id)
-    {
-        $deleted = DB::table('careers')->where("id", $id)->update(["status" => "inactivo"]);
-        return $deleted;
-    }
 }

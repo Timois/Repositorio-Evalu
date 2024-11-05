@@ -52,10 +52,13 @@ class PeriodController extends Controller
     {
 
         $period = Period::find($id);
-        if(!$period)
-        return ["message:", "El periodo con el id:" . $id . " no existe."];
-        $period->period = $request->period;
-        $period->level = $request->level;
+        if (!$period)
+            return ["message:", "El periodo con el id:" . $id . " no existe."];
+        if ($request->period)
+            $period->period = $request->period;
+        if ($request->level)
+            $period->level = $request->level;
+        
         $period->save();
         return $period;
     }

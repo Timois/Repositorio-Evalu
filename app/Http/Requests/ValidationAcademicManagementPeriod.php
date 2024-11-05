@@ -39,10 +39,11 @@ class ValidationAcademicManagementPeriod extends FormRequest
     {
         $management = $this->buscar();
         $initial_date = $this->initial_date;
+        $id = $this->route("id");
         if ($management)
             return [
-                'initial_date' => ['required', 'date', 'date_format:Y-m-d', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
-                'end_date' => ['required', 'date', 'date_format:Y-m-d', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
+                'initial_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
+                'end_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
                 'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
                 'period_id' => ['required', 'exists:periods,id'],
             ];

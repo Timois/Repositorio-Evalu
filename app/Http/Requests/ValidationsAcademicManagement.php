@@ -28,9 +28,9 @@ class ValidationsAcademicManagement extends FormRequest
         $fecha = Carbon::parse($initial_date);
         $year= $fecha->year;
         return [
-            'year' => ['numeric', 'required' ,'unique:academic_management,year,' . ($id ?? 'NULL'),'date_equals:'.$year],
-            'initial_date' => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:today'],
-            'end_date' => ['required', 'date', 'date_format:Y-m-d', 'after:' . $initial_date],
+            'year' => ['numeric', 'required_if:id,null' , 'max:4','unique:academic_management,year,' . ($id ?? 'NULL'),'date_equals:'.$year],
+            'initial_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'after_or_equal:today'],
+            'end_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'after:' . $initial_date],
         ];
     }
 
@@ -38,6 +38,7 @@ class ValidationsAcademicManagement extends FormRequest
     {
         return [
             'year.numeric' => 'La gestion es un numero.',
+            'year.max' => 'El año debe ser de 4 digitos',
             'year.required' => 'El año es obligatorio.',
             'year.date_equals'=> 'El año debe ser igual al año de fecha inicio',
             'year.unique' => 'El año ya ha sido registrado. Por favor, elige otro.',

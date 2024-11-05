@@ -56,16 +56,27 @@ class UnitController extends Controller
      */
     public function findAndUpdate(ValidationsUnit $request, string $id)
     {
+        $unit = Unit::find($id);
+        if (!$unit)
+            return ["message:", "La unidad con id:" . $id . " no existe."];
+        if($request->name)
+            $unit->name = strtolower($request->name);
+        if($request->initials)
+            $unit->initials = strtoupper($request->initials);
+        if($request->type)
+            $unit->type = $request->type;
+        
         $image = $request->file('logo');
+        if(!$image){
+            $unit->save();
+            return $unit;
+        }
+            
         $imageName = time() . '.' . $image->getClientOriginalExtension();
         $imagePath = asset('images/units/' . $imageName);
         $image->move(public_path('images/units'), $imageName);
-
-        $unit = Unit::find($id);
-        $unit->name = strtolower($request->name);
-        $unit->initials = strtoupper($request->initials);
         $unit->logo = $imagePath;
-        $unit->type = $request->type;
+        
         $unit->save();
         return $unit;
 
@@ -81,14 +92,5 @@ class UnitController extends Controller
 
         // Retornar una vista con los datos de la unidad
         return $result;
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function unsubscribe(string $id)
-    {
-        $deleted = DB::table('units')->where("id", $id)->update(["status" => "inactivo"]);
-        return $deleted;
     }
 }
