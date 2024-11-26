@@ -39,7 +39,6 @@ class CareerController extends Controller
         $career->name = strtolower($request->name);
         $career->initials = strtoupper($request->initials);
         $career->logo = $imagePath;
-        $career->user_id = $request->user_id;
         $career->unit_id = $request->unit_id;
         $career->save();
         return $career;
