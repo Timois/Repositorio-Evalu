@@ -28,7 +28,7 @@ class ValidationsAcademicManagement extends FormRequest
         $fecha = Carbon::parse($initial_date);
         $year= $fecha->year;
         return [
-            'year' => ['numeric', 'required_if:id,null' , 'max:4','unique:academic_management,year,' . ($id ?? 'NULL'),'date_equals:'.$year],
+            'year' => ['numeric', 'required_if:id,null' , 'digits:4','unique:academic_management,year,' . ($id ?? 'NULL'),'date_equals:'.$year],
             'initial_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'after_or_equal:today'],
             'end_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d', 'after:' . $initial_date],
         ];
