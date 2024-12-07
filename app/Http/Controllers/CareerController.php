@@ -20,7 +20,7 @@ class CareerController extends Controller
 
     public function find()
     {
-        $careers = Career::get();
+        $careers = Career::with("careers")->orderBy('ASC','id')->get();
         return $careers;
     }
 
