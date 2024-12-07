@@ -70,9 +70,9 @@ class ValidationsUnit extends FormRequest
         return [
             'name.required' => 'El nombre es obligatorio.',
             'name.regex' => 'Solo debe contener letras.',
-            'name.unique' => "El nombre de la carrera ya existe. ID de la carrera existente: " . (($unit_name) ? $unit_name->id:0),
+            'name.unique' => "El nombre de la unidad ya existe. ID de la unidad existente: " . (($unit_name) ? $unit_name->id:0),
             'initials.required' => 'La sigla es obligatorio.',
-            'initials.unique' => "La sigla de la carrera ya existe. ID de la carrera existente: " . (($unit_sigla) ? $unit_sigla->id:0),
+            'initials.unique' => "La sigla de la unidad ya existe. ID de la unidad existente: " . (($unit_sigla) ? $unit_sigla->id:0),
             'initials.regex' => 'Solo debe contener letras.',
             'initial.max' => 'Las siglas no deben pasar de 10 letras. ',
             'logo.required' => 'La imagen es obligatoria.',

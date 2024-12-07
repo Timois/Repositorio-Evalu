@@ -32,7 +32,6 @@ Route::controller(UserController::class)->prefix('user')->group(function(){
     Route::get("/list", "create");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
-    Route::post("/unsubscribe/{id}", 'unsubscribe');
 });
 
 Route::controller(UnitController::class)->prefix('unit')->group(function(){
@@ -40,7 +39,6 @@ Route::controller(UnitController::class)->prefix('unit')->group(function(){
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
-    Route::post("/unsubscribe/{id}", 'unsubscribe');
 });
 
 Route::controller(CareerController::class)->prefix('career')->group(function(){
@@ -57,7 +55,6 @@ Route::controller(AcademicManagementController::class)->prefix('management')->gr
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
-    Route::post("/unsubscribe/{id}", 'unsubscribe');
 });
 
 Route::controller(ManagementExtensionController::class)->prefix('management_extension')->group(function(){

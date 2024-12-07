@@ -28,7 +28,8 @@ class UnitController extends Controller
      */
     public function find()
     {
-        $units = Unit::with("careers")->get();
+        // $units = Unit::with("careers")->get();
+        $units = Unit::with("careers")->orderBy('ASC','id')->get();        
         return $units;
     }
 
