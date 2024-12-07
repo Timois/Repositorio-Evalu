@@ -26,8 +26,6 @@ class ValidationsUnit extends FormRequest
      */
     public function rules(): array
     {
-
-        // dd($this);
         $validationName = 'required|string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name';
         $validationSigla = 'required|string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials';
         $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
