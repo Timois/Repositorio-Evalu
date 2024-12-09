@@ -12,7 +12,7 @@ class AcademicManagementController extends Controller
 
     public function find()
     {
-        $academicManagements = AcademicManagement::get();
+        $academicManagements = AcademicManagement::orderby('id','ASC')->get();
         return $academicManagements;
     }
     public function create(ValidationsAcademicManagement $request)

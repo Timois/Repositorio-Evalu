@@ -41,7 +41,7 @@ class PeriodController extends Controller
      */
     public function find(Request $request)
     {
-        $periods = DB::table('periods')->get();
+        $periods = DB::table('periods')->orderBy('id','ASC')->get();
         return $periods;
     }
 
