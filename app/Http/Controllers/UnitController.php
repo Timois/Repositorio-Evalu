@@ -29,7 +29,7 @@ class UnitController extends Controller
     public function find()
     {
         // $units = Unit::with("careers")->get();
-        $units = Unit::with("units")->orderBy('id','ASC')->get();        
+        $units = Unit::with("careers")->orderBy('id','ASC')->get();        
         return $units;
     }
 
