@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationsAcademicManagement;
 use App\Models\AcademicManagement;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class AcademicManagementController extends Controller
 {

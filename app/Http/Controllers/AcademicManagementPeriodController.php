@@ -10,7 +10,7 @@ class AcademicManagementPeriodController extends Controller
 {
     public function find()
     {
-        $academicManagementPeriod = AcademicManagementPeriod::get();
+        $academicManagementPeriod = AcademicManagementPeriod::orderBy('id','ASC')->get();
         return $academicManagementPeriod;
     }
     public function create(ValidationAcademicManagementPeriod $request)

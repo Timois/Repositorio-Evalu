@@ -48,7 +48,7 @@ class ManagementExtensionController extends Controller
      */
     public function find()
     {
-        $managementExtension = ManagementExtension::get();
+        $managementExtension = ManagementExtension::orderBy('id','ASC')->get();
         return $managementExtension;
     }
 

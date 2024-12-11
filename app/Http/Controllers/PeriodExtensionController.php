@@ -17,7 +17,7 @@ class PeriodExtensionController extends Controller
         return $period_extension;
     }
     public function find(){
-        $period = PeriodExtension::get();
+        $period = PeriodExtension::orderBy('id','ASC')->get();
         return $period;
     }
     public function finAndUpdate(ValidationPeriodExtension $request, string $id){

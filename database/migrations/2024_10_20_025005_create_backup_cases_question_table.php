@@ -19,7 +19,6 @@ return new class extends Migration
             $table->longText('answer')->nullable(); // Respuesta corregida (opcional)
             $table->double('value')->nullable(); // Valor asignado
             $table->enum('status', ['evaluado', 'corregido'])->default('evaluado'); // Estado del backup
-            $table->foreignId('user_id')->nullable()->constrained('users'); // Relación opcional con el usuario que hizo la corrección
             $table->timestamps();
         });
         Schema::create('cases_detail_correction_question', function (Blueprint $table) {
