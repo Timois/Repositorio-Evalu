@@ -12,12 +12,12 @@ class AcademicManagementPeriodController extends Controller
     public function find()
     {
         $academicManagementPeriod = AcademicManagementPeriod::orderBy('id','ASC')->get();
-        return response()->json([$academicManagementPeriod]);
+        return response()->json($academicManagementPeriod);
     }
 
     public function findByIdCareer($request, string $id){
         $academic_career = Career::with('periods')->find($id);
-        return response()->json([$academic_career]);
+        return response()->json($academic_career);
     }
     public function create(ValidationAcademicManagementPeriod $request)
     {
