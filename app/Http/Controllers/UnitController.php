@@ -30,7 +30,7 @@ class UnitController extends Controller
     {
         // $units = Unit::with("careers")->get();
         $units = Unit::with("careers")->orderBy('id','ASC')->get();        
-        return $units;
+        return response()->json([$units]);
     }
 
     /**
@@ -92,6 +92,6 @@ class UnitController extends Controller
         $result = DB::table('units')->where('id', $id)->get();
 
         // Retornar una vista con los datos de la unidad
-        return $result;
+        return response()->json([$result]);
     }
 }

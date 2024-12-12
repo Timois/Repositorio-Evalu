@@ -21,7 +21,7 @@ class CareerController extends Controller
     public function find()
     {
         $careers = Career::orderBy('id','ASC')->get();
-        return $careers;
+        return response()->json([$careers]);
     }
 
     /**
@@ -78,7 +78,7 @@ class CareerController extends Controller
         $career = Career::find($id);
         if (!$career)
             return ["message:", "La carrera con id:" . $id . " no existe."];
-        return $career;
+        return response()->json([$career]);
     }
 
     public function assignManagement(ValidationAssignManagements $request){
@@ -91,7 +91,7 @@ class CareerController extends Controller
     
     public function findAssignManagement(){
         $assign = AcademicManagementCareer::get();
-        return $assign;
+        return response()->json([$assign]);
     }
 
 }

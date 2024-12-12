@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAcademicManagementPeriod;
 use App\Models\AcademicManagementPeriod;
+use App\Models\Career;
 use Illuminate\Http\Request;
 
 class AcademicManagementPeriodController extends Controller
@@ -11,7 +12,12 @@ class AcademicManagementPeriodController extends Controller
     public function find()
     {
         $academicManagementPeriod = AcademicManagementPeriod::orderBy('id','ASC')->get();
-        return $academicManagementPeriod;
+        return response()->json([$academicManagementPeriod]);
+    }
+
+    public function findByIdCareer($request, string $id){
+        $academic_career = Career::with('periods')->find($id);
+        return response()->json([$academic_career]);
     }
     public function create(ValidationAcademicManagementPeriod $request)
     {
