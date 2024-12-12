@@ -94,4 +94,11 @@ class CareerController extends Controller
         return response()->json($assign);
     }
 
+    public function findByIdGestion(string $id){
+        $management = AcademicManagementCareer::with('academic_management')->find($id);
+        if(!$management)
+            return ["message:", "La gestion con id:" . $id . " no existe."];
+        return response()->json($management);
+    }
+
 }
