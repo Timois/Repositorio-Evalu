@@ -22,7 +22,7 @@ class ValidationsCareer extends FormRequest
     public function rules(): array
     {
         // Validación para creación o actualización
-        $validationName = 'required|unique:careers,name|regex:/^[\pL\s\-]+$/unique:careers,name';
+        $validationName = 'required|unique:careers,name|regex:/^[\pL\s\-.]+$/|unique:careers,name';
         $validationinitials = 'required|unique:careers,initials|max:255|regex:/^[\pL\s\-]+$/u';
         $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         // Obtener el ID si es una actualización
