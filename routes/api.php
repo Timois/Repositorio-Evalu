@@ -48,7 +48,8 @@ Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::get("/find/{id}",'findById');
     Route::post("/assignManagement",'assignManagement');
     Route::get("/findAsign", 'findAssignManagement');
-    Route::get("/findByIdGestion{id}", 'findByIdGestion');
+    Route::get("/findByAssignId/{id}", 'findByIdAssign');
+    Route::post("/saveAssign", 'createAssign');
 });
 
 Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
