@@ -48,6 +48,7 @@ Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::get("/find/{id}",'findById');
     Route::post("/assignManagement",'assignManagement');
     Route::get("/findAsign", 'findAssignManagement');
+    Route::get("/findByIdGestion{id}", 'findByIdGestion');
 });
 
 Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
@@ -74,6 +75,7 @@ Route::controller(AcademicManagementPeriodController::class)->prefix('academic_m
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
+    Route::get("/findByIdCareer{id}", "findByIdCareer");
 });
 Route::controller(PeriodExtensionController::class)->prefix('period_extension')->group(function(){
     Route::post("/save","create");

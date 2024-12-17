@@ -42,7 +42,7 @@ class PeriodController extends Controller
     public function find(Request $request)
     {
         $periods = DB::table('periods')->orderBy('id','ASC')->get();
-        return $periods;
+        return response()->json($periods);
     }
 
     /**
@@ -71,6 +71,6 @@ class PeriodController extends Controller
         $period = Period::find($id);
         if (!$period)
             return ["message:", "El periodo con id:" . $id . " no existe."];
-        return $period;
+        return response()->json($period);
     }
 }
