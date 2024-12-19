@@ -49,7 +49,7 @@ class CareerController extends Controller
      */
     public function findAndUpdate(ValidationsCareer $request, string $id)
     {
-        
+
 
         $career = Career::find($id);
         if (!$career)
@@ -64,7 +64,7 @@ class CareerController extends Controller
             $career->save();
             return $career;
         }
-            
+
         $imageName = time() . '.' . $image->getClientOriginalExtension();
         $imagePath = asset('images/units/' . $imageName);
         $image->move(public_path('images/units'), $imageName);
@@ -88,17 +88,45 @@ class CareerController extends Controller
         $academicManagementCareer->save();
         return ["message:", "Gestion asignado exitosamente"];
     }
-    
+
     public function findAssignManagement(){
         $assign = AcademicManagementCareer::get();
         return response()->json($assign);
     }
 
-    public function findByIdGestion(string $id){
-        $management = AcademicManagementCareer::with('academic_management')->find($id);
-        if(!$management)
-            return ["message:", "La gestion con id:" . $id . " no existe."];
-        return response()->json($management);
+    public function findByIdAssign(string $careerId) {
+        $managements = AcademicManagementCareer::where('career_id', $careerId)
+            ->with(['academicManagement' => function($query) {
+                $query->select('id', 'initial_date', 'end_date');
+            }])
+            ->get();
+
+            // , 'career' => function($query) {
+            //     $query->select('id', 'name');
+            // }
+
+        if ($managements->isEmpty())
+            return response()->json([]);
+
+        $result = $managements->map(function($management) {
+            return [
+                'id' => $management->academicManagement->id,
+                'name' => $management->career->name,
+                'initial_date' => $management->academicManagement->initial_date,
+                'end_date' => $management->academicManagement->end_date,
+            ];
+        });
+
+        return response()->json($result);
     }
 
+
+    public function createAssign(Request $request){
+        $academicManagementCareer = new AcademicManagementCareer();
+        $academicManagementCareer->career_id=$request->career_id;
+        $academicManagementCareer->academic_management_id=$request->academic_management_id;
+        $academicManagementCareer->save();
+
+        return ["message:", "Gestion asignado exitosamente"];
+    }
 }
