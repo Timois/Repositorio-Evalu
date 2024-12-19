@@ -26,19 +26,19 @@ class ValidationsUnit extends FormRequest
      */
     public function rules(): array
     {
-        $validationName = 'required|string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name';
+        $validationName = 'required|string|max:255|regex:/^[\pL\s,\-]+$/u|unique:units,name';
         $validationSigla = 'required|string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials';
         $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         $validationType = 'required|in:facultad,unidad';
         $unit = $this->route("id");
         if ($unit) {
-            $validationName = 'string|max:255|regex:/^[\pL\s\-]+$/u|unique:units,name,' . $unit;
+            $validationName = 'required|string|max:255|regex:/^[\pL\s,\-]+$/u|unique:units,name';
             $validationSigla = 'string|max:10|regex:/^[\pL\s\-]+$/u|unique:units,initials,' . $unit;
             $validationLogo = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
             $validationType = 'in:facultad,unidad';
-        }
+        }   
 
-        return [
+        return [    
             'name' => $validationName,
             'initials' => $validationSigla,
             'logo' => $validationLogo,
