@@ -110,6 +110,7 @@ class CareerController extends Controller
 
         $result = $managements->map(function($management) {
             return [
+                'id' => $management->academicManagement->id,
                 'name' => $management->career->name,
                 'initial_date' => $management->academicManagement->initial_date,
                 'end_date' => $management->academicManagement->end_date,
