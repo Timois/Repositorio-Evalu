@@ -32,8 +32,8 @@ return new class extends Migration
         });
         Schema::create('academic_management_period',function(Blueprint $table){
             $table->id();
-            $table->date('initial_date')->nullable();
-            $table->date('end_date')->nullable();
+            $table->dateTime('initial_date')->nullable();
+            $table->dateTime('end_date')->nullable();
             $table->foreignId('academic_management_career_id')->constrained("academic_management_career", 'id')->onDelete('cascade');
             $table->enum('status',['aperturado','finalizado']);
             $table->foreignId('period_id')->constrained("periods", 'id')->onDelete('cascade');
@@ -41,8 +41,8 @@ return new class extends Migration
         });
         Schema::create('period_extensions', function (Blueprint $table) {
             $table->id();
-            $table->date('initial_date')->nullable();
-            $table->date('end_date')->nullable();
+            $table->dateTime('initial_date')->nullable();
+            $table->dateTime('end_date')->nullable();
             $table->foreignId('academic_management_period_id')->constrained("academic_management_period", 'id')->onDelete('cascade');
             $table->timestamps();
         });
