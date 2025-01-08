@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Http\Requests\ValidationsCareer;
 use App\Models\AcademicManagement;
 use App\Models\AcademicManagementCareer;
+use App\Models\AcademicManagementPeriod;
 use App\Models\Career;
 use Illuminate\Validation\ValidationException as ValidationValidationException;
 
@@ -114,6 +115,30 @@ class CareerController extends Controller
                 'name' => $management->career->name,
                 'initial_date' => $management->academicManagement->initial_date,
                 'end_date' => $management->academicManagement->end_date,
+                'academic_management_career_id' => $management->id
+            ];
+        });
+
+        return response()->json($result);
+    }
+
+    public function findPeriodByIdAssign(string $academicManagementCareerId) {
+        $periods = AcademicManagementPeriod::where('academic_management_career_id', $academicManagementCareerId)
+            ->with(['period' => function($query) {
+                $query->select('id', 'period');
+            }])
+            ->get();
+
+        if ($periods->isEmpty())
+            return response()->json([]);
+
+        $result = $periods->map(function($periods) {
+            return [
+                'id' => $periods->id,
+                'period_id' => $periods->period->id,
+                'period' => $periods->period->period,
+                'initial_date' => $periods->initial_date,
+                'end_date' => $periods->end_date
             ];
         });
 
