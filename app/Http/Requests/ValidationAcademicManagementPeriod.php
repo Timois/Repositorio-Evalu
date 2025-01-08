@@ -44,12 +44,12 @@ class ValidationAcademicManagementPeriod extends FormRequest
             return [
                 'initial_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d H:i:s', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
                 'end_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d H:i:s', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
-                //'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
+                'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
                 'period_id' => ['required', 'exists:periods,id'],
             ];
 
         return [
-            //'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
+            'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
         ];
     }
 
@@ -68,15 +68,15 @@ class ValidationAcademicManagementPeriod extends FormRequest
                 'end_date.date_format' => 'La fecha debe estar en formato:Y-m-d. H:i:s',
                 'end_date.after' => 'La fecha fin no puede ser antes de la fecha de inicio de gestion academica',
                 'end_date.before_or_equal' => 'La fecha fin tiene que estar en el rango de: ' . $management->initial_date . ' - ' . $management->end_date,
-                //'academic_management_career_id.required' => 'El id de la gestion academica de la carrera es obligatorio',
-                //'academic_management_career_id.exists' => 'No existe el id de la gestion academica de la carrera',
+                'academic_management_career_id.required' => 'El id de la gestion academica de la carrera es obligatorio',
+                'academic_management_career_id.exists' => 'No existe el id de la gestion academica de la carrera',
                 'period.required' => 'El id del periodo es obligatorio',
                 'period.exists' => 'No existe el id del periodo'
             ];
 
         return [
-            //'academic_management_career_id.required' => 'El id de la gestion academica de la carrera es obligatorio',
-            //'academic_management_career_id.exists' => 'No existe el id de la gestion academica de la carrera',
+            'academic_management_career_id.required' => 'El id de la gestion academica de la carrera es obligatorio',
+            'academic_management_career_id.exists' => 'No existe el id de la gestion academica de la carrera',
         ];
     }
 }
