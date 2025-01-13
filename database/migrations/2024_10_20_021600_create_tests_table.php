@@ -34,8 +34,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
             $table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta
-            $table->foreignId('question_answer_select_id')->constrained('answer_question', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta  seleccionada por el estudiante
-            $table->foreignId('question_answer_correct_id')->constrained('answer_question', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta  seleccionada po el estudiante
             $table->longText('optional_answer')->nullable();
             $table->double('value')->nullable();
             $table->enum('status',['evaluado','corregido'])->default('evaluado');

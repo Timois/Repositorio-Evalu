@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
-            $table->string('user_id')->unsigned(); // Relacion con el usuario
             $table->string('unit_id')->unsigned(); // Relacion con la unit
             $table->string('period_id')->unsigned(); // Relacion con el periodo
             $table->string('name')->nullable();

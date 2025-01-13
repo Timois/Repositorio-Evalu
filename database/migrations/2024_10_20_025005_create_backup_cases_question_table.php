@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('backup_case_question', function (Blueprint $table) {
             $table->id(); // ID del backup de pregunta caso
             $table->foreignId('results_student_test_id')->constrained('results_student_test', 'id')->onDelete('cascade'); // Relación con resultados de prueba del estudiante
-            $table->foreignId('question_answer_id')->constrained('answer_question', 'id')->onDelete('cascade'); // Relación con pregunta_respuesta
             $table->string('student_answer'); // Respuesta proporcionada por el estudiante
             $table->longText('answer')->nullable(); // Respuesta corregida (opcional)
             $table->double('value')->nullable(); // Valor asignado
