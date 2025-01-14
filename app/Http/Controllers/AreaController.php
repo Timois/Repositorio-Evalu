@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAreas;
 use App\Models\Areas;
+use App\Models\Period;
 use Illuminate\Http\Request;
 
 class AreaController extends Controller
@@ -32,33 +33,29 @@ class AreaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function findAndUpdate(ValidationAreas $request)
+    public function findAndUpdate(ValidationAreas $request, string $id)
     {
-        //
+        $area = Areas::find($id);
+        if(!$area)
+            return ["message:", "La area con el id:". $id . " no existe."];
+        if ($request->name)
+            $area->name = $request->name;
+        if ($request->description)
+            $area->description = $request->description;
+
+            $area->save();
+            return $area;
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function findById(Request $request, string $id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+        $area = Areas::find($id);
+        if(!$area)
+            return ["message:", "La area con el id:" . $id . "no existe"];
+        return response()->json($area);
     }
 
     /**

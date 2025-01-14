@@ -19,10 +19,18 @@ class ValidationAreas extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'name' => 'required|string|max:255|unique:areas,name',
-            'description' => 'nullable|string|max:500',
-        ];
+        $validationName = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+        $validationDescription = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+        $areaId = $this->route('id'); // Asegúrate de pasar el ID en la ruta
+        if ($areaId){
+            $validationName = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+            $validationDescription = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+        }
+        return[
+            'name' => $validationName,
+            'description' => $validationDescription
+        ]; 
+        
     }
 
     /**
@@ -34,7 +42,8 @@ class ValidationAreas extends FormRequest
             'name.required' => 'El nombre del área es obligatorio.',
             'name.unique' => 'Ya existe un área con este nombre.',
             'name.max' => 'El nombre del área no puede tener más de 255 caracteres.',
-            'description.max' => 'La descripción no puede exceder los 500 caracteres.',
+            'description.regex' => 'La descripción solo puede contener letras, espacios, comas, guiones y puntos.',
+            'description.regex' => 'Solo debe contener letras'
         ];
     }
 }

@@ -89,7 +89,7 @@ Route::controller(PeriodExtensionController::class)->prefix('period_extension')-
 Route::controller(AreaController::class)->prefix("areas")->group(function(){
     Route::post("/save", "create");
     Route::get("/list", "find");
-    Route::post("/edit{id}", "findAndUpdate");
+    Route::post("/edit/{id}", "findAndUpdate");
 });
 
 
