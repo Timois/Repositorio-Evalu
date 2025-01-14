@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\AcademicManagementPeriodController;
+use App\Http\Controllers\AreaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -83,6 +84,12 @@ Route::controller(PeriodExtensionController::class)->prefix('period_extension')-
     Route::post("/save","create");
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
+});
+
+Route::controller(AreaController::class)->prefix("areas")->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::post("/edit{id}", "findAndUpdate");
 });
 
 
