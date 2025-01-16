@@ -19,9 +19,9 @@ class QuestionBank extends Model
     public function areas():HasMany{
         return $this->hasMany(Areas::class);
     }
-
-    public function excel_imports_detail():BelongsTo{
-        return $this->belongsTo(ExcelImportsDetail::class);
+    
+    public function excel_imports():HasMany{
+        return $this->hasMany(ExcelImports::class);
     }
 
     public function evaluations_area():HasMany{

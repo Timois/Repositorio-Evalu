@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
+use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\ResponsibleController;
-
+use App\Models\ExcelImports;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,6 +93,11 @@ Route::controller(AreaController::class)->prefix("areas")->group(function(){
     Route::post("/edit/{id}", "findAndUpdate");
 });
 
+Route::controller(ExcelImportController::class)->prefix('excel_import')->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+});
 
 
 
