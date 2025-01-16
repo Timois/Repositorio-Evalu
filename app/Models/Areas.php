@@ -10,6 +10,10 @@ class Areas extends Model
 {
     protected $table = "areas";
 
+    protected $fillable = [
+        'name',
+        'description',
+    ];
     public function bank_questions():BelongsTo{
         return $this->belongsTo(QuestionBank::class);
     }

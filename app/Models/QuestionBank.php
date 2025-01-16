@@ -11,17 +11,28 @@ class QuestionBank extends Model
 {
     protected $table = "bank_questions";
 
+    protected $fillable = [
+        'area_id',
+        'excel_import_id',
+        'question',
+        'description',
+        'type',
+        'image',
+        'total_weight',
+        'status',
+    ];
+
     public function bank_answers():BelongsTo{
-        return $this->belongsTo(QuestionBank::class)
+        return $this->belongsTo(AnswerBank::class)
         ->withTimestamps();
     }
 
     public function areas():HasMany{
         return $this->hasMany(Areas::class);
     }
-
-    public function excel_imports_detail():BelongsTo{
-        return $this->belongsTo(ExcelImportsDetail::class);
+    
+    public function excel_imports():HasMany{
+        return $this->hasMany(ExcelImports::class);
     }
 
     public function evaluations_area():HasMany{
