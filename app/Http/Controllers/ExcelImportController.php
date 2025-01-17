@@ -67,8 +67,6 @@ class ExcelImportController extends Controller
             ], 500);
         }
     }
-    
-
 
     /**
      * Store a newly created resource in storage.

@@ -26,6 +26,7 @@ class ValidationExcelImport extends FormRequest
         $rules = [
             'file_name' => 'required|file|mimes:xlsx,xls,csv|max:2048',
             'status' => 'required|in:completado,error',
+
         ];
 
         if ($excelId) {

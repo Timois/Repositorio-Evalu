@@ -23,6 +23,7 @@ return new class extends Migration
             $table->double('total_weight')->nullable(); // Ponderación de la pregunta
             $table->enum("type", ['multiple', 'una opcion'])->default('multiple');
             $table->enum('status', ['activo', 'inactivo'])->default('activo'); // Estado de la pregunta
+
             $table->timestamps();
         });
         //php artisan migrate --path=/database/migrations/2024_10_20_020820_create_bank_questions_table.php
