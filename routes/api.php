@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\AcademicManagementPeriodController;
+use App\Http\Controllers\AnswerBankController;
 use App\Http\Controllers\AreaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -12,8 +13,11 @@ use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
+use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ResponsibleController;
+use App\Models\AnswerBank;
 use App\Models\ExcelImports;
+use Symfony\Component\Console\Question\Question;
 
 /*
 |--------------------------------------------------------------------------
@@ -99,5 +103,17 @@ Route::controller(ExcelImportController::class)->prefix('excel_import')->group(f
     Route::post("/edit/{id}", "findAndUpdate");
 });
 
+Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+});
 
+Route::controller(QuestionBankController::class)->prefix('bank_questions')->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+});
 

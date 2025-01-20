@@ -27,12 +27,33 @@ class ExcelImportController extends Controller
             // Procesar el archivo Excel
             $excel = $request->file('file_name');
             $fileSize = $excel->getSize();
+
+            // Validar que el archivo no esté vacío
+            if ($fileSize === 0) {
+                return response()->json([
+                    'message' => 'Error en la importación',
+                    'error' => 'El archivo Excel está vacío'
+                ], 422);
+            }
+
+            // Primero verificar el formato del Excel sin guardar nada
+            $tempImport = new QuestionBanKImport(null); // Pasamos null porque aún no tenemos ID
+            $data = Excel::toArray($tempImport, $excel);
+
+            // Validar el formato usando el método de validación de QuestionBankImport
+            $validationMessages = $tempImport->validateFormat($data);
+
+            if (!empty($validationMessages)) {
+                return response()->json([
+                    'message' => 'Error en el formato del Excel',
+                    'errors' => $validationMessages
+                ], 422);
+            }
+
+            // Si el formato es válido, procedemos con el guardado
             $excelName = time() . '.' . $excel->getClientOriginalName();
             $name_path = public_path('private/exams/' . $excelName);
-    
-            // Leer los datos del archivo Excel
-            $datos = Excel::toArray(null, $excel);
-    
+
             // Guardar información del archivo importado
             $importExcel = new ExcelImports();
             $importExcel->file_name = $excelName;
@@ -40,34 +61,38 @@ class ExcelImportController extends Controller
             $importExcel->status = $request->status;
             $importExcel->file_path = $name_path;
             $importExcel->save();
-    
-            // Mover el archivo a la carpeta adecuada
+
+            // Mover el archivo
             $path = $excel->move(public_path('private/exams'), $excelName);
-            $filePath = public_path('private/exams/' . $excelName);
-    
-            // Guardar el ID de la importación
-            $excelImportId = $importExcel->id;
-    
-            // Importar datos usando el importador
-            $import = new QuestionBanKImport($excelImportId);
+
+            // Ahora sí realizamos la importación real con el ID
+            $import = new QuestionBanKImport($importExcel->id);
             Excel::import($import, $path);
-    
-            // Obtener los mensajes del importador
+
+            // Obtener mensajes de la importación
             $messages = $import->getMessages();
-    
-            // Retornar los mensajes de la importación
+
             return response()->json([
                 'message' => 'Importación completa',
                 'details' => $messages,
             ], 200);
         } catch (\Exception $e) {
+            // Limpiar archivos si se crearon
+            if (isset($path) && file_exists($path)) {
+                unlink($path);
+            }
+
+            // Eliminar registro si se creó
+            if (isset($importExcel)) {
+                $importExcel->delete();
+            }
+
             return response()->json([
                 'message' => 'Error general en la importación',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-
     /**
      * Store a newly created resource in storage.
      */

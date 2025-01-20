@@ -28,6 +28,7 @@ class ServiceArea
     // Guardar la pregunta
     public static function SaveQuestion($data)
     {
+        dd($data);
         $question = new QuestionBank();
         $question->area_id = $data['area_id'];
         $question->excel_import_id = $data['excel_import_id'];

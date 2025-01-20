@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\QuestionBank;
 use Illuminate\Http\Request;
 
 class QuestionBankController extends Controller
@@ -9,9 +10,10 @@ class QuestionBankController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function find()
     {
-        //
+        $questions = QuestionBank::orderBy('id', 'ASC')->get();
+        return response()->json($questions);
     }
 
     /**

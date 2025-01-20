@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AnswerBank;
 use Illuminate\Http\Request;
 
 class AnswerBankController extends Controller
@@ -9,9 +10,10 @@ class AnswerBankController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function find()
     {
-        //
+        $answers = AnswerBank::orderBy('id', 'ASC')->get();
+        return response()->json($answers);
     }
 
     /**
