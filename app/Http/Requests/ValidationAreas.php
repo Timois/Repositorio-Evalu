@@ -20,11 +20,11 @@ class ValidationAreas extends FormRequest
     public function rules(): array
     {
         $validationName = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
-        $validationDescription = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+        $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
         $areaId = $this->route('id'); // Asegúrate de pasar el ID en la ruta
         if ($areaId){
             $validationName = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
-            $validationDescription = 'required|string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
+            $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:areas,name';
         }
         return[
             'name' => $validationName,

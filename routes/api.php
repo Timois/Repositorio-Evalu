@@ -108,6 +108,7 @@ Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(fu
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
+    Route::post("/unsubscribe", "remove");
 });
 
 Route::controller(QuestionBankController::class)->prefix('bank_questions')->group(function(){
@@ -115,5 +116,6 @@ Route::controller(QuestionBankController::class)->prefix('bank_questions')->grou
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
+    Route::post("/unsubscribe", "remove");
 });
 

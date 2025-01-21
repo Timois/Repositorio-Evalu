@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id(); // ID de la respuesta
             $table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta
             $table->string('answer')->nullable(); // Contenido de la respuesta
-            $table->string('image')->nullable(); // Imagen asociada a la respuesta (si existe)
+            //$table->string('image')->nullable(); // Imagen asociada a la respuesta (si existe)
             $table->double('weight')->nullable(); // Ponderación de la respuesta
             $table->boolean('is_correct')->default(false); // Indica si la respuesta es correcta
             $table->enum('status', ['activo', 'inactivo'])->default('activo'); // Estado de la respuesta
