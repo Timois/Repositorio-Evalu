@@ -103,27 +103,17 @@ class ExcelImportController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(ValidationExcelImport $request, string $id)
     {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+        $excel = ExcelImports::find($id);
+        if (!$excel) {
+            return ["message:", "El archivo con el id:" . $id . " no existe"];
+        }
+        $excel->status = $request->status;
+        $excel->save();
+        return $excel;
     }
 
     /**

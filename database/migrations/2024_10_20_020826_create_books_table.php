@@ -25,7 +25,7 @@ return new class extends Migration
         Schema::create('books_material', function (Blueprint $table) {
             $table->id();
             $table->foreignId('books_id')->constrained("books", 'id')->onDelete('cascade'); // Relacion con el libro
-            $table->foreignId('evaluation_id')->constrained("evaluations", 'id')->onDelete('cascade'); // Relacion con las evaluaciones
+            //$table->foreignId('evaluation_id')->constrained("evaluations", 'id')->onDelete('cascade'); // Relacion con las evaluaciones
             $table->timestamps();
         });
     }

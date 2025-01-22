@@ -22,15 +22,15 @@ class ValidationQuestionBank extends FormRequest
      */
     public function rules(): array
     {
-        $validationQuestion = 'required||string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:question_bank,name';
+        $validationQuestion = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√]+$/u|unique:bank_questions,question';
         $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
-        $validateImage = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
+        $validateImage = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         $validateTotalWeight = 'required|numeric|min:0';
         $validateType = 'required|in:multiple,una opcion';
         $validateStatus = 'required|in:activo,inactivo';
         $bankQuestion = $this->route("id");
         if ($bankQuestion) {
-            $validationQuestion = 'required||string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:question_bank,name';
+            $validationQuestion = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√]+$/u|unique:bank_questions,question,' . $bankQuestion;
             $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
             $validateImage = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
             $validateTotalWeight = 'required|numeric|min:0';
@@ -63,13 +63,12 @@ class ValidationQuestionBank extends FormRequest
     public function messages()
     {
         $question = $this->request->filter('question'); 
-        $bankQuestion = DB::table('question_bank')->where('question', '=', $question)->first();
+        $bankQuestion = DB::table('bank_questions')->where('question', '=', $question)->first();
         return [
             'question.required' => 'La pregunta es obligatoria.',
-            'question.regex' => 'Solo debe contener letras.',
+            'question.regex' => 'Solo debe contener letras o simbolos matematicos.',
             'question.unique' => 'La pregunta ya existe. ID de la pregunta existente:' . (($bankQuestion) ? $bankQuestion->id:0),
             'description.regex' => 'Solo debe contener letras.',
-            'image.required' => 'Debe subir una imagen para el campo path.',
             'image.image' => 'El archivo subido debe ser una imagen válida.',
             'image.mimes' => 'La imagen debe estar en uno de los siguientes formatos: jpeg, png, jpg, webp, svg.',
             'image.max' => 'La imagen no debe superar los 2 MB.',

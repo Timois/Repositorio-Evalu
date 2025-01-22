@@ -21,13 +21,13 @@ class ValidationAnswerBank extends FormRequest
      */
     public function rules(): array
     {
-        $validationAnswer = 'required||string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:answer_bank,answer';
+        $validationAnswer = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√]+$/u|unique:bank_answers,answer';
         $validationWeight = 'required|numeric|min:0';
         $validationIsCorrect = 'required|in:false,true';
         $validationStatus = 'required|in:activo,inactivo';
         $answerId = $this->route("id");
         if ($answerId) {
-            $validationAnswer = 'required||string|max:255|regex:/^[\pL\s,\-.]+$/u|unique:answer_bank,name';
+            $validationAnswer = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√]+$/u|unique:bank_answers,answer,' . $answerId;
             $validationWeight = 'required|numeric|min:0';
             $validationIsCorrect = 'required|in:false,true';
             $validationStatus = 'required|in:activo,inactivo';

@@ -24,10 +24,14 @@ class QuestionBankController extends Controller
      */
     public function create(ValidationQuestionBank $request)
     {
-        $image = $request->file('image');
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $imagePath = asset('images/questions/' . $imageName);
-        $image->move(public_path('images/questions'), $imageName);
+        // Manejar la imagen si está presente
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('images/questions'), $imageName);
+            $imagePath = asset('images/questions/' . $imageName);
+        }
 
         $question = new QuestionBank();
         $question->question = $request->question;
@@ -36,6 +40,8 @@ class QuestionBankController extends Controller
         $question->total_weight = $request->total_weight;
         $question->type = $request->type;
         $question->status = $request->status;
+        $question->area_id = $request->area_id;
+        $question->excel_import_id = $request->excel_import_id;
         $question->save();
         return $question;
     }
@@ -47,30 +53,30 @@ class QuestionBankController extends Controller
     {
         $question = QuestionBank::find($id);
 
-        if(!$question)
+        if (!$question)
             return ["message:", "La pregunta con id:" . $id . " no existe."];
-        if($request->question)
+        if ($request->question)
             $question->question = strtolower($request->question);
-        if($request->description)
+        if ($request->description)
             $question->description = $request->description;
-        if($request->total_weight)
+        if ($request->total_weight)
             $question->total_weight = $request->total_weight;
-        if($request->type)
+        if ($request->type)
             $question->type = $request->type;
-        if($request->status)
+        if ($request->status)
             $question->status = $request->status;
 
         $image = $request->file('image');
-        if(!$image){
+        if (!$image) {
             $question->save();
             return $question;
         }
-        
+
         $imageName = time() . '.' . $image->getClientOriginalExtension();
         $imagePath = asset('images/questions/' . $imageName);
         $image->move(public_path('images/questions'), $imageName);
         $question->image = $imagePath;
-        
+
         $question->save();
         return $question;
     }
@@ -86,7 +92,7 @@ class QuestionBankController extends Controller
         return response()->json($question);
     }
 
-    
+
     public function remove(string $id)
     {
         $question = QuestionBank::find($id);

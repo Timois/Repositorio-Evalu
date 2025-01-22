@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
@@ -117,5 +118,14 @@ Route::controller(QuestionBankController::class)->prefix('bank_questions')->grou
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
     Route::post("/unsubscribe", "remove");
+});
+
+Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::postcl("/edit/{id}", "findAndUpdate");
+    Route::get("/find/{id}",'findById');
+    Route::post("/assignQuestion", "AssignQuestion");
+    Route::get("/listAssignedQuestions", "ListAssignedQuestions");
 });
 

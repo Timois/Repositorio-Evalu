@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('tests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la evaluaciones
+            //$table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la evaluaciones
             $table->uuid('code')->unique();
             $table->enum('range',['minutos','horas','jornada'])->default('minutos');  
             $table->integer('time')->unsigned();
@@ -33,7 +33,7 @@ return new class extends Migration
         Schema::create('results_student_test', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
-            $table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta
+            //$table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta
             $table->longText('optional_answer')->nullable();
             $table->double('value')->nullable();
             $table->enum('status',['evaluado','corregido'])->default('evaluado');
