@@ -24,11 +24,10 @@ class ExcelImportController extends Controller
     public function create(ValidationExcelImport $request)
     {
         try {
-            // Procesar el archivo Excel
             $excel = $request->file('file_name');
             $fileSize = $excel->getSize();
 
-            // Validar que el archivo no esté vacío
+            // Validate file is not empty
             if ($fileSize === 0) {
                 return response()->json([
                     'message' => 'Error en la importación',
@@ -36,13 +35,12 @@ class ExcelImportController extends Controller
                 ], 422);
             }
 
-            // Primero verificar el formato del Excel sin guardar nada
-            $tempImport = new QuestionBanKImport(null); // Pasamos null porque aún no tenemos ID
+            // Pre-validate Excel format
+            $tempImport = new QuestionBanKImport(null);
             $data = Excel::toArray($tempImport, $excel);
 
-            // Validar el formato usando el método de validación de QuestionBankImport
+            // Validate format
             $validationMessages = $tempImport->validateFormat($data);
-
             if (!empty($validationMessages)) {
                 return response()->json([
                     'message' => 'Error en el formato del Excel',
@@ -50,45 +48,62 @@ class ExcelImportController extends Controller
                 ], 422);
             }
 
-            // Si el formato es válido, procedemos con el guardado
+            // Check for duplicate file content
+            $fileHash = hash_file('sha256', $excel->getRealPath());
+            $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
+
+            if ($existingImport) {
+                return response()->json([
+                    'message' => 'Error en la importación',
+                    'error' => 'Este archivo ya ha sido importado previamente'
+                ], 422);
+            }
+
+            // Continue with import logic
             $excelName = time() . '.' . $excel->getClientOriginalName();
             $name_path = public_path('private/exams/' . $excelName);
 
-            // Guardar información del archivo importado
             $importExcel = new ExcelImports();
             $importExcel->file_name = $excelName;
             $importExcel->size = $fileSize;
             $importExcel->status = $request->status;
             $importExcel->file_path = $name_path;
+            $importExcel->file_hash = $fileHash;
             $importExcel->save();
 
-            // Mover el archivo
+            // Move the file
             $path = $excel->move(public_path('private/exams'), $excelName);
 
-            // Ahora sí realizamos la importación real con el ID
+            // Perform actual import
             $import = new QuestionBanKImport($importExcel->id);
             Excel::import($import, $path);
 
-            // Obtener mensajes de la importación
+            // Get import messages
             $messages = $import->getMessages();
 
             return response()->json([
-                'message' => 'Importación completa',
-                'details' => $messages,
+                'message' => 'Importación completada exitosamente',
+                'success' => true,
+                'details' => [
+                    'file_name' => $excelName,
+                    'file_size' => $fileSize,
+                    'import_messages' => $messages
+                ]
             ], 200);
         } catch (\Exception $e) {
-            // Limpiar archivos si se crearon
+            // Cleanup uploaded file if exists
             if (isset($path) && file_exists($path)) {
                 unlink($path);
             }
 
-            // Eliminar registro si se creó
+            // Delete import record if created
             if (isset($importExcel)) {
                 $importExcel->delete();
             }
 
             return response()->json([
-                'message' => 'Error general en la importación',
+                'message' => 'Error en la importación',
+                'success' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -105,7 +120,7 @@ class ExcelImportController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(ValidationExcelImport $request, string $id)
+    public function findAndUpdate(ValidationExcelImport $request, string $id)
     {
         $excel = ExcelImports::find($id);
         if (!$excel) {
