@@ -26,8 +26,10 @@ class EvaluationController extends Controller
         $evaluation->number_questions = $request->number_questions;
         $evaluation->total_score = $request->total_score;
         $evaluation->is_random = $request->is_random;
+        $evaluation->duration = $request->duration;
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
+        $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
         return response()->json($evaluation);
     }
@@ -47,6 +49,8 @@ class EvaluationController extends Controller
             $evaluation->total_score = $request->total_score;
         if ($request->is_random)
             $evaluation->is_random = $request->is_random;
+        if ($request->duration)
+            $evaluation->duration = $request->duration;
         if ($request->status)
             $evaluation->status = $request->status;
         if ($request->type)

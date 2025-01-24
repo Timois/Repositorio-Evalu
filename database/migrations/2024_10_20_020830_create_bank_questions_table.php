@@ -25,7 +25,7 @@ return new class extends Migration
 
             $table->timestamps();
         });
-        //php artisan migrate --path=/database/migrations/2024_10_20_020820_create_bank_questions_table.php
+        //php artisan migrate --path=/database/migrations/2024_10_20_020825_create_evaluations_table.php
 
         Schema::create('question_evaluation', function (Blueprint $table) {
             $table->id();

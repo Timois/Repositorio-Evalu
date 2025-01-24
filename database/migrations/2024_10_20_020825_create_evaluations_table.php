@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('number_questions');
             $table->integer('total_score')->nullable();
             $table->boolean('is_random')->nullable();
+            $table->time('duration');
             $table->enum('status', ['activo', 'inactivo', 'efectuado'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
             $table->foreignId('academic_mangement_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');

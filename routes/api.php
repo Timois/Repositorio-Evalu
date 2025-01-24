@@ -123,7 +123,7 @@ Route::controller(QuestionBankController::class)->prefix('bank_questions')->grou
 Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
     Route::post("/save", "create");
     Route::get("/list", "find");
-    Route::postcl("/edit/{id}", "findAndUpdate");
+    Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
     Route::post("/assignQuestion", "AssignQuestion");
     Route::get("/listAssignedQuestions", "ListAssignedQuestions");
