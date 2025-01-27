@@ -7,6 +7,7 @@ use App\Http\Requests\ValidationExcelImport;
 use App\Imports\QuestionBanKImport;
 use App\Models\ExcelImports;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ExcelImportController extends Controller
 {
@@ -21,11 +22,23 @@ class ExcelImportController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(ValidationExcelImport $request)
+    public function create(Request $request)
     {
         try {
-            $excel = $request->file('file_name');
-            $fileSize = $excel->getSize();
+            // busqueda de archivo excel
+            $fileTitle = 'preguntas de mate.xlsx';
+            $archivos = $request->file('file_name');
+            // dd(count($request->file('file_name')));
+
+            for ($i = 0; $i < count($archivos); $i++) {
+                if ($fileTitle == $archivos[$i]->getClientOriginalName()) {
+                    $excelFile = $archivos[$i];
+                }
+            }
+
+
+            // $excel = $request->file('file_name');
+            $fileSize = $excelFile->getSize();
 
             // Validate file is not empty
             if ($fileSize === 0) {
@@ -37,7 +50,22 @@ class ExcelImportController extends Controller
 
             // Pre-validate Excel format
             $tempImport = new QuestionBanKImport(null);
-            $data = Excel::toArray($tempImport, $excel);
+            $data = Excel::toArray($tempImport, $excelFile);
+
+            // dd(gettype($data[0][2]));
+
+            // buscamos las preguntas con imagen
+            for ($i = 1; $i < count($data[0]); $i++) {
+
+                if ($data[0][$i][4] != null) {
+                    $relativePath = $data[0][$i][4];
+                    $realPath = ExcelImportController::getSavePath($relativePath, $request);
+                    $data[0][$i][4] = $realPath;
+                }
+            }
+            // dd($data);
+
+
 
             // Validate format
             $validationMessages = $tempImport->validateFormat($data);
@@ -49,18 +77,18 @@ class ExcelImportController extends Controller
             }
 
             // Check for duplicate file content
-            $fileHash = hash_file('sha256', $excel->getRealPath());
-            $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
+            // $fileHash = hash_file('sha256', $excelFile->getRealPath());
+            // $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
 
-            if ($existingImport) {
-                return response()->json([
-                    'message' => 'Error en la importación',
-                    'error' => 'Este archivo ya ha sido importado previamente'
-                ], 422);
-            }
+            // if ($existingImport) {
+            //     return response()->json([
+            //         'message' => 'Error en la importación',
+            //         'error' => 'Este archivo ya ha sido importado previamente'
+            //     ], 422);
+            // }
 
             // Continue with import logic
-            $excelName = time() . '.' . $excel->getClientOriginalName();
+            $excelName = time() . '.' . $excelFile->getClientOriginalName();
             $name_path = public_path('private/exams/' . $excelName);
 
             $importExcel = new ExcelImports();
@@ -68,16 +96,16 @@ class ExcelImportController extends Controller
             $importExcel->size = $fileSize;
             $importExcel->status = $request->status;
             $importExcel->file_path = $name_path;
-            $importExcel->file_hash = $fileHash;
+            // $importExcel->file_hash = $fileHash;
             $importExcel->save();
 
             // Move the file
-            $path = $excel->move(public_path('private/exams'), $excelName);
+            $path = $excelFile->move(public_path('private/exams'), $excelName);
 
             // Perform actual import
             $import = new QuestionBanKImport($importExcel->id);
             Excel::import($import, $path);
-
+            //dd("agsfds",$import);    
             // Get import messages
             $messages = $import->getMessages();
 
@@ -137,5 +165,22 @@ class ExcelImportController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    //$data es un array que pertenece a los elementos que llegan desde un $request->files
+    public function getSavePath(string $relativeName, Request $request)
+    {
+        //buscar en $data el archivo que contenga el nombre original igual a $relativeName
+        // dd($relativeName, $request->file('file_name'));
+        foreach ($request->file('file_name') as $key => $value) {
+            if ($key > 0) {
+                if ($value->getClientOriginalName() === $relativeName) {
+                    $imageName = Str::uuid() . '.' . $value->getClientOriginalExtension();
+                    $value->move(public_path('images/questions/'), $imageName);
+                    return $imageName;
+                }
+            }
+        }
+        return null;
     }
 }

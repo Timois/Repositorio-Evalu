@@ -28,17 +28,17 @@ class ValidationExcelImport extends FormRequest
             'file_name' => ['required','file','mimes:xlsx,xls,csv','max:10240', // 10MB
                 function ($attribute, $value, $fail) {
                     // Validate file is not empty
-                    if ($value->getSize() === 0) {
-                        $fail('El archivo no puede estar vacío');
-                    }
+                    // if ($value->getSize() === 0) {
+                    //     $fail('El archivo no puede estar vacío');
+                    // }
 
                     // Check for duplicate file content
-                    $fileHash = hash_file('sha256', $value->getRealPath());
-                    $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
+                    // $fileHash = hash_file('sha256', $value->getRealPath());
+                    // $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
 
-                    if ($existingImport) {
-                        $fail('Este archivo ya ha sido importado previamente');
-                    }
+                    // if ($existingImport) {
+                    //     $fail('Este archivo ya ha sido importado previamente');
+                    // }
 
                     // Additional custom validation for Excel format
                     try {
