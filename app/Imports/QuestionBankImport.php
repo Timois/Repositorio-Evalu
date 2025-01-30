@@ -93,12 +93,14 @@ class QuestionBankImport implements ToCollection
             return;
         }
 
+
         foreach ($rows as $index => $row) {
             // Saltar la primera fila (headers)
             if ($index === 0) {
                 continue;
             }
 
+            // Convertir la fila a un array
             $rowArray = $row->toArray();
             
             // Verificar si la fila está completamente vacía

@@ -11,6 +11,7 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
+use App\Http\Controllers\ImportExcelImageController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ResponsibleController;
 use App\Models\AnswerBank;
 use App\Models\ExcelImports;
+use Maatwebsite\Excel\Importer;
 use Symfony\Component\Console\Question\Question;
 
 /*
@@ -103,6 +105,13 @@ Route::controller(ExcelImportController::class)->prefix('excel_import')->group(f
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
 });
+
+Route::controller(ImportExcelImageController::class)->prefix('excel_import_image')->group(function(){
+    Route::post("/save", "create");
+    Route::post("/savezip", "saveimgezip");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate");
+}); 
 
 Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(function(){
     Route::post("/save", "create");
