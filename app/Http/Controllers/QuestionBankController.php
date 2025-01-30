@@ -51,34 +51,49 @@ class QuestionBankController extends Controller
      */
     public function findAndUpdate(ValidationQuestionBank $request, string $id)
     {
-        $question = QuestionBank::find($id);
+        try {
+            $question = QuestionBank::findOrFail($id);
 
-        if (!$question)
-            return ["message:", "La pregunta con id:" . $id . " no existe."];
-        if ($request->question)
-            $question->question = strtolower($request->question);
-        if ($request->description)
-            $question->description = $request->description;
-        if ($request->total_weight)
-            $question->total_weight = $request->total_weight;
-        if ($request->type)
-            $question->type = $request->type;
-        if ($request->status)
-            $question->status = $request->status;
+            // Update fields if they exist in the request
+            $updateData = $request->only([
+                'question',
+                'description',
+                'total_weight',
+                'type',
+                'status'
+            ]);
 
-        $image = $request->file('image');
-        if (!$image) {
-            $question->save();
-            return $question;
+            // Convert question to lowercase if it exists
+            if (isset($updateData['question'])) {
+                $updateData['question'] = strtolower($updateData['question']);
+            }
+
+            // Handle image upload
+            $image = $request->file('image');
+            if ($image) {
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $imagePath = asset('images/questions/' . $imageName);
+                $image->move(public_path('images/questions'), $imageName);
+                $updateData['image'] = $imagePath;
+            }
+
+            // Update the question
+            $question->update($updateData);
+
+            return response()->json([
+                'message' => 'Pregunta actualizada exitosamente',
+                'data' => $question
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => "La pregunta con id: $id no existe."
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar la pregunta',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $imagePath = asset('images/questions/' . $imageName);
-        $image->move(public_path('images/questions'), $imageName);
-        $question->image = $imagePath;
-
-        $question->save();
-        return $question;
     }
 
     /**

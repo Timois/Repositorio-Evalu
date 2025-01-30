@@ -36,28 +36,49 @@ class EvaluationController extends Controller
 
     public function findAndUpdate(ValidationEvaluation $request, string $id)
     {
-        $evaluation = Evaluation::find($id);
-        if (!$evaluation)
-            return ["message:", "La evaluación con el id:" . $id . " no existe."];
-        if ($request->title)
-            $evaluation->title = strtoupper($request->title);
-        if ($request->description)
-            $evaluation->description = strtolower($request->description);
-        if ($request->number_questions)
-            $evaluation->number_questions = $request->number_questions;
-        if ($request->total_score)
-            $evaluation->total_score = $request->total_score;
-        if ($request->is_random)
-            $evaluation->is_random = $request->is_random;
-        if ($request->duration)
-            $evaluation->duration = $request->duration;
-        if ($request->status)
-            $evaluation->status = $request->status;
-        if ($request->type)
-            $evaluation->type = $request->type;
-        $evaluation->save();
-        return $evaluation;
+        try {
+            // Busca la evaluación por su ID
+            $evaluation = Evaluation::findOrFail($id);
+
+            // Captura los datos del request, solo los campos editables
+            $updateData = $request->only([
+                'title',
+                'description',
+                'number_questions',
+                'is_random',
+                'duration'
+            ]);
+
+            // Convierte 'title' a mayúsculas si está presente
+            if (isset($updateData['title'])) {
+                $updateData['title'] = strtoupper($updateData['title']);
+            }
+
+            // Convierte 'description' a minúsculas si está presente
+            if (isset($updateData['description'])) {
+                $updateData['description'] = strtolower($updateData['description']);
+            }
+
+            // Actualiza los datos en el modelo
+            $evaluation->update($updateData);
+
+            // Retorna la respuesta exitosa
+            return response()->json([
+                'message' => 'Evaluación actualizada exitosamente',
+                'data' => $evaluation
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => "La evaluación con id: $id no existe."
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar la evaluación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function findById(string $id)
     {
@@ -109,6 +130,6 @@ class EvaluationController extends Controller
     public function ListAssignedQuestions(Request $request)
     {
         $questions = QuestionEvaluation::get();
-        return response()->json($questions);      
+        return response()->json($questions);
     }
 }

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->time('duration');
             $table->enum('status', ['activo', 'inactivo', 'efectuado'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
-            $table->foreignId('academic_mangement_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');
+            $table->foreignId('academic_management_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');
             $table->timestamps();
         });
     }
