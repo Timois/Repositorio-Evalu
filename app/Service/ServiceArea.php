@@ -47,9 +47,10 @@ class ServiceArea
     public static function SaveAnswer($data)
     {
         $answer = new AnswerBank();
-        $answer->question_bank_id = $data['question_bank_id'];
+        $answer->bank_question_id = $data['bank_question_id'];
         $answer->answer = $data['answer'];
         $answer->weight = $data['weight'];
+        $answer->is_correct = $data['is_correct'];
         $answer->status = $data['status'];
         $answer->save();
 
@@ -72,7 +73,7 @@ class ServiceArea
             // Insertar respuestas
             foreach ($answersToInsert as $answerData) {
                 // Se asegura de que la respuesta se relacione con la pregunta correcta
-                $answerData['question_bank_id'] = $questionIds[$answerData['bank_question_id']];
+                $answerData['bank_question_id'] = $questionIds[$answerData['bank_question_id']];
                 self::SaveAnswer($answerData);
             }
 

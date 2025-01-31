@@ -29,10 +29,10 @@ class ImportExcelImageController extends Controller
         // Subir el archivo ZIP
         $zipFile = $request->file('file_name');
         $zipFileName = time() . '_' . $zipFile->getClientOriginalName();
-        $zipPath = public_path("uploads/") . $zipFileName;
+        $zipPath = public_path("uploads") . DIRECTORY_SEPARATOR . $zipFileName;
 
-        // Mover el archivo a la carpeta de destino
-        if ($zipFile->move(public_path("uploads/"), $zipFileName)) {
+        // Mover el archivo a la carpeta de destino 
+        if ($zipFile->move(public_path("uploads" . DIRECTORY_SEPARATOR), $zipFileName)) {
             // Obtener el tamaño del archivo después de moverlo
             $fileSize = filesize($zipPath); // Usamos `filesize()` en lugar de `$zipFile->getSize()`
 
@@ -46,37 +46,46 @@ class ImportExcelImageController extends Controller
 
             // Ruta para extraer
             $excelImportId = time(); // Generar ID único
-            $extractTo = public_path('uploads/extracted_files/' . $excelImportId . '/');
-            $pathaux='uploads/extracted_files/' . $excelImportId . '/';
+            $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
+            //dd($extractTo);
+            $pathaux = 'uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR .
+                str_replace(['\\', '/'], DIRECTORY_SEPARATOR, pathinfo($zipFileName, PATHINFO_FILENAME)) . DIRECTORY_SEPARATOR;
+
+            // Eliminar barras invertidas o diagonales innecesarias al principio o al final de la ruta
+            $pathaux = rtrim($pathaux, DIRECTORY_SEPARATOR);
+            $pathaux = ltrim($pathaux, DIRECTORY_SEPARATOR);
+
+            //dd($pathaux);
             // Extraer el ZIP
             $result = $this->extractZip($zipPath, $extractTo);
-                           // Guardar los detalles de la importación en la base de datos
-                           $importRecord = DB::table('excel_imports')->insert([
-                            'id' => $excelImportId,
-                            'file_name' => $zipFileName,
-                            'size' => $fileSize,  // Usamos el tamaño del archivo movido
-                            'status' => 'completado',
-                            'file_path' => $result['excel'],
-                        ]);
-                        //dd($importRecord);
-                        if (!$importRecord) {
-                            throw new \Exception("Error al guardar el registro en excel_imports");
-                        }
+            // Guardar los detalles de la importación en la base de datos
+            $importRecord = DB::table('excel_imports')->insert([
+                'id' => $excelImportId,
+                'file_name' => $zipFileName,
+                'size' => $fileSize,  // Usamos el tamaño del archivo movido
+                'status' => 'completado',
+                'file_path' => $result['excel'],
+            ]);
+
+            if (!$importRecord) {
+                throw new \Exception("Error al guardar el registro en excel_imports");
+            }
             if ($result['success']) {
+
                 try {
                     DB::beginTransaction(); // Iniciar la transacción
 
-     
                     // Crear los parámetros para la importación
                     $importParams = [
                         'excel_import_id' => $excelImportId,
-                        'extractedPath'=>$pathaux
+                        'extractedPath' => $pathaux
                     ];
-                    //dd($importParams);
+
                     // Crear la instancia de importación con los parámetros
                     $import = new QuestionImagesImport($importParams);
                     Excel::import($import, $result['excel']);
 
+                    //dd('entro' ,$import);
                     // Verificar si hubo errores durante la importación
                     $messages = $import->getMessages();
                     if (!empty($messages)) {
@@ -127,6 +136,7 @@ class ImportExcelImageController extends Controller
         $zip = new \ZipArchive();
 
         if ($zip->open($zipPath) === true) {
+            //dd("Zip abierta");
             // Crear la carpeta si no existe
             if (!File::exists($extractTo)) {
                 File::makeDirectory($extractTo, 0755, true);
@@ -138,22 +148,22 @@ class ImportExcelImageController extends Controller
 
             // Obtener la lista de archivos extraídos
             $extractedFiles = File::allFiles($extractTo);
-
+            //dd($extractedFiles);
             // Filtrar solo los archivos Excel (.xlsx, .xls)
             $excelFiles = array_filter($extractedFiles, function ($file) {
                 return in_array(strtolower($file->getExtension()), ['xlsx', 'xls']);
             });
-            //dd($extractTo);
+            //dd($excelFiles);
             // Si se encuentran archivos Excel, retornar el primero
             if (!empty($excelFiles)) {
                 $firstExcelFile = reset($excelFiles);  // Obtener el primer archivo Excel
                 $excelFilePath = $firstExcelFile->getRelativePathname();  // Ruta relativa
                 $fullPath = $extractTo . $excelFilePath;  // Ruta completa al archivo
-                
+
                 return [
                     'success' => true,
                     'excel' => $fullPath, // Ruta completa del primer archivo Excel encontrado
-                    'path'=>$extractTo
+                    'path' => $extractTo
                 ];
             }
 

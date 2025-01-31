@@ -20,3 +20,4 @@ yarn-error.log
 
 # remove images from repo
 /public/images
+/public/uploads
