@@ -85,7 +85,6 @@ class QuestionBankImport implements ToCollection
             }
         }
 
-
         foreach ($rows as $index => $row) {
             // Saltar la primera fila (headers)
             if ($index === 0) {
@@ -125,8 +124,9 @@ class QuestionBankImport implements ToCollection
             try {
 
                 // Verificar si el área existe
-                $iafind = ServiceArea::FindArea($dataRow['area']);
-                dd($rows);
+                $areafind = ServiceArea::FindArea($dataRow['area']);
+                $iafind = $areafind->id;
+                //dd($rows);
                 if (!$iafind) {
                     $responseMessages[] = "Error en la fila " . ($index + 1) . ": Área ' {$dataRow['area']} ' no encontrada.";
                     continue;

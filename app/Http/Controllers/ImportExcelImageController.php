@@ -28,10 +28,11 @@ class ImportExcelImageController extends Controller
 
         // Subir el archivo ZIP
         $zipFile = $request->file('file_name');
-        $zipFileName = time() . '_' . $zipFile->getClientOriginalName();
+        $zipFileName = time();
         $zipPath = public_path("uploads") . DIRECTORY_SEPARATOR . $zipFileName;
 
         // Mover el archivo a la carpeta de destino 
+        //dd($zipFileName);
         if ($zipFile->move(public_path("uploads" . DIRECTORY_SEPARATOR), $zipFileName)) {
             // Obtener el tamaño del archivo después de moverlo
             $fileSize = filesize($zipPath); // Usamos `filesize()` en lugar de `$zipFile->getSize()`
@@ -46,18 +47,16 @@ class ImportExcelImageController extends Controller
 
             // Ruta para extraer
             $excelImportId = time(); // Generar ID único
+            //dd($excelImportId);
             $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
-            //dd($extractTo);
             $pathaux = 'uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR .
                 str_replace(['\\', '/'], DIRECTORY_SEPARATOR, pathinfo($zipFileName, PATHINFO_FILENAME)) . DIRECTORY_SEPARATOR;
 
             // Eliminar barras invertidas o diagonales innecesarias al principio o al final de la ruta
             $pathaux = rtrim($pathaux, DIRECTORY_SEPARATOR);
             $pathaux = ltrim($pathaux, DIRECTORY_SEPARATOR);
-
-            //dd($pathaux);
-            // Extraer el ZIP
             $result = $this->extractZip($zipPath, $extractTo);
+            //dd($result);
             // Guardar los detalles de la importación en la base de datos
             $importRecord = DB::table('excel_imports')->insert([
                 'id' => $excelImportId,
@@ -94,10 +93,6 @@ class ImportExcelImageController extends Controller
 
                     DB::commit(); // Confirmar la transacción si todo salió bien
 
-                    // Limpiar archivos temporales
-                    File::deleteDirectory($extractTo);
-                    File::delete($zipPath);
-
                     return response()->json([
                         'message' => 'Importación completada exitosamente',
                         'status' => 'completado',
@@ -105,10 +100,6 @@ class ImportExcelImageController extends Controller
                 } catch (\Exception $e) {
                     //dd('me entre al roll bak');
                     DB::rollback(); // Deshacer cambios en caso de error
-
-                    // Limpiar archivos en caso de error
-                    File::deleteDirectory($extractTo);
-                    File::delete($zipPath);
 
                     return response()->json([
                         'message' => 'Error durante la importación',
@@ -136,7 +127,7 @@ class ImportExcelImageController extends Controller
         $zip = new \ZipArchive();
 
         if ($zip->open($zipPath) === true) {
-            //dd("Zip abierta");
+            
             // Crear la carpeta si no existe
             if (!File::exists($extractTo)) {
                 File::makeDirectory($extractTo, 0755, true);
@@ -148,12 +139,12 @@ class ImportExcelImageController extends Controller
 
             // Obtener la lista de archivos extraídos
             $extractedFiles = File::allFiles($extractTo);
-            //dd($extractedFiles);
+            
             // Filtrar solo los archivos Excel (.xlsx, .xls)
             $excelFiles = array_filter($extractedFiles, function ($file) {
                 return in_array(strtolower($file->getExtension()), ['xlsx', 'xls']);
             });
-            //dd($excelFiles);
+            
             // Si se encuentran archivos Excel, retornar el primero
             if (!empty($excelFiles)) {
                 $firstExcelFile = reset($excelFiles);  // Obtener el primer archivo Excel
@@ -192,7 +183,6 @@ class ImportExcelImageController extends Controller
 
     public function getSavePath(string $relativeName, Request $request)
     {
-        dd($relativeName, $request);
         //buscar en $data el archivo que contenga el nombre original igual a $relativeName
         foreach ($request->file('file_name') as $key => $value) {
             if ($key > 0) {

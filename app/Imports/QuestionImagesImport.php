@@ -2,13 +2,14 @@
 
 namespace App\Imports;
 
+use App\Http\Controllers\AreaController;
 use App\Models\AnswerBank;
 use App\Models\Areas;
 use App\Service\ServiceArea;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToCollection;
 
 class QuestionImagesImport implements ToCollection
@@ -28,20 +29,19 @@ class QuestionImagesImport implements ToCollection
 
     public function validateFormat($data)
     {
-        
+
         $messages = [];
 
         if (empty($data) || empty($data[0])) {
             $messages[] = "Error: El archivo está vacío o no tiene encabezados.";
             return $messages;
         }
-
-        $headers = $data[0];
-
         // Validar que todas las columnas requeridas existan        
-        $missingColumns = array_diff($this->requiredColumns, $headers);
-        if (!empty($missingColumns)) {
+        $missingColumns = array_diff($this->requiredColumns, $data);
+
+        if (count($missingColumns) > 0) {
             $messages[] = "Error: Faltan las siguientes columnas requeridas: " . implode(', ', $missingColumns);
+            //dd(count($missingColumns ));   
         }
 
         return $messages;
@@ -49,77 +49,68 @@ class QuestionImagesImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-        if ($rows->isEmpty()) {
-            $this->messages[] = "El archivo Excel está vacío.";
-            return;
-        }
+        // Limpiar los arrays cuyos campos sean todos null
+        $rows = $rows->filter(function ($row) {
+            return count(array_filter($row->toArray())) > 0;
+        });
 
         // Obtener y validar headers
         $headers = $rows->first()->toArray();
-        $formatMessages = $this->validateFormat(['0' => $headers]);
-        if (!empty($formatMessages)) {
-            $this->messages = array_merge($this->messages, $formatMessages);
-            return;
+
+        foreach ($headers as $key => $value) {
+            if ($value !== $this->requiredColumns[$key]) {
+                $this->messages[] = "LA COLUMNA {$headers[$key]} No COINCIDE CON LA COLUMNA REQUERIDA {$this->requiredColumns[$key]}";
+            }
         }
 
-        // Crear un array asociativo con los índices de las columnas
-        $columnIndexes = array_flip($headers);
-
-        // Procesar cada fila de datos
         foreach ($rows as $index => $row) {
-            if ($index === 0) continue; // Omitir headers
-
-            try {
-                $rowData = $row->toArray();
-
-                // Verificar que la fila tiene suficientes columnas
-                if (count($rowData) < count($this->requiredColumns)) {
-                    $this->messages[] = "La fila $index no contiene todas las columnas requeridas.";
-                    continue;
-                }
-
-                // Crear array asociativo con los datos de la fila
-                $data = [];
-                foreach ($this->requiredColumns as $column) {
-                    $columnIndex = $columnIndexes[$column] ?? null;
-                    if ($columnIndex === null) {
-                        throw new \Exception("Columna '$column' no encontrada");
-                    }
-                    $data[$column] = $rowData[$columnIndex] ?? null;
-                }
-
-                $area_archivo = $data['area'];
-                // Procesar imagen si existe
-                if (($data['imagen'])) {
-                    
-                    //if($index === 2) dd($data['imagen']);
-                    $imagePath = $this->processImage($data['imagen'], $area_archivo);
-                    $data['imagen'] = $imagePath;
-                }
-                
-                //Guardar area
-                $areaId = $this->saveArea($data['area']);
-
-                // Guardar la pregunta
-                $question = $this->saveQuestion($data);
-                
-                // Guardar las respuestas
-                $answers = $this->saveAnswers($question, $data);
-            } catch (\Exception $e) {
-                $this->messages[] = "Error en la fila $index: " . $e->getMessage();
+            // Saltar la primera fila (headers)
+            if ($index === 0) {
+                continue;
             }
+
+            $rowArray = $row->toArray();
+
+            // Verificar si la fila está completamente vacía
+            if (empty(array_filter($rowArray, function ($value) {
+                return $value !== null && $value !== '';
+            }))) {
+                logger()->info('Fila ' . ($index + 1) . ' está vacía, terminando el procesamiento.');
+                break; // Terminar el procesamiento al encontrar una fila vacía
+            }
+            // Crear array asociativo con los datos de la fila
+            $dataRow = array_combine($headers, $rowArray);
+
+            $area_archivo = $dataRow['area'];
+
+            if (($dataRow['imagen'])) {
+                $imagePath = $this->processImage($dataRow['imagen'], $area_archivo);
+            }
+
+            //Guardar area
+            $area = $this->saveArea($area_archivo);
+            // dd($imagePath);
+
+            $question = $this->saveQuestion($dataRow, $imagePath, $area->id);
+
+            // Guardar las respuestas
+            $this->saveAnswers($question, $dataRow);
         }
     }
 
     protected function saveArea($area)
     {
-        $existingArea = Areas::where('name', $area)->first();
-        if (!$existingArea) {
-            throw new \Exception("Área '$area' no encontrada");
-        }
-        return $existingArea->id;
-    }
+        // Limpiar el nombre del área eliminando espacios extras
+        $areaName = trim($area);
 
+        // Usar el servicio existente para encontrar o crear el área
+        $area = ServiceArea::FindArea($areaName);
+        // Guardar area si no existe
+        if (!$area) {
+            $area = ServiceArea::SaveArea(['name' => $areaName, 'description' => $areaName]);
+        }
+        return $area;
+    }
     protected function processImage($imagePath, $area_archivo)
     {
         //dd($area_archivo);
@@ -130,22 +121,22 @@ class QuestionImagesImport implements ToCollection
         try {
             // Obtener el nombre original del archivo de la ruta completa
             $originalName = basename($imagePath);
-            
+            //dd($originalName);
             // Crear el directorio de destino en public si no existe
-            $destinationDir = public_path('images'. DIRECTORY_SEPARATOR .'questions');
+            $destinationDir = public_path('images' . DIRECTORY_SEPARATOR . 'questions');
 
             if (!file_exists($destinationDir)) {
                 mkdir($destinationDir, 0777, true);
             }
-            
+
             // Usar el nombre original para el archivo de destino
             $destinationPath = $destinationDir . DIRECTORY_SEPARATOR . $originalName;
 
             // Construir la ruta del archivo de origen
-            $sourcePath = $this->extractedPath . DIRECTORY_SEPARATOR . $area_archivo . DIRECTORY_SEPARATOR . 'imagenes' . DIRECTORY_SEPARATOR . $originalName;
-            //dd($sourcePath);
+            $sourcePath = public_path($this->extractedPath . DIRECTORY_SEPARATOR . $area_archivo . DIRECTORY_SEPARATOR . 'imagenes' . DIRECTORY_SEPARATOR . $originalName);
             // Verificar si el archivo existe
             if (!file_exists($sourcePath)) {
+
                 throw new \Exception("Imagen no encontrada en la ruta: $sourcePath");
             }
 
@@ -155,33 +146,22 @@ class QuestionImagesImport implements ToCollection
             }
 
             // Devolver la ruta relativa con el nombre original
-            return 'images'. DIRECTORY_SEPARATOR .'questions' . DIRECTORY_SEPARATOR . $originalName;
+            return 'images' . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . $originalName;
         } catch (\Exception $e) {
             $this->messages[] = "Error procesando imagen: " . $e->getMessage();
             return null;
         }
     }
 
-    protected function saveQuestion($data)
+    protected function saveQuestion($data, $imagePath, $area_id)
     {
-        //dd($data);
-        $areaId = $this->saveArea($data['area']);
-
         $exists = DB::table('excel_imports')->where('id', $this->excelImportId)->exists();
         if (!$exists) {
             throw new \Exception("El ID de importación de Excel ($this->excelImportId) no existe.");
         }
 
-        //dd(!empty(public_path($data['imagen']))); 
-
-        // Procesar la imagen y obtener la ruta relativa
-        $imagePath = !empty(public_path($data['imagen'])) ?
-            $this->processImage(public_path($data['imagen']), $data['area']) :
-            null;
-        //dd($imagePath);
-        // Guardar la pregunta con la ruta de la imagen
         return ServiceArea::SaveQuestion([
-            'area_id' => $areaId,
+            'area_id' => $area_id,
             'excel_import_id' => $this->excelImportId,
             'question' => $data['pregunta'],
             'description' => $data['descripcion'],

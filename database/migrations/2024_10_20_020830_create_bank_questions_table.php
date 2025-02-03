@@ -16,8 +16,8 @@ return new class extends Migration
             //$table->foreignId('evaluation_area_id')->constrained('evaluation_career', 'id')->onDelete('cascade'); // Relación con l área de evaluación
             $table->foreignId('area_id')->constrained('areas', 'id')->onDelete('cascade'); 
             $table->foreignId('excel_import_id')->constrained('excel_imports','id')->onDelete('cascade');
-            $table->string('description')->nullable(); // descripcion de la pregunta
-            $table->string('question')->nullable(); // Contenido de la pregunta
+            $table->text('description')->nullable(); // descripcion de la pregunta
+            $table->text('question')->nullable(); // Contenido de la pregunta
             $table->string('image')->nullable(); // Imagen asociada a la pregunta (si existe)
             $table->double('total_weight')->nullable(); // Ponderación de la pregunta
             $table->enum("type", ['multiple', 'una opcion'])->default('multiple');

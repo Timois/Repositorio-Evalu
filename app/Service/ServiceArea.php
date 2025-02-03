@@ -14,15 +14,7 @@ class ServiceArea
     public static function FindArea($name)
     {
         $area = Areas::where('name', $name)->first();
-
-        if (!$area) {
-            $area = new Areas();
-            $area->name = $name;
-            $area->description = $name;
-            $area->save();
-        }
-
-        return $area->id;
+        return $area;
     }
 
     // Guardar la pregunta
@@ -39,10 +31,18 @@ class ServiceArea
         $question->total_weight = $data['total_weight'];
         $question->status = $data['status'];
         $question->save();
+        //dd($question);
 
         return $question;
     }
-
+    public static function SaveArea($data)
+    {
+        $area = new Areas();
+        $area->name = $data['name'];
+        $area->description = $data['description'];
+        $area->save();
+        return $area;
+    }
     // Guardar respuesta
     public static function SaveAnswer($data)
     {
