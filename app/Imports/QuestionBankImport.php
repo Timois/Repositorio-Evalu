@@ -67,7 +67,7 @@ class QuestionBankImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-        // $headers = [];
+        $headers = [];
         $responseMessages = [];
 
         // Verificar si hay filas en el Excel
@@ -79,10 +79,11 @@ class QuestionBankImport implements ToCollection
         // Obtener las cabeceras del Excel
         $headers = $rows[0]->toArray();
 
-        foreach ($headers as $key => $value) {
-            if ($value !== $this->requiredColumns[$key]) {
-                $this->messages[] = "LA COLUMNA {$headers[$key]} No COINCIDE CON LA COLUMNA REQUERIDA {$this->requiredColumns[$key]}";
-            }
+        // Validar que los headers coincidan con los required columns
+        $headersDiff = array_diff($this->requiredColumns, $headers);
+        if (!empty($headersDiff)) {
+            $this->messages[] = "Columnas faltantes: " . implode(', ', $headersDiff);
+            return;
         }
 
         foreach ($rows as $index => $row) {
@@ -92,7 +93,7 @@ class QuestionBankImport implements ToCollection
             }
 
             $rowArray = $row->toArray();
-            
+
             // Verificar si la fila está completamente vacía
             if (empty(array_filter($rowArray, function ($value) {
                 return $value !== null && $value !== '';
@@ -100,33 +101,35 @@ class QuestionBankImport implements ToCollection
                 logger()->info('Fila ' . ($index + 1) . ' está vacía, terminando el procesamiento.');
                 break; // Terminar el procesamiento al encontrar una fila vacía
             }
+
+            // Asegurarse de que tengan la misma longitud
+            if (count($headers) !== count($rowArray)) {
+                $responseMessages[] = "Error en la fila " . ($index + 1) . ": El número de columnas no coincide con los encabezados.";
+                continue;
+            }
             
             // Crear array asociativo con los datos de la fila
             $dataRow = array_combine($headers, $rowArray);
-            // dd($dataRow);
 
             // Validar que los campos requeridos no estén vacíos (excepto imagen)
             $emptyFields = [];
             foreach ($this->requiredColumns as $column) {
-                if ($column !== 'imagen' && empty($dataRow[$column])) {
+                // Modificamos la condición para ser más estricta
+                if ($column !== 'imagen' && (!isset($dataRow[$column]) || $dataRow[$column] === '' || $dataRow[$column] === null)) {
                     $emptyFields[] = $column;
                 }
             }
 
-            if (count($emptyFields) === 0) {
-                // dd(($emptyFields));
-
+            if (count($emptyFields) > 0) {
                 $responseMessages[] = "Error en la fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
                 continue;
             }
 
-
             try {
 
                 // Verificar si el área existe
-                $areafind = ServiceArea::FindArea($dataRow['area']);
-                $iafind = $areafind->id;
-                //dd($rows);
+                $iafind = ServiceArea::FindArea($dataRow['area']);
+                //dd($iafind);
                 if (!$iafind) {
                     $responseMessages[] = "Error en la fila " . ($index + 1) . ": Área ' {$dataRow['area']} ' no encontrada.";
                     continue;
@@ -147,10 +150,9 @@ class QuestionBankImport implements ToCollection
                     //dd($dataToInsert);
                     $saveQuest = QuestionBank::create($dataToInsert);
                     // Verificar si la pregunta ya existe para esta área
-                    if($index === 5){
+                    if ($index === 5) {
                         //dd($saveQuest);
                     }
-
                 } catch (\Exception $e) {
                     // Manejar cualquier error que pueda ocurrir
                     return [
@@ -184,14 +186,14 @@ class QuestionBankImport implements ToCollection
                         ];
                     }
                 }
-
+    
                 // Guardar respuestas masivamente
                 if (!empty($answersToInsert)) {
                     AnswerBank::insert($answersToInsert);
                     $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta y respuestas guardadas exitosamente.";
                 }
             } catch (\Exception $e) {
-                dd($e->getMessage());
+                //dd($e->getMessage());
                 $responseMessages[] = "Error en la fila " . ($index + 1) . ": " . $e->getMessage();
                 logger()->error("Error en importación fila " . ($index + 1) . ": " . $e->getMessage());
             }

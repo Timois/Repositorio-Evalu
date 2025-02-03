@@ -24,41 +24,21 @@ class ValidationExcelImport extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'file_name' => ['required','file','mimes:xlsx,xls,csv','max:10240', // 10MB
-                function ($attribute, $value, $fail) {
-                    // Validate file is not empty
-                    // if ($value->getSize() === 0) {
-                    //     $fail('El archivo no puede estar vacío');
-                    // }
-
-                    // Check for duplicate file content
-                    // $fileHash = hash_file('sha256', $value->getRealPath());
-                    // $existingImport = ExcelImports::where('file_hash', $fileHash)->exists();
-
-                    // if ($existingImport) {
-                    //     $fail('Este archivo ya ha sido importado previamente');
-                    // }
-
-                    // Additional custom validation for Excel format
-                    try {
-                        $tempImport = new QuestionBankImport(null);
-                        $data = Excel::toArray($tempImport, $value);
-                        $validationMessages = $tempImport->validateFormat($data);
-
-                        if (!empty($validationMessages)) {
-                            foreach ($validationMessages as $message) {
-                                $fail($message);
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        $fail('Error al validar el formato del archivo: ' . $e->getMessage());
-                    }
-                },
-            ],
+        $excelId = $this->route('id'); // Obtener el ID del archivo si estamos editando
+        $rules = [
+            'file_name' => 'required','file','mimes:xlsx,xls,csv','max:10240',
             'status' => 'required|in:completado,error',
         ];
-    }
+
+        if ($excelId) {
+            return [
+                // Validaciones expecificas para la edición
+                $rules['file_name'] = 'required','file','mimes:xlsx,xls,csv','max:10240',
+                $rules['status'] .= 'unique:excel_imports,status,' . ($excelId ?? 'NULL'),
+            ];
+        }
+        return $rules;
+    }   
 
     public function messages(): array
     {

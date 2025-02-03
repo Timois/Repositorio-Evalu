@@ -17,10 +17,6 @@ use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ResponsibleController;
-use App\Models\AnswerBank;
-use App\Models\ExcelImports;
-use Maatwebsite\Excel\Importer;
-use Symfony\Component\Console\Question\Question;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,4 +133,3 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::post("/assignQuestion", "AssignQuestion");
     Route::get("/listAssignedQuestions", "ListAssignedQuestions");
 });
-
