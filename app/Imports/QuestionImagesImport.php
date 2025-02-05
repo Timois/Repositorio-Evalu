@@ -117,27 +117,51 @@ class QuestionImagesImport implements ToCollection
                     'status' => 'activo',
                 ]);
 
-                // Procesar respuestas
-                $correctAnswers = ($dataRow['tipo'] === 'multiple')
-                    ? array_map('intval', explode(',', $dataRow['respuesta correcta']))
-                    : [intval($dataRow['respuesta correcta'])];
+                // Primero, obtener las opciones disponibles
+                $optionColumns = array_filter(array_keys($dataRow), function ($key) {
+                    return strpos($key, 'opcion') === 0;
+                });
 
+                // Obtener el texto de las respuestas correctas del campo 'respuesta correcta'
+                $correctAnswerTexts = ($dataRow['tipo'] === 'multiple')
+                    ? explode(',', $dataRow['respuesta correcta'])
+                    : [$dataRow['respuesta correcta']];
+
+                // Crear un mapeo de las opciones y sus valores
+                $optionsMap = [];
+                foreach ($optionColumns as $optionKey) {
+                    $optionNumber = (int) str_replace('opcion', '', $optionKey);
+                    $optionsMap[$optionNumber] = $dataRow[$optionKey];
+                }
+
+                // Encontrar los números de las opciones correctas comparando los textos
+                $correctAnswers = [];
+                foreach ($correctAnswerTexts as $correctText) {
+                    foreach ($optionsMap as $number => $text) {
+                        if (trim($correctText) === trim($text)) {
+                            $correctAnswers[] = $number;
+                        }
+                    }
+                }
+
+                // Procesar las respuestas
                 $weightPerAnswer = floatval($dataRow['nota']) / count($correctAnswers);
-
                 $answersToInsert = [];
-                for ($i = 1; $i <= 4; $i++) {
-                    if (!empty($dataRow["opcion$i"])) {
-                        $isCorrect = in_array($i, $correctAnswers);
+
+                foreach ($optionColumns as $optionKey) {
+                    $optionNumber = (int) str_replace('opcion', '', $optionKey);
+
+                    if (!empty($dataRow[$optionKey])) {
+                        $isCorrect = in_array($optionNumber, $correctAnswers);
                         $answersToInsert[] = [
                             'bank_question_id' => $question->id,
-                            'answer' => $dataRow["opcion$i"],
+                            'answer' => $dataRow[$optionKey],
                             'is_correct' => $isCorrect,
                             'weight' => $isCorrect ? $weightPerAnswer : 0,
                             'status' => 'activo',
                         ];
                     }
                 }
-
                 // Guardar respuestas
                 if (!empty($answersToInsert)) {
                     AnswerBank::insert($answersToInsert);

@@ -13,4 +13,7 @@ class Evaluation extends Model
    public function evaluation_career(): HasMany{
        return $this->hasMany(EvaluationCareer::class);
    }
+   public function student():HasMany{
+       return $this->hasMany(Student::class);
+   }
 }

@@ -12,11 +12,14 @@ use App\Http\Controllers\CareerController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ImportExcelImageController;
+use App\Http\Controllers\ImportStudentController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ResponsibleController;
+use App\Http\Controllers\StudentsImportController;
+use App\Models\Student;
 
 /*
 |--------------------------------------------------------------------------
@@ -132,4 +135,13 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::get("/find/{id}",'findById');
     Route::post("/assignQuestion", "AssignQuestion");
     Route::get("/listAssignedQuestions", "ListAssignedQuestions");
+});
+
+Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
+    Route::post("/save", "create");
+    Route::get("/list", "find");
+    Route::post("/edit/{id}", "findAndUpdate"); 
+    Route::get("/find/{id}",'findById');
+    Route::get("/findByName", 'findByName');
+    Route::post("/import", "import");
 });

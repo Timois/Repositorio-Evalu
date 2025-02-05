@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('ci')->default('');
             $table->string('name')->default('');
-            $table->string('last_name_parent')->default('');
-            $table->string('last_name_mother')->default('');
+            $table->string('paternal_surname')->nullable();
+            $table->string('maternal_surname')->nullable();
             $table->string('phone_number')->default('');
             $table->string('birthdate')->default('');
             $table->string('password')->default('');
