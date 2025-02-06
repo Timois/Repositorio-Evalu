@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ValidationStudent;
 use App\Imports\StudentsImport;
 use App\Models\Student;
+use Exception;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,6 @@ class ImportStudentController extends Controller
 {
     public function import(Request $request)
     {
-        // Validar el archivo
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:2048',
         ], [
@@ -23,14 +23,32 @@ class ImportStudentController extends Controller
         ]);
 
         try {
-            // Importar el archivo
-            Excel::import(new StudentsImport, $request->file('file'));
+            $import = new StudentsImport();
+            Excel::import($import, $request->file('file'));
+
+            $results = $import->getResults();
+
+            // Calcular estadísticas
+            $totalRows = count($results);
+            $successRows = count(array_filter($results, fn($r) => $r['estado'] === 'éxito'));
+            $errorRows = $totalRows - $successRows;
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Estudiantes importados correctamente'
+                'resumen' => [
+                    'total_filas' => $totalRows,
+                    'exitosos' => $successRows,
+                    'errores' => $errorRows
+                ],
+                'resultados_detallados' => $results
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            $errorMessage = json_decode($e->getMessage(), true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return response()->json($errorMessage, 422);
+            }
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al importar estudiantes',
@@ -65,10 +83,10 @@ class ImportStudentController extends Controller
             return ["message:", "El estudiante con id:" . $request->id . " no existe."];
         return response()->json($student);
     }
-    public function findByName(Request $request) {
+    public function findByName(Request $request)
+    {
         $name = $request->input('name');
         $student = Student::where('name', 'like', "%$name%")->get();
         return response()->json($student);
     }
-    
 }

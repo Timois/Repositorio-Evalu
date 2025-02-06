@@ -14,78 +14,105 @@ use Illuminate\Support\Facades\Log;
 
 class StudentsImport implements ToCollection, WithHeadingRow
 {
+    protected $requiredColumns = ['ci', 'nombre', 'apellido_paterno', 'apellido_materno', 'fecha_de_nacimiento', 'telefono'];
+    protected $results = [];
+    
     public function collection(Collection $rows)
     {   
-        $mensaje_ = []; // Array para almacenar los mensajes
+        // Validar cabeceras
+        $headers = $rows->first()->keys()->toArray();
+        
+        if (count($headers) !== count($this->requiredColumns)) {
+            throw new Exception(json_encode([
+                'error' => true,
+                'message' => "El archivo no puede ser procesado. El número de columnas no coincide con el formato requerido.",
+                'expected' => $this->requiredColumns,
+                'received' => $headers
+            ]));
+        }
 
+        $currentRow = 1; // Contador de filas, empezamos en 1 porque la fila 0 son las cabeceras
+        
         foreach ($rows as $row) {
-            try {
-                // Convertir "/" en "-" si es necesario
-                $birthdateFormatted = str_replace('/', '-', $row['fecha_de_nacimiento']);
+            $currentRow++;
+            $rowResult = [
+                'fila' => $currentRow,
+                'ci' => $row['ci'],
+                'estado' => 'error', // Por defecto asumimos error, lo cambiaremos a 'éxito' si todo va bien
+                'mensajes' => []
+            ];
 
-                // Validar que la fecha tenga el formato correcto (d-m-Y)
-                if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $birthdateFormatted)) {
-                    $mensaje_[] = "Fila {$row['ci']}: Formato de fecha inválido: " . $row['fecha_de_nacimiento'];
+            try {
+                // Validaciones de datos
+                if (empty(trim($row['ci']))) {
+                    $rowResult['mensajes'][] = "El CI es obligatorio";
+                    $this->results[] = $rowResult;
                     continue;
                 }
 
-                // Parsear fecha a solo números (dmY)
-                $birthdateNumbers = Carbon::createFromFormat('d-m-Y', $birthdateFormatted)->format('dmY');
+                if (empty(trim($row['nombre']))) {
+                    $rowResult['mensajes'][] = "El nombre es obligatorio";
+                    $this->results[] = $rowResult;
+                    continue;
+                }
 
-                // Generar contraseña (CI + fecha en formato ddmmyyyy)
+                // Validar apellidos
+                $paternalSurname = trim($row['apellido_paterno'] ?? '');
+                $maternalSurname = trim($row['apellido_materno'] ?? '');
+
+                if (empty($paternalSurname) && empty($maternalSurname)) {
+                    $rowResult['mensajes'][] = "Debe proporcionar al menos un apellido (paterno o materno)";
+                    $this->results[] = $rowResult;
+                    continue;
+                }
+
+                // Validar formato de fecha
+                $birthdateFormatted = str_replace('/', '-', $row['fecha_de_nacimiento']);
+                if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $birthdateFormatted)) {
+                    $rowResult['mensajes'][] = "Formato de fecha inválido: " . $row['fecha_de_nacimiento'];
+                    $this->results[] = $rowResult;
+                    continue;
+                }
+
+                // Verificar CI duplicado
+                if (Student::where('ci', $row['ci'])->exists()) {
+                    $rowResult['mensajes'][] = "El CI ya está registrado en la base de datos";
+                    $this->results[] = $rowResult;
+                    continue;
+                }
+
+                // Procesar fecha y contraseña
+                $birthdateNumbers = Carbon::createFromFormat('d-m-Y', $birthdateFormatted)->format('dmY');
                 $ciNumbers = preg_replace('/[^0-9]/', '', $row['ci']);
                 $generatedPassword = $ciNumbers . $birthdateNumbers;
-
-                // Encriptar la contraseña
                 $hashedPassword = Hash::make($generatedPassword);
 
-                // Verificar si el CI ya existe en la base de datos
-                $existingStudent = Student::where('ci', $row['ci'])->exists();
-                if ($existingStudent) {
-                    $mensaje_[] = "El CI {$row['ci']} ya está registrado. Se omitió el registro.";
-                    continue; // Si ya existe, saltamos a la siguiente fila
-                }
+                // Crear estudiante
+                $student = Student::create([
+                    'ci' => $row['ci'],
+                    'name' => trim($row['nombre']),
+                    'paternal_surname' => $paternalSurname ?: null,
+                    'maternal_surname' => $maternalSurname ?: null,
+                    'phone_number' => trim($row['telefono']),
+                    'birthdate' => $birthdateFormatted,
+                    'password' => $hashedPassword,
+                    'status' => 'inactivo',
+                ]);
 
-                // Si los campos estan vacios en la columna apellido_paterno y apellido_materno entonces guardar null
-                $paternalSurname = $row['apellido_paterno'] ? $row['apellido_paterno'] : null;
-                $maternalSurname = $row['apellido_materno'] ? $row['apellido_materno'] : null;
-                //dd($paternalSurname, $maternalSurname);
-                try {
-                    // Crear el estudiante
-                    $student = Student::create([
-                        'ci' => $row['ci'],
-                        'name' => $row['nombre'],
-                        'paternal_surname' => $paternalSurname,
-                        'maternal_surname' => $maternalSurname,
-                        'phone_number' => $row['telefono'],
-                        'birthdate' => $birthdateFormatted,
-                        'password' => $hashedPassword,
-                        'status' => 'inactivo',
-                    ]);
+                // Si llegamos aquí, todo fue exitoso
+                $rowResult['estado'] = 'éxito';
+                $rowResult['mensajes'][] = "Registro creado exitosamente";
                 
-                    //dd($student);  // Aquí se mostrará si el estudiante fue creado
-                
-                    // Verificar si se ha creado correctamente
-                    if ($student) {
-                        $mensaje_[] = "Estudiante con CI {$row['ci']} creado exitosamente.";
-                    } else {
-                        $mensaje_[] = "No se pudo crear el estudiante con CI {$row['ci']}.";
-                    }
-                
-                } catch (Exception $e) {
-                    // Captura cualquier excepción y muestra el mensaje
-                    $mensaje_[] = "Error al crear el estudiante con CI {$row['ci']}: " . $e->getMessage();
-                }
-                //dd($row['ci']);
             } catch (Exception $e) {
-                // Guardar el error en el array de mensajes
-                $mensaje_[] = "Error al crear estudiante con CI {$row['ci']}: " . $e->getMessage();
+                $rowResult['mensajes'][] = "Error: " . $e->getMessage();
             }
-        }
 
-        // Retornar los mensajes
-        return response()->json([
-            'mensaje_' => $mensaje_
-        ]);
+            $this->results[] = $rowResult;
+        }
+    }
+
+    public function getResults()
+    {
+        return $this->results;
     }
 }

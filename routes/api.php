@@ -142,6 +142,5 @@ Route::controller(ImportStudentController::class)->prefix('students')->group(fun
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate"); 
     Route::get("/find/{id}",'findById');
-    Route::get("/findByName", 'findByName');
     Route::post("/import", "import");
 });

@@ -7,6 +7,7 @@ use App\Models\QuestionBank;
 use App\Service\ServiceArea;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
+use Illuminate\Support\Facades\File;
 
 class QuestionImagesImport implements ToCollection
 {
@@ -20,7 +21,6 @@ class QuestionImagesImport implements ToCollection
         'descripcion',
         'tipo',
         'imagen',
-        'nota',
         'opcion1',
         'opcion2',
         'opcion3',
@@ -58,7 +58,6 @@ class QuestionImagesImport implements ToCollection
             if ($index === 0) {
                 continue;
             }
-
             $rowArray = $row->toArray();
 
             // Verificar si la fila está completamente vacía
@@ -92,17 +91,24 @@ class QuestionImagesImport implements ToCollection
                     $this->messages[] = "Fila " . ($index + 1) . ": Área '{$dataRow['area']}' no encontrada.";
                     continue;
                 }
-
-                // Si el campo 'imagen' está vacío, no se guarda el path de la imagen
-                $imagePath = null;
+                $areaName = $dataRow['area'];
+                $imagePath = null; // Inicializar en null por defecto
+                
+                // Verificar si el campo 'imagen' tiene datos
                 if (!empty($dataRow['imagen'])) {
-                    $imageFullPath = public_path('images' . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+                    // Concatenar el extractedPath con la carpeta area y el nombre de la imagen
+                    $originalImagePath = public_path($this->extractedPath . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+                    // Ruta de destino donde moveremos la imagen
+                    $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+                    
+                    // Crear la carpeta si no existe
+                    if (!File::exists(public_path('images' . DIRECTORY_SEPARATOR . 'questions'))) {
+                        File::makeDirectory(public_path('images' . DIRECTORY_SEPARATOR . 'questions'), 0777, true);
+                    }
 
-                    // Verificar si el archivo existe antes de asignarlo
-                    if (file_exists($imageFullPath)) {
-                        $imagePath = $imageFullPath;
-                    } else {
-                        $this->messages[] = "Fila " . ($index + 1) . ": La imagen especificada no existe en el sistema.";
+                    // Mover la imagen a la carpeta de destino
+                    if (File::move($originalImagePath, $destinationPath)) {
+                        $imagePath = asset('images/questions/' . basename($dataRow['imagen']));
                     }
                 }
                 // Guardar la pregunta
@@ -113,7 +119,6 @@ class QuestionImagesImport implements ToCollection
                     'description' => $dataRow['descripcion'],
                     'type' => $dataRow['tipo'],
                     'image' => $imagePath,
-                    'total_weight' => $dataRow['nota'],
                     'status' => 'activo',
                 ]);
 
@@ -145,7 +150,6 @@ class QuestionImagesImport implements ToCollection
                 }
 
                 // Procesar las respuestas
-                $weightPerAnswer = floatval($dataRow['nota']) / count($correctAnswers);
                 $answersToInsert = [];
 
                 foreach ($optionColumns as $optionKey) {
@@ -157,7 +161,6 @@ class QuestionImagesImport implements ToCollection
                             'bank_question_id' => $question->id,
                             'answer' => $dataRow[$optionKey],
                             'is_correct' => $isCorrect,
-                            'weight' => $isCorrect ? $weightPerAnswer : 0,
                             'status' => 'activo',
                         ];
                     }
