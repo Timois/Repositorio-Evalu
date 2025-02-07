@@ -21,6 +21,7 @@ class QuestionImagesImport implements ToCollection
         'descripcion',
         'tipo',
         'imagen',
+        'nota',
         'opcion1',
         'opcion2',
         'opcion3',
@@ -105,11 +106,18 @@ class QuestionImagesImport implements ToCollection
                     if (!File::exists(public_path('images' . DIRECTORY_SEPARATOR . 'questions'))) {
                         File::makeDirectory(public_path('images' . DIRECTORY_SEPARATOR . 'questions'), 0777, true);
                     }
-
+                    
                     // Mover la imagen a la carpeta de destino
                     if (File::move($originalImagePath, $destinationPath)) {
                         $imagePath = asset('images/questions/' . basename($dataRow['imagen']));
+                        // Mosstrar el mensaje de éxito
+                        $this->messages[] = "Fila " . ($index + 1) . ": Imagen movida con exito: " . basename($dataRow['imagen']);
+                    }else{
+                        // Mostrar el mensaje de error
+                        $this->messages[] = "Fila " . ($index + 1) . ": No se pudo mover la imagen: " . basename($dataRow['imagen']);
                     }
+                    
+                    
                 }
                 // Guardar la pregunta
                 $question = QuestionBank::create([
@@ -119,6 +127,7 @@ class QuestionImagesImport implements ToCollection
                     'description' => $dataRow['descripcion'],
                     'type' => $dataRow['tipo'],
                     'image' => $imagePath,
+                    'total_weight' => $dataRow['nota'], 
                     'status' => 'activo',
                 ]);
 
@@ -150,6 +159,7 @@ class QuestionImagesImport implements ToCollection
                 }
 
                 // Procesar las respuestas
+                $weightPerAnswer = floatval($dataRow['nota']) / count($correctAnswers);
                 $answersToInsert = [];
 
                 foreach ($optionColumns as $optionKey) {
@@ -161,6 +171,7 @@ class QuestionImagesImport implements ToCollection
                             'bank_question_id' => $question->id,
                             'answer' => $dataRow[$optionKey],
                             'is_correct' => $isCorrect,
+                            'weight' => $isCorrect ? $weightPerAnswer : 0,
                             'status' => 'activo',
                         ];
                     }

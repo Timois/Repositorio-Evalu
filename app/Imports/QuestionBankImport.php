@@ -20,6 +20,7 @@ class QuestionBankImport implements ToCollection
         'descripcion',
         'imagen',
         'tipo',
+        'nota',
         'opcion1',
         'opcion2',
         'opcion3',
@@ -142,6 +143,7 @@ class QuestionBankImport implements ToCollection
                         'description' => $dataRow['descripcion'],
                         'type' => $dataRow['tipo'],
                         'image' => basename($dataRow['imagen']),
+                        'total_weight' => $dataRow['nota'],
                         'status' => 'activo',
                     ];
 
@@ -160,12 +162,15 @@ class QuestionBankImport implements ToCollection
                     ];
                 }
                 $respuestasCorrectas = [];
+                $notaPorRespuesta = 0;
 
                 // Procesar respuestas
                 if ($dataRow['tipo'] === 'multiple') {
                     $respuestasCorrectas = array_map('intval', explode(',', $dataRow['respuesta correcta']));
+                    $notaPorRespuesta = floatval($dataRow['nota']) / count($respuestasCorrectas);
                 } else {
                     array_push($respuestasCorrectas, $dataRow['respuesta correcta']);
+                    $notaPorRespuesta = floatval($dataRow['nota']);
                 }
 
                 $answersToInsert = [];
@@ -176,6 +181,7 @@ class QuestionBankImport implements ToCollection
                             'bank_question_id' => $saveQuest->id,
                             'answer' => $dataRow["opcion$i"],
                             'is_correct' => $esCorrecta,
+                            'weight' => $esCorrecta ? $notaPorRespuesta : 0,
                             'status' => 'activo',
                         ];
                     }

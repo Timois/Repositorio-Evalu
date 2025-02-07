@@ -12,52 +12,55 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tests', function (Blueprint $table) {
+        Schema::create('rules_tests', function (Blueprint $table) {
             $table->id();
-            //$table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la evaluaciones
+            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la evaluaciones
+            $table->string('name');
             $table->uuid('code')->unique();
-            $table->enum('range',['minutos','horas','jornada'])->default('minutos');  
-            $table->integer('time')->unsigned();
+            $table->enum('range_time',['minutos','horas','jornada'])->default('minutos');  
+            $table->integer('minimum_score')->nullable();
             $table->enum('status',['evaluado','en_proceso','creado'])->default('creado');    
             $table->timestamps();
         });
 
         Schema::create('student_tests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('test_id')->constrained('tests', 'id')->onDelete('cascade'); // Relación con la prueba
+            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la prueba
             $table->foreignId('student_id')->constrained('students', 'id')->onDelete('cascade'); // Relación con la estudiantes
+            $table->integer('number_of_places')->nullable();
             $table->uuid('code')->unique();
-            $table->enum('status',['evaluado','en_proceso','creado'])->default('creado');    
+            $table->date('date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();    
             $table->timestamps();
         });
-        Schema::create('results_student_test', function (Blueprint $table) {
+    
+        
+        Schema::create('draft_exam_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
-            //$table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta respuesta
-            $table->longText('optional_answer')->nullable();
-            $table->double('value')->nullable();
+            $table->string('name')->nullable();
+            $table->double('qualification')->nullable();
+            $table->string('correct_answers')->nullable();
+            $table->string('incorrect_answers')->nullable();
             $table->enum('status',['evaluado','corregido'])->default('evaluado');
             $table->timestamps();
         });
-        Schema::create('draft_evaluations_header_notes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('test_id')->constrained('tests', 'id')->onDelete('cascade'); // Relación con la prueba
-            $table->enum('status', ['abierto', 'cerrado']);
+        
+        Schema::create('cases_correction', function (Blueprint $table) {
+            $table->id(); // ID del caso de corrección
+            $table->foreignId('result_student_test_id')->constrained('draft_exam_results', 'id')->onDelete('cascade'); // Relación con resultados de prueba del estudiante
+            $table->longText('detail')->nullable(); // Detalle del caso de corrección
+            $table->double('corrected_score')->nullable(); // Puntaje corregido
+            $table->dateTime('correction_date')->nullable(); // Fecha de correccion
             $table->timestamps();
         });
-        Schema::create('detail_draft_evaluations_notes', function (Blueprint $table) {
+
+        Schema::create('final_results', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('draft_evaluations_header_notes_id')->constrained('draft_evaluations_header_notes', 'id')->onDelete('cascade'); // Relación con la cabezera nota evaluacion borrador
-            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba del estudiante
-            $table->double('score')->nullable();
-            $table->enum('status', ['admitido', 'no_admitido']);
-            $table->timestamps();
-        });
-        Schema::create('detail_evaluation_final_note', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba estudiante
-            $table->double('score')->nullable();
-            $table->integer('detail_draft_evaluations_notes_id')->constrained('detail_draft_evaluations_notes', 'id')->onDelete('cascade'); // Relación con la detalle de notas en borrador
+            $table->foreignId('exam_result_id')->constrained('draft_exam_results', 'id')->onDelete('cascade'); // Relación con el resultado de la prueba
+            $table->double('final_score');
+            $table->double('corrected_final_score')->nullable();
             $table->enum('status',['admitido','no_admitido']);      
             $table->timestamps();
         });
@@ -69,10 +72,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('detail_evaluation_final_note');
-        Schema::dropIfExists('detail_draft_evaluations_notes');
-        Schema::dropIfExists('draft_evaluations_header_notes');
-        Schema::dropIfExists('results_student_test');
+        Schema::dropIfExists('final_results');
+        Schema::dropIfExists('cases_correction');
+        Schema::dropIfExists('draft_exam_results');
         Schema::dropIfExists('student_tests');
         Schema::dropIfExists('tests');
     }

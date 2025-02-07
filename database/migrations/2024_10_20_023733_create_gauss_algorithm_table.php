@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gauss_algorithm', function (Blueprint $table) {
+        Schema::create('gaussian_curvature', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('test_id')->constrained('tests', 'id')->onDelete('cascade'); // Relación con la evaluacion
+            $table->foreignId('rules_test_id')->constrained('rules_tests', 'id')->onDelete('cascade');
             $table->double('passing_score')->nullable();
             $table->double('maximum_score')->nullable();
             $table->integer('approval_count')->nullable();
@@ -27,13 +27,6 @@ return new class extends Migration
             $table->enum('status',['activo','inactivo','en_proceso'])->default('en_proceso');
             $table->timestamps();
         });
-        Schema::create('evaluation_final_notes', function (Blueprint $table) {
-            $table->id();
-            $table->integer('gauss_algorithm_id')->unsigned(); //Relacion con Algoritmo de Gauss
-            $table->integer('evaluation_id')->unsigned();
-            $table->enum('status', ['abierto', 'cerrado']);  
-            $table->timestamps();
-        });
     }
 
     /**
@@ -41,7 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('evaluation_final_notes');
         Schema::dropIfExists('gauss_algorithm');
     }
 };
