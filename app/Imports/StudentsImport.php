@@ -98,7 +98,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     'password' => $hashedPassword,
                     'status' => 'inactivo',
                 ]);
-
+                
                 // Si llegamos aquí, todo fue exitoso
                 $rowResult['estado'] = 'éxito';
                 $rowResult['mensajes'][] = "Registro creado exitosamente";

@@ -2,18 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Evaluation extends Model
 {
     protected $table = 'evaluations';
 
-   public function evaluation_career(): HasMany{
-       return $this->hasMany(EvaluationCareer::class);
+   public function period_career(): BelongsTo{
+       return $this->belongsTo(AcademicManagementPeriod::class);
    }
-   public function student():HasMany{
-       return $this->hasMany(Student::class);
+   public function students_test():HasMany{
+       return $this->hasMany(StudentTest::class);
    }
+   public function rules_test():HasMany{
+       return $this->hasMany(RuleTest::class);
+   }
+
 }

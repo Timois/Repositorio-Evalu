@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
@@ -20,7 +19,7 @@ class Student extends Model
         'password'
     ];
 
-    public function evaluations():BelongsTo {
-        return $this->belongsTo(Evaluation::class);
+    public function evaluations():HasMany {
+        return $this->hasMany(StudentTest::class);
     }
 }

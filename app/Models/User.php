@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -17,10 +18,13 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
+    protected $table = 'students';
+
     protected $fillable = [
-        'name',
-        'email',
+        'ci',
+        'birthdate',
         'password',
+        'status'
     ];
 
     /**
@@ -42,4 +46,25 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function generarPassword()
+    {
+        // Eliminar cualquier carácter que no sea un número (maneja d/m/Y y d-m-Y)
+        $fechaNumerica = preg_replace('/\D/', '', $this->birthdate);
+        // Concatenar con la cédula de identidad
+        return $this->ci . $fechaNumerica;
+    }
+
+
+    // Métodos requeridos por JWT
+    public function getJWTIdentifier()
+    {
+        // Devuelve el id del usuario
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
 }

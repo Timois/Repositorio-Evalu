@@ -4,6 +4,7 @@ use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\AcademicManagementPeriodController;
 use App\Http\Controllers\AnswerBankController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ResponsibleController;
 use App\Http\Controllers\StudentsImportController;
 use App\Models\Student;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +42,13 @@ Route::controller(UserController::class)->prefix('user')->group(function(){
     Route::get("/list", "create");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
+});
+
+Route::controller(AuthController::class)->prefix('auth')->group(function(){
+    Route::post("/login", "login");
+    Route::post("/logout", "logout");
+    Route::post("/refresh", "refresh");
+    Route::get("/profile", "me");
 });
 
 Route::controller(UnitController::class)->prefix('unit')->group(function(){
