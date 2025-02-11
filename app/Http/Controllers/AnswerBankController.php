@@ -24,7 +24,7 @@ class AnswerBankController extends Controller
     {
         $answer = new AnswerBank();
         $answer->answer = $request->answer;
-        $answer->weight = $request->weight;
+        // $answer->weight = $request->weight;
         $answer->is_correct = $request->is_correct;
         $answer->status = $request->status;
         $answer->bank_question_id = $request->bank_question_id;

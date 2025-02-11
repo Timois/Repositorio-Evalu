@@ -21,4 +21,8 @@ class Evaluation extends Model
        return $this->hasMany(RuleTest::class);
    }
 
+   public function areaScores()
+   {
+       return $this->hasMany(EvaluationAreaScore::class);
+   }
 }

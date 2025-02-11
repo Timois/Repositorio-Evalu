@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
+use App\Http\Controllers\EvaluationAreaScoreController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ImportExcelImageController;
@@ -142,7 +143,6 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
-    Route::post("/assignQuestion", "AssignQuestion");
     Route::get("/listAssignedQuestions", "ListAssignedQuestions");
 });
 

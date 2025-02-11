@@ -15,10 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->string('description')->nullable();
-            $table->integer('number_questions');
             $table->integer('total_score')->nullable();
             $table->boolean('is_random')->nullable();
-            $table->double('new_weight')->nullable();
             $table->enum('status', ['activo', 'inactivo', 'efectuado'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
             $table->foreignId('academic_management_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');
@@ -29,6 +27,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade');
             $table->foreignId('question_id')->constrained('bank_questions', 'id')->onDelete('cascade');
+            $table->integer('quantity')->nullable();
+            $table->integer('score')->nullable();
             $table->timestamps();
         });
     }

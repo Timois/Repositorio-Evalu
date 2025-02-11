@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade'); // Relación con la pregunta
             $table->string('answer')->nullable(); // Contenido de la respuesta
             $table->boolean('is_correct')->default(false); // Indica si la respuesta es correcta
-            $table->double('weight')->nullable(); // Nota de la respuesta
+            // $table->double('weight')->nullable(); // Nota de la respuesta
             $table->enum('status', ['activo', 'inactivo'])->default('activo'); // Estado de la respuesta
             $table->timestamps();
         });

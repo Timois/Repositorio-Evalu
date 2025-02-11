@@ -2,27 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ValidationRulesTest;
-use App\Models\RuleTest;
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\StudentTest;
 use Illuminate\Http\Request;
 
-class RulesTestController extends Controller
+class StudenTestsController extends Controller
 {
-    public function find(){
-        $test = RuleTest::orderBy('id','asc')->get();
+    public function find()
+    {
+        $test = StudentTest::orderBy('id','asc')->get();
         return response()->json($test);
     }
 
-    public function findById(string $id){
-        $test = RuleTest::find($id);
+    public function findById(string $id)
+    {
+        $test = StudentTest::find($id);
         if (!$test)
             return ["message:", "La prueba con id:" . $id . " no existe."];
         return response()->json($test);
     }
 
-    public function create(ValidationRulesTest $request){
-        $test = new RuleTest();
+    public function create(Request $request){
+        $test = new StudentTest();
+        $test->evaluation_id = $request->evaluation_id;
         $test->name = $request->name;
         $test->code = $request->code;
         $test->range_time = $request->range_time;
@@ -32,8 +33,8 @@ class RulesTestController extends Controller
         return $test;
     }
 
-    public function findAndUpdate(ValidationRulesTest $request, string $id){
-        $test = RuleTest::find($id);
+    public function findAndUpdate(Request $request, string $id){
+        $test = StudentTest::find($id);
         if (!$test)
             return ["message:", "La prueba con id:" . $id . " no existe."];
         if ($request->name)

@@ -37,7 +37,7 @@ class QuestionBankController extends Controller
         $question->question = $request->question;
         $question->description = $request->description;
         $question->image = $imagePath;
-        $question->total_weight = $request->total_weight;
+        // $question->total_weight = $request->total_weight;
         $question->type = $request->type;
         $question->status = $request->status;
         $question->area_id = $request->area_id;

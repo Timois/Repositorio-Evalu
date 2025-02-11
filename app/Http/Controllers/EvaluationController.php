@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAssignQuestion;
 use App\Http\Requests\ValidationEvaluation;
+use App\Models\Areas;
 use App\Models\Evaluation;
 use App\Models\QuestionBank;
 use App\Models\QuestionEvaluation;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Symfony\Component\Console\Question\Question;
+use Illuminate\Support\Facades\DB;
 
 class EvaluationController extends Controller
 {
@@ -23,10 +25,8 @@ class EvaluationController extends Controller
         $evaluation = new Evaluation();
         $evaluation->title = $request->title;
         $evaluation->description = $request->description;
-        $evaluation->number_questions = $request->number_questions;
         $evaluation->total_score = $request->total_score;
         $evaluation->is_random = $request->is_random;
-        $evaluation->duration = $request->duration;
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
@@ -44,9 +44,10 @@ class EvaluationController extends Controller
             $updateData = $request->only([
                 'title',
                 'description',
-                'number_questions',
+                'total_score',
                 'is_random',
-                'duration'
+                'status',
+                'type'
             ]);
 
             // Convierte 'title' a mayúsculas si está presente
@@ -88,45 +89,8 @@ class EvaluationController extends Controller
         return response()->json($evaluation);
     }
 
-    public function AssignQuestion(Request $request)
-    {
-        try {
-            // Obtener la evaluación existente
-            $evaluation = Evaluation::findOrFail($request->evaluation_id);
 
-            // Verificar que la evaluación permita preguntas aleatorias
-            if (!$evaluation->is_random) {
-                return response()->json([
-                    'message' => 'Esta evaluación no permite preguntas aleatorias'
-                ], 400);
-            }
-
-            // Obtener preguntas aleatorias según el número especificado en la evaluación
-            $randomQuestions = QuestionBank::query()
-                ->inRandomOrder()
-                ->take($evaluation->number_questions)
-                ->get();
-
-            // Asignar cada pregunta a la evaluación
-            foreach ($randomQuestions as $question) {
-                QuestionEvaluation::create([
-                    'evaluation_id' => $request->evaluation_id,
-                    'bank_question_id' => $question->id
-                ]);
-            }
-
-            return response()->json([
-                'message' => 'Preguntas asignadas con éxito',
-                'questions_assigned' => $randomQuestions->count()
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al asignar preguntas',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
+    // Función para calcular la nota total por área
     public function ListAssignedQuestions(Request $request)
     {
         $questions = QuestionEvaluation::get();

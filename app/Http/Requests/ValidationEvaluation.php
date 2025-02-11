@@ -23,24 +23,8 @@ class ValidationEvaluation extends FormRequest
     {
         $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
         $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-        $validationNumberQuestions = 'required|numeric|min:0';
         $validationTotalScore = 'required|numeric|min:0';
         $validationIsRandom = 'required|in:true,false';
-        $validationDuration = [
-            'required',
-            'regex:/^\d{2}:\d{2}:\d{2}$/',
-            function ($attribute, $value, $fail) {
-                $parts = explode(':', $value);
-                if (
-                    count($parts) !== 3 ||
-                    $parts[0] > 23 ||
-                    $parts[1] > 59 ||
-                    $parts[2] > 59
-                ) {
-                    $fail('The duration must be a valid time format (HH:MM:SS)');
-                }
-            }
-        ];
         $validationAcademicPeriod = 'required|exists:academic_management_period,id';
         $validationStatus = 'required|in:activo,inactivo';
         $validationType = 'required|in:web,ocr,app';
@@ -49,24 +33,8 @@ class ValidationEvaluation extends FormRequest
         if ($evaluation) {
             $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u' . $evaluation;
             $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-            $validationNumberQuestions = 'required|numeric|min:0';
             $validationTotalScore = 'required|numeric|min:0';
             $validationIsRandom = 'required|in:true,false';
-            $validationDuration = [
-                'required',
-                'regex:/^\d{2}:\d{2}:\d{2}$/',
-                function ($attribute, $value, $fail) {
-                    $parts = explode(':', $value);
-                    if (
-                        count($parts) !== 3 ||
-                        $parts[0] > 23 ||
-                        $parts[1] > 59 ||
-                        $parts[2] > 59
-                    ) {
-                        $fail('The duration must be a valid time format (HH:MM:SS)');
-                    }
-                }
-            ];
             $validationAcademicPeriod = 'required|exists:academic_management_period,id';
             $validationStatus = 'required|in:activo,inactivo';
             $validationType = 'required|in:web,ocr,app';
@@ -75,10 +43,8 @@ class ValidationEvaluation extends FormRequest
         return [
             'title' => $validationTitle,
             'description' => $validationdescription,
-            'number_questions' => $validationNumberQuestions,
             'total_score' => $validationTotalScore,
             'is_random' => $validationIsRandom,
-            'duration' => $validationDuration,
             'academic_management_period_id' => $validationAcademicPeriod,
             'status' => $validationStatus,
             'type' => $validationType
@@ -110,16 +76,11 @@ class ValidationEvaluation extends FormRequest
             'description.string' => 'El campo descripción debe ser una cadena de texto.',
             'description.max' => 'La longitud máxima de la descripción es de 255 caracteres.',
             'description.regex' => 'La descripción debe contener solo letras y espacios.',
-            'number_questions.required' => 'El campo número de preguntas es obligatorio.',
-            'number_questions.numeric' => 'El campo número de preguntas debe ser un número.',
-            'number_questions.min' => 'El campo número de preguntas debe ser mayor o igual a 0.',
             'total_score.required' => 'El campo puntaje total es obligatorio.',
             'total_score.numeric' => 'El campo puntaje total debe ser un número.',
             'total_score.min' => 'El campo puntaje total debe ser mayor o igual a 0.',
             'is_random.required' => 'El campo aleatorio es obligatorio.',
             'is_random.in' => 'El campo is_random debe ser "false" o "true".',
-            'duration.required' => 'La duracion de la evaluacion es obligatorio',
-            'duration.regex' =>  'La duracion debe ser una hora en este formato h:m:s',
             'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
             'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
             'status.required' => 'El campo estado es obligatorio.',

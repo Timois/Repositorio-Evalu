@@ -21,7 +21,6 @@ class QuestionImagesImport implements ToCollection
         'descripcion',
         'tipo',
         'imagen',
-        'nota',
         'opcion1',
         'opcion2',
         'opcion3',
@@ -126,8 +125,7 @@ class QuestionImagesImport implements ToCollection
                     'question' => $dataRow['pregunta'],
                     'description' => $dataRow['descripcion'],
                     'type' => $dataRow['tipo'],
-                    'image' => $imagePath,
-                    'total_weight' => $dataRow['nota'], 
+                    'image' => $imagePath, 
                     'status' => 'activo',
                 ]);
 
@@ -159,7 +157,7 @@ class QuestionImagesImport implements ToCollection
                 }
 
                 // Procesar las respuestas
-                $weightPerAnswer = floatval($dataRow['nota']) / count($correctAnswers);
+                // $weightPerAnswer = floatval($dataRow['nota']) / count($correctAnswers);
                 $answersToInsert = [];
 
                 foreach ($optionColumns as $optionKey) {
@@ -171,7 +169,6 @@ class QuestionImagesImport implements ToCollection
                             'bank_question_id' => $question->id,
                             'answer' => $dataRow[$optionKey],
                             'is_correct' => $isCorrect,
-                            'weight' => $isCorrect ? $weightPerAnswer : 0,
                             'status' => 'activo',
                         ];
                     }

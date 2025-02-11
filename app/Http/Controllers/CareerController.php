@@ -4,17 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAssignManagements;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Illuminate\Validations\ValidationException;
-use Illuminate\Support\Facades\Schema;
 
 use App\Http\Requests\ValidationsCareer;
-use App\Models\AcademicManagement;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Career;
-use Illuminate\Validation\ValidationException as ValidationValidationException;
 
 class CareerController extends Controller
 {
