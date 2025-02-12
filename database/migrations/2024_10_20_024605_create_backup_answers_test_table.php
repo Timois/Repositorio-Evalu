@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('backup_case_question', function (Blueprint $table) {
+        Schema::create('backup_answers_test', function (Blueprint $table) {
             $table->id(); // ID del backup de pregunta caso
-            $table->foreignId('case_correction_id')->constrained('cases_correction', 'id')->onDelete('cascade'); // Relación con la pregunta
+            // $table->foreignId('case_correction_id')->constrained('cases_correction', 'id')->onDelete('cascade'); // Relación con la pregunta
             $table->string('student_answer'); // Respuesta proporcionada por el estudiante
             $table->string('correct_answer')->nullable(); // Respuesta corregida (opcional)
             $table->double('value')->nullable(); // Valor asignado
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {   
-        Schema::dropIfExists('backup_case_question');
+        Schema::dropIfExists('backup_answers_test');
     }
 };

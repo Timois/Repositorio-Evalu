@@ -19,10 +19,12 @@ use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\QuestionBankController;
+use App\Http\Controllers\QuestionEvaluationController;
 use App\Http\Controllers\ResponsibleController;
 use App\Http\Controllers\StudentsImportController;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\Console\Question\Question;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,6 +148,14 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::get("/listAssignedQuestions", "ListAssignedQuestions");
 });
 
+Route::controller(QuestionEvaluationController::class)->prefix('question_evaluation')->group(function(){
+    Route::post("/save", "create");
+    Route::post("asignQuestion", "assignRandomQuestion");
+    Route::get("listAssignedQuestions", "listAssignedQuestions");
+    Route::post("assignScores", "assignScores");
+    Route::get("listAssignedScores", "listAssignedScores");
+});
+
 Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
     Route::post("/save", "create");
     Route::get("/list", "find");
@@ -153,3 +163,4 @@ Route::controller(ImportStudentController::class)->prefix('students')->group(fun
     Route::get("/find/{id}",'findById');
     Route::post("/import", "import");
 });
+

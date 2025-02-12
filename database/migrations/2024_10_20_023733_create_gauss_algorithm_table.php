@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('gaussian_curvature', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rules_test_id')->constrained('rules_tests', 'id')->onDelete('cascade');
+            // $table->foreignId('rules_test_id')->constrained('rules_tests', 'id')->onDelete('cascade');
             $table->double('passing_score')->nullable();
             $table->double('maximum_score')->nullable();
             $table->integer('approval_count')->nullable();

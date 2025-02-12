@@ -4,14 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAssignQuestion;
 use App\Http\Requests\ValidationEvaluation;
-use App\Models\Areas;
 use App\Models\Evaluation;
-use App\Models\QuestionBank;
 use App\Models\QuestionEvaluation;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Str;
 class EvaluationController extends Controller
 {
     public function find()
@@ -26,43 +22,54 @@ class EvaluationController extends Controller
         $evaluation->title = $request->title;
         $evaluation->description = $request->description;
         $evaluation->total_score = $request->total_score;
-        $evaluation->is_random = $request->is_random;
+        $evaluation->passing_score = $request->passing_score;
+        $evaluation->date_realization = $request->date_realization;
+        $evaluation->code = Str::uuid(); // Genera un UUID automáticamente
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
+
         return response()->json($evaluation);
     }
+
 
     public function findAndUpdate(ValidationEvaluation $request, string $id)
     {
         try {
             // Busca la evaluación por su ID
             $evaluation = Evaluation::findOrFail($id);
-
-            // Captura los datos del request, solo los campos editables
+    
+            // Captura los datos editables del request
             $updateData = $request->only([
                 'title',
                 'description',
                 'total_score',
-                'is_random',
+                'passing_score', // Se agrega porque estaba en create()
+                'date_realization', // Se agrega porque estaba en create()
                 'status',
-                'type'
+                'type',
+                'academic_management_period_id'
             ]);
-
+    
             // Convierte 'title' a mayúsculas si está presente
             if (isset($updateData['title'])) {
-                $updateData['title'] = strtoupper($updateData['title']);
+                $updateData['title'] = Str::upper($updateData['title']);
             }
-
+    
             // Convierte 'description' a minúsculas si está presente
             if (isset($updateData['description'])) {
-                $updateData['description'] = strtolower($updateData['description']);
+                $updateData['description'] = Str::lower($updateData['description']);
             }
-
+    
+            // Evitar que se actualice el UUID `code`
+            if (isset($updateData['code'])) {
+                unset($updateData['code']);
+            }
+    
             // Actualiza los datos en el modelo
             $evaluation->update($updateData);
-
+    
             // Retorna la respuesta exitosa
             return response()->json([
                 'message' => 'Evaluación actualizada exitosamente',
@@ -79,6 +86,7 @@ class EvaluationController extends Controller
             ], 500);
         }
     }
+    
 
 
     public function findById(string $id)

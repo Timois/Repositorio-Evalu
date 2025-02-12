@@ -17,9 +17,6 @@ class Evaluation extends Model
    public function students_test():HasMany{
        return $this->hasMany(StudentTest::class);
    }
-   public function rules_test():HasMany{
-       return $this->hasMany(RuleTest::class);
-   }
 
    public function areaScores()
    {
