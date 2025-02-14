@@ -34,4 +34,9 @@ class QuestionBank extends Model
     public function excel_imports():HasMany{
         return $this->hasMany(ExcelImports::class);
     }
+
+    public function questionEvaluation()
+    {
+        return $this->belongsTo(QuestionEvaluation::class, 'question_evaluation_id');
+    }
 }

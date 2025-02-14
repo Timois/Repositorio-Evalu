@@ -22,14 +22,14 @@ class ValidationsCareer extends FormRequest
     public function rules(): array
     {
         // Validación para creación o actualización
-        $validationName = 'required|unique:careers,name|regex:/^[\pL\s\-.]+$/|unique:careers,name';
+        $validationName = 'required|unique:careers,name|regex:/[a-zA-Zñ]+/|unique:careers,name';
         $validationinitials = 'required|unique:careers,initials|max:255|regex:/^[\pL\s\-]+$/u';
         $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         // Obtener el ID si es una actualización
         $career = $this->route("id");
         // Si es una actualización (hay un ID), se ignora el registro actual para la validación de unicidad
         if ($career) {
-            $validationName = 'string|max:255|regex:/^[\pL\s\-]+$/u|unique:careers,name,' . $career;
+            $validationName = 'string|max:255|regex:/[a-zA-Zñ]+/|unique:careers,name,' . $career;
             $validationinitials = 'string|max:255|unique:careers,initials,' . $career;
             $validationLogo = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         }

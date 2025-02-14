@@ -70,6 +70,7 @@ Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::get("/findAsign", 'findAssignManagement');
     Route::get("/findByAssignId/{id}", 'findByIdAssign');
     Route::post("/saveAssign", 'createAssign');
+    Route::post("/editAssign/{id}", 'findAndUpdateAssign');
     Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign');
 });
 

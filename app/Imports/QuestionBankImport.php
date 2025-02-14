@@ -7,6 +7,7 @@ use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use App\Service\ServiceArea;
+use Illuminate\Support\Facades\DB;
 
 class QuestionBankImport implements ToCollection
 {
@@ -18,6 +19,7 @@ class QuestionBankImport implements ToCollection
         'area',
         'pregunta',
         'descripcion',
+        'dificultad',
         'imagen',
         'tipo',
         'opcion1',
@@ -27,7 +29,7 @@ class QuestionBankImport implements ToCollection
         'respuesta correcta'
     ];
 
-    public function __construct($excelImportId)
+    public function __construct($excelImportId, $careerId)
     {
         $this->excelImportId = $excelImportId;
     }
@@ -106,18 +108,17 @@ class QuestionBankImport implements ToCollection
                 $responseMessages[] = "Error en la fila " . ($index + 1) . ": El número de columnas no coincide con los encabezados.";
                 continue;
             }
-            
+
             // Crear array asociativo con los datos de la fila
             $dataRow = array_combine($headers, $rowArray);
 
-            // Validar que los campos requeridos no estén vacíos (excepto imagen)
-            $emptyFields = [];
-            foreach ($this->requiredColumns as $column) {
-                // Modificamos la condición para ser más estricta
-                if ($column !== 'imagen' && (!isset($dataRow[$column]) || $dataRow[$column] === '' || $dataRow[$column] === null)) {
-                    $emptyFields[] = $column;
-                }
-            }
+           // Validar campos requeridos (excluyendo 'imagen' y 'dificultad)
+           $emptyFields = [];
+           foreach ($this->requiredColumns as $column) {
+               if ($column !== 'imagen' && $column !== 'dificultad' && empty($dataRow[$column])) {
+                   $emptyFields[] = $column;
+               }
+           }
 
             if (count($emptyFields) > 0) {
                 $responseMessages[] = "Error en la fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
@@ -125,42 +126,63 @@ class QuestionBankImport implements ToCollection
             }
 
             try {
-
-                // Verificar si el área existe
-                $iafind = ServiceArea::FindArea($dataRow['area']);
-                //dd($iafind);
-                if (!$iafind) {
-                    $responseMessages[] = "Error en la fila " . ($index + 1) . ": Área ' {$dataRow['area']} ' no encontrada.";
+                // Obtener el ID del área normalizada o existente
+                $areaId = ServiceArea::FindArea($dataRow['area']);
+            
+                if (!$areaId) {
+                    $responseMessages[] = [
+                        'success' => false,
+                        'message' => "Error en la fila " . ($index + 1) . ": No se pudo encontrar o crear el área '{$dataRow['area']}'."
+                    ];
                     continue;
                 }
-
+            
                 try {
+                    // Normalizar la pregunta antes de verificar si existe
+                    $normalizedQuestion = DB::selectOne("SELECT normalizar_cadena(?) AS normalized", [$dataRow['pregunta']])->normalized;
+            
+                    // **Asegurar que no haya preguntas duplicadas en esta área**
+                    $questionExists = DB::table('bank_questions')
+                        ->where('area_id', $areaId)
+                        ->whereRaw('normalizar_cadena(question) = ?', [$normalizedQuestion]) // Verificar usando la versión normalizada
+                        ->where('status', 'activo')
+                        ->exists(); 
+            
+                    if ($questionExists) {
+                        $responseMessages[] = [
+                            'success' => false,
+                            'message' => "Error en la fila " . ($index + 1) . ": La pregunta '{$dataRow['pregunta']}' ya existe en esta área."
+                        ];
+                        continue;
+                    }
+            
+                    // Si la pregunta no existe, insertarla
                     $dataToInsert = [
-                        'area_id' => $iafind,
+                        'area_id' => $areaId,
                         'excel_import_id' => $this->excelImportId,
                         'question' => $dataRow['pregunta'],
+                        'question_normalized' => $normalizedQuestion,  // Guardar la versión normalizada
                         'description' => $dataRow['descripcion'],
                         'type' => $dataRow['tipo'],
                         'image' => basename($dataRow['imagen']),
                         'status' => 'activo',
                     ];
-
-                    //dd($dataToInsert);
+            
                     $saveQuest = QuestionBank::create($dataToInsert);
-                    // Verificar si la pregunta ya existe para esta área
-                    if ($index === 5) {
-                        //dd($saveQuest);
-                    }
+            
+                    $responseMessages[] = [
+                        'success' => true,
+                        'message' => "Fila " . ($index + 1) . ": Pregunta '{$dataRow['pregunta']}' importada correctamente."
+                    ];
+                    
                 } catch (\Exception $e) {
-                    // Manejar cualquier error que pueda ocurrir
-                    return [
+                    $responseMessages[] = [
                         'success' => false,
-                        'message' => 'Error al guardar la pregunta: ' . $e->getMessage(),
-                        'data' => null
+                        'message' => "Error en la fila " . ($index + 1) . ": " . $e->getMessage()
                     ];
                 }
+
                 $respuestasCorrectas = [];
-               
 
                 // Procesar respuestas
                 if ($dataRow['tipo'] === 'multiple') {
@@ -181,7 +203,7 @@ class QuestionBankImport implements ToCollection
                         ];
                     }
                 }
-    
+
                 // Guardar respuestas masivamente
                 if (!empty($answersToInsert)) {
                     AnswerBank::insert($answersToInsert);

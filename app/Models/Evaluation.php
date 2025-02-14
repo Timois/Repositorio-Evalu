@@ -11,9 +11,10 @@ class Evaluation extends Model
 {
     protected $table = 'evaluations';
 
-   public function period_career(): BelongsTo{
-       return $this->belongsTo(AcademicManagementPeriod::class);
-   }
+    public function academicManagementPeriod()
+    {
+        return $this->belongsTo(AcademicManagementPeriod::class, 'academic_management_period_id');
+    }
    public function students_test():HasMany{
        return $this->hasMany(StudentTest::class);
    }
@@ -21,5 +22,9 @@ class Evaluation extends Model
    public function areaScores()
    {
        return $this->hasMany(EvaluationAreaScore::class);
+   }
+
+   public function questionEvaluations():HasMany{
+       return $this->hasMany(QuestionEvaluation::class);
    }
 }

@@ -117,4 +117,20 @@ class QuestionBankController extends Controller
         $question->save();
         return $question;
     }
+    public function findByIdArea(string $id)
+    {
+        $question = QuestionBank::where('area_id', $id)->get();
+        if (!$question)
+            return ["message:", "La pregunta con id:" . $id . " no existe."];
+
+        // sacar la cantidad de total de preguntas por area
+        $totalQuestions = QuestionBank::where('area_id', $id)->count();
+        $question = [
+            'questions' => $question,
+            'totalQuestions' => $totalQuestions
+        ];
+
+        return response()->json($question);
+        
+    }
 }

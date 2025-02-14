@@ -13,14 +13,21 @@ class QuestionEvaluation extends Model
 
     protected $fillable = [
         'evaluation_id',
-        'bank_question_id'
+        'question_id',
+        'score'
+    ];
+
+     // Asegurarse de que los campos no sean nullable
+     protected $attributes = [
+        'score' => 0,  // valor por defecto si es necesario
     ];
     public function evaluations():BelongsTo {
         return $this->belongsTo(Evaluation::class);
     }
 
-    public function bank_questions():BelongsTo {
-        return $this->belongsTo(QuestionBank::class);
+    public function evaluation()
+    {
+        return $this->belongsTo(Evaluation::class, 'evaluation_id');
     }
 }   
 

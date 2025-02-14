@@ -29,19 +29,22 @@ class ValidationAssignManagements extends FormRequest
         
     }
     public function withValidator($validator){
-        $validator->after(
-            function($validator){
-                $career_id = $this->career_id;
-                $academic_management_id = $this->academic_management_id;
-                $assign = AcademicManagementCareer::where('career_id','=',$career_id,'and')
-                ->where('academic_management_id','=',$academic_management_id)->first();
-
-                if($assign){
-                    $validator->errors()->add('academic_management_id','la gestion ya ha sido asignada a esta carrera');
-                }
+        $validator->after(function($validator){
+            $career_id = $this->career_id;
+            $academic_management_id = $this->academic_management_id;
+            $id = $this->route('academic_management_career'); // Obtiene el ID del registro que se está editando
+    
+            $assign = AcademicManagementCareer::where('career_id', $career_id)
+                ->where('academic_management_id', $academic_management_id)
+                ->where('id', '!=', $id) // Excluye el registro actual en la verificación
+                ->first();
+    
+            if ($assign) {
+                $validator->errors()->add('academic_management_id', 'La gestión ya ha sido asignada a esta carrera.');
             }
-        );
+        });
     }
+    
     public function messages()
     {
         return[

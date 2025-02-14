@@ -9,6 +9,7 @@ use App\Http\Requests\ValidationsCareer;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Career;
+use PhpOffice\PhpSpreadsheet\Worksheet\Validations;
 
 class CareerController extends Controller
 {
@@ -96,10 +97,6 @@ class CareerController extends Controller
             }])
             ->get();
 
-            // , 'career' => function($query) {
-            //     $query->select('id', 'name');
-            // }
-
         if ($managements->isEmpty())
             return response()->json([]);
 
@@ -115,6 +112,16 @@ class CareerController extends Controller
 
         return response()->json($result);
     }
+
+    public function findAndUpdateAssign(ValidationAssignManagements $request, string $id) {
+        $update = AcademicManagementCareer::find($id);
+        if (!$update)
+            return ["message:", "La gestion academica no existe con el id:" . $id . " no existe."];
+        $update->academic_management_id = $request->academic_management_id;
+        $update->save();
+        return $update;
+    }
+
 
     public function findPeriodByIdAssign(string $academicManagementCareerId) {
         $periods = AcademicManagementPeriod::where('academic_management_career_id', $academicManagementCareerId)
@@ -140,7 +147,7 @@ class CareerController extends Controller
     }
 
 
-    public function createAssign(Request $request){
+    public function createAssign(ValidationAssignManagements $request){
         $academicManagementCareer = new AcademicManagementCareer();
         $academicManagementCareer->career_id=$request->career_id;
         $academicManagementCareer->academic_management_id=$request->academic_management_id;
