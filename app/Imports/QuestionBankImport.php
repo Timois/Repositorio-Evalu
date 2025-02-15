@@ -29,7 +29,7 @@ class QuestionBankImport implements ToCollection
         'respuesta correcta'
     ];
 
-    public function __construct($excelImportId, $careerId)
+    public function __construct($excelImportId)
     {
         $this->excelImportId = $excelImportId;
     }
