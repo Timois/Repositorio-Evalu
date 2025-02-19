@@ -21,7 +21,10 @@ class ImportExcelImageController extends Controller
         try {
             // Validar que el archivo sea un ZIP
             $request->validate([
-                'file_name' => 'required|mimes:zip|max:10240'
+                'file_name' => 'required|mimetypes:application/zip,application/x-zip-compressed|max:10240',
+                'career' => 'required|max:255|regex:/[a-zA-Zñ]+/',
+                'sigla' => 'required|string|max:10|regex:/[a-zA-Zñ]+/',
+                'status' => 'required|in:completado,error',
             ]);
 
             // Subir el archivo ZIP
@@ -29,86 +32,107 @@ class ImportExcelImageController extends Controller
             $zipFileName = time();
             $zipPath = public_path("uploads") . DIRECTORY_SEPARATOR . $zipFileName;
 
-            // Mover el archivo a la carpeta de destino
+            // Mover el archivo ZIP
             if (!$zipFile->move(public_path("uploads" . DIRECTORY_SEPARATOR), $zipFileName)) {
-                return response()->json([
-                    'message' => 'Error al mover el archivo',
-                    'error' => 'No se pudo mover el archivo ZIP al directorio de carga'
-                ], 500);
+                throw new \Exception('No se pudo mover el archivo ZIP al directorio de carga');
             }
 
-            // Obtener el tamaño del archivo después de moverlo
+            // Obtener el tamaño del archivo
             $fileSize = filesize($zipPath);
-
-            // Verificar si el archivo está vacío
             if ($fileSize === 0) {
-                return response()->json([
-                    'message' => 'Error en la importación',
-                    'error' => 'El archivo ZIP está vacío'
-                ], 422);
+                throw new \Exception('El archivo ZIP está vacío');
             }
-
-            // Ruta para extraer
-            $excelImportId = time(); // Generar ID único
-            $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
-            $pathaux = 'uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR .
-                str_replace(['\\', '/'], DIRECTORY_SEPARATOR, pathinfo($zipFileName, PATHINFO_FILENAME)) . DIRECTORY_SEPARATOR;
-
-            // Eliminar barras invertidas o diagonales innecesarias
-            $pathaux = rtrim($pathaux, DIRECTORY_SEPARATOR);
-            $pathaux = ltrim($pathaux, DIRECTORY_SEPARATOR);
 
             // Extraer el ZIP
+            $excelImportId = time();
+            $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
             $result = $this->extractZip($zipPath, $extractTo);
 
             if (!$result['success']) {
-                return response()->json([
-                    'message' => 'Error al extraer el ZIP',
-                    'error' => $result['message']
-                ], 500);
+                throw new \Exception($result['message']);
             }
+            DB::beginTransaction();
 
-            // Guardar los detalles de la importación en la base de datos
-            $importRecord = DB::table('excel_imports')->insert([
-                'id' => $excelImportId,
-                'file_name' => $zipFileName,
-                'size' => $fileSize,
-                'status' => 'completado',
-                'file_path' => $result['excel'],
-            ]);
+            try {
+                $importParams = [
+                    'sigla' => $request->sigla,
+                    'extractedPath' => $extractTo,
+                    'validateOnly' => true
+                ];
 
-            // Crear los parámetros para la importación
-            $importParams = [
-                'excel_import_id' => $excelImportId,
-                'extractedPath' => $pathaux
-            ];
+                $import = new QuestionImagesImport($importParams);
+                Excel::import($import, $result['excel']);
 
-            // Crear la instancia de importación con los parámetros
-            $import = new QuestionImagesImport($importParams);
-            Excel::import($import, $result['excel']);
+                $analysis = $import->getImportSummary();
 
-            $messages = $import->getMessages();
-            if (!$importRecord) {
+                // Verificar porcentaje de duplicados
+                if ($analysis['total_duplicates'] > 0) {
+                    $totalQuestions = $analysis['total_duplicates'] + $analysis['total_valid'];
+                    $duplicatePercentage = ($analysis['total_duplicates'] / $totalQuestions) * 100;
+
+                    if ($duplicatePercentage > 50) {
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => 'Demasiadas preguntas duplicadas',
+                            'success' => false,
+                            'analysis' => [
+                                'total_preguntas' => $totalQuestions,
+                                'duplicadas' => $analysis['total_duplicates'],
+                                'porcentaje_duplicados' => round($duplicatePercentage, 2) . '%',
+                                'detalle_duplicados' => $analysis['duplicate_details']
+                            ]
+                        ], 422);
+                    }
+                }
+
+                // Proceder con la importación
+                $importRecordId = DB::table('excel_imports')->insertGetId([
+                    'file_name' => $zipFileName,
+                    'career' => strtolower($request->career),
+                    'sigla' => strtoupper($request->sigla),
+                    'size' => $fileSize,
+                    'status' => $request->status,
+                    'file_path' => $result['excel'],
+                ]);
+
+                // Importación real
+                $importParams['excel_import_id'] = $importRecordId;
+                $importParams['validateOnly'] = false;
+                $import = new QuestionImagesImport($importParams);
+                Excel::import($import, $result['excel']);
+
+                DB::commit();
+
+                // Obtener resumen detallado
+                $importSummary = $import->getImportSummary();
+
                 return response()->json([
-                    'message' => 'Error al guardar el registro en excel_imports',
-                    'error' => 'No se pudo guardar el registro en la base de datos'
-                ], 500);
+                    'message' => 'Importación completada',
+                    'success' => true,
+                    'resumen' => [
+                        'total_procesadas' => $importSummary['registradas']['total'] +
+                            $importSummary['no_registradas']['total'] +
+                            $importSummary['duplicadas']['total'],
+                        'preguntas_registradas' => [
+                            'total' => $importSummary['registradas']['total'],
+                            'detalle' => $importSummary['registradas']['detalle']
+                        ],
+                        'preguntas_no_registradas' => [
+                            'total' => $importSummary['no_registradas']['total'],
+                            'detalle' => $importSummary['no_registradas']['detalle']
+                        ],
+                        'preguntas_duplicadas' => [
+                            'total' => $importSummary['duplicadas']['total'],
+                            'detalle' => $importSummary['duplicadas']['detalle']
+                        ]
+                    ]
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
-            return response()->json([
-                'message' => 'Importación completada exitosamente',
-                'success' => $messages,
-            ], 200);
         } catch (\Exception $e) {
-            // Limpiar archivos si hubo un error
-            if (isset($path) && file_exists($path)) {
-                unlink($path);
-            }
-
-            // Eliminar import si hubo un error
-            if (isset($importExcel)) {
-                $importExcel->delete();
-            }
-
+            // ... limpieza de archivos ...
             return response()->json([
                 'message' => 'Error en la importación',
                 'success' => false,
@@ -116,6 +140,7 @@ class ImportExcelImageController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Extrae el contenido de un archivo ZIP.

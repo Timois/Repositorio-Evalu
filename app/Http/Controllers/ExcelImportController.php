@@ -54,6 +54,8 @@ class ExcelImportController extends Controller
 
             $importExcel = new ExcelImports();
             $importExcel->file_name = $excelName;
+            $importExcel->career = $request->career;
+            $importExcel->sigla = $request->sigla;
             $importExcel->size = $fileSize;
             $importExcel->status = $request->status;
             $importExcel->file_path = $name_path;
@@ -74,6 +76,11 @@ class ExcelImportController extends Controller
                 'success' => $messages,
             ], 200);
         } catch (\Exception $e) {
+
+            //el id del excel subido eliminar si hubo un error
+            $importExcel = ExcelImports::find($importExcel->id);
+            $importExcel->delete();
+
             // Limpiar archivos si hubo un error
             if (isset($path) && file_exists($path)) {
                 unlink($path);

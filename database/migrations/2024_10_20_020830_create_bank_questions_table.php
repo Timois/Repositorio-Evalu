@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('excel_import_id')->constrained('excel_imports','id')->onDelete('cascade');
             $table->text('description')->nullable(); // descripcion de la pregunta
             $table->text('question'); // Contenido de la pregunta
-            // $table->integer('total_weight')->nullable(); // Nota de la pregunta
+            $table->enum('dificulty', ['facil', 'medio', 'dificil'])->default('medio'); // Nivel de dificultad de la pregunta
             $table->string('image')->nullable(); // Imagen asociada a la pregunta (si existe)
             $table->enum("type", ['multiple', 'una opcion'])->default('multiple');
             $table->enum('status', ['activo', 'inactivo'])->default('activo'); // Estado de la pregunta

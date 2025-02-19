@@ -24,25 +24,32 @@ class ValidationExcelImport extends FormRequest
      */
     public function rules(): array
     {
-        $excelId = $this->route('id'); // Obtener el ID del archivo si estamos editando
-        $rules = [
-            'file_name' => 'required','file','mimes:xlsx,xls,csv','max:10240',
-            'status' => 'required|in:completado,error',
-        ];
-
-        if ($excelId) {
-            return [
-                // Validaciones expecificas para la edición
-                $rules['file_name'] = 'required','file','mimes:xlsx,xls,csv','max:10240',
-                $rules['status'] .= 'unique:excel_imports,status,' . ($excelId ?? 'NULL'),
-            ];
+        $validationFile = $this->file('file_name');
+        $validationCareer = 'required|max:255|regex:/[a-zA-Zñ]+/';
+        $validationSigla = 'required|string|max:10|regex:/[a-zA-Zñ]+/';
+        $validationStatus = 'required|in:completado,error';
+        if ($validationFile) {
+            $validationFile = $validationFile->getClientOriginalName();
+            $validationFile = 'required|file|mimes:xlsx,xls,csv|max:10000';
+            $validationCareer = 'required|max:255|regex:/[a-zA-Zñ]+/';
+            $validationSigla = 'required|string|max:10|regex:/[a-zA-Zñ]+/';
+            $validationStatus = 'required|in:completado,error';
         }
-        return $rules;
+        return [
+            'career' => $validationCareer,
+            'sigla' => $validationSigla,
+            'file_name' => 'required|file|mimes:xlsx,xls,csv|max:10000',
+            'status' => $validationStatus,
+        ];
     }   
 
     public function messages(): array
     {
         return [
+            'career.required' => 'La carrera es obligatoria.',
+            'career.regex' => 'Solo debe contener letras.',
+            'sigla.required' => 'La sigla es obligatoria.',
+            'sigla.regex' => 'Solo debe contener letras.',
             'file_name.required' => 'El archivo es obligatorio.',
             'file_name.file' => 'El archivo debe ser válido.',
             'file_name.mimes' => 'Solo se permiten archivos de tipo xlsx, xls o csv.',
