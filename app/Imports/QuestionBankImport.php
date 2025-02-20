@@ -3,6 +3,8 @@
 namespace App\Imports;
 
 use App\Models\AnswerBank;
+use App\Models\Areas;
+use App\Models\ExcelImports;
 use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -12,15 +14,15 @@ use Illuminate\Support\Facades\DB;
 class QuestionBankImport implements ToCollection
 {
     protected $excelImportId;
+    protected $areaId;
     protected $messages = [];
 
     // Definir las columnas requeridas
     protected $requiredColumns = [
-        'area',
         'pregunta',
         'descripcion',
         'dificultad',
-        'imagen',
+        'imagen',   
         'tipo',
         'opcion1',
         'opcion2',
@@ -112,10 +114,10 @@ class QuestionBankImport implements ToCollection
             // Crear array asociativo con los datos de la fila
             $dataRow = array_combine($headers, $rowArray);
 
-           // Validar campos requeridos (excluyendo 'imagen' y 'dificultad)
+           // Validar campos requeridos (excluyendo 'imagen', 'descripcion' y 'dificultad)
            $emptyFields = [];
            foreach ($this->requiredColumns as $column) {
-               if ($column !== 'imagen' && $column !== 'dificultad' && empty($dataRow[$column])) {
+               if ($column !== 'imagen' && $column !== 'dificultad' && $column !== 'descripcion' && empty($dataRow[$column])) {
                    $emptyFields[] = $column;
                }
            }
@@ -126,42 +128,12 @@ class QuestionBankImport implements ToCollection
             }
 
             try {
-                // Obtener el ID del área normalizada o existente
-                $areaId = ServiceArea::FindArea($dataRow['area']);
-            
-                if (!$areaId) {
-                    $responseMessages[] = [
-                        'success' => false,
-                        'message' => "Error en la fila " . ($index + 1) . ": No se pudo encontrar o crear el área '{$dataRow['area']}'."
-                    ];
-                    continue;
-                }
-            
                 try {
-                    // Normalizar la pregunta antes de verificar si existe
-                    $normalizedQuestion = DB::selectOne("SELECT normalizar_cadena(?) AS normalized", [$dataRow['pregunta']])->normalized;
-            
-                    // **Asegurar que no haya preguntas duplicadas en esta área**
-                    $questionExists = DB::table('bank_questions')
-                        ->where('area_id', $areaId)
-                        ->whereRaw('normalizar_cadena(question) = ?', [$normalizedQuestion]) // Verificar usando la versión normalizada
-                        ->where('status', 'activo')
-                        ->exists(); 
-            
-                    if ($questionExists) {
-                        $responseMessages[] = [
-                            'success' => false,
-                            'message' => "Error en la fila " . ($index + 1) . ": La pregunta '{$dataRow['pregunta']}' ya existe en esta área."
-                        ];
-                        continue;
-                    }
-            
                     // Si la pregunta no existe, insertarla
                     $dataToInsert = [
-                        'area_id' => $areaId,
+                        'area_id' => $this->areaId,
                         'excel_import_id' => $this->excelImportId,
                         'question' => $dataRow['pregunta'],
-                        'question_normalized' => $normalizedQuestion,  // Guardar la versión normalizada
                         'description' => $dataRow['descripcion'],
                         'type' => $dataRow['tipo'],
                         'image' => basename($dataRow['imagen']),

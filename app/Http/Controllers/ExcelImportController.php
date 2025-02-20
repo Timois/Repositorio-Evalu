@@ -7,6 +7,7 @@ use App\Http\Requests\ValidationExcelImport;
 use App\Imports\QuestionBanKImport;
 use App\Models\ExcelImports;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ExcelImportController extends Controller
 {
@@ -24,6 +25,7 @@ class ExcelImportController extends Controller
     public function create(ValidationExcelImport $request)
     {
         try {
+            $area_id = $request->area_id;
             $excel = $request->file('file_name');
             $fileSize = $excel->getSize();
 
@@ -50,22 +52,20 @@ class ExcelImportController extends Controller
 
             // Continue with import logic
             $excelName = time() . '.' . $excel->getClientOriginalName();
-            $name_path = public_path('private/exams/' . $excelName);
-
+            $name_path = public_path('private'. DIRECTORY_SEPARATOR .'exams'. DIRECTORY_SEPARATOR . $excelName);
+            
             $importExcel = new ExcelImports();
             $importExcel->file_name = $excelName;
-            $importExcel->career = $request->career;
-            $importExcel->sigla = $request->sigla;
             $importExcel->size = $fileSize;
             $importExcel->status = $request->status;
             $importExcel->file_path = $name_path;
             $importExcel->save();
 
             // Move the file
-            $path = $excel->move(public_path('private/exams'), $excelName);
+            $path = $excel->move(public_path('private'. DIRECTORY_SEPARATOR .'exams'), $excelName);
 
             // Perform actual import
-            $import = new QuestionBanKImport($importExcel->id);
+            $import = new QuestionBanKImport($importExcel->id, $area_id);
             Excel::import($import, $path);
 
             // Get import messages

@@ -2,19 +2,13 @@
 
 namespace App\Imports;
 
-use App\Models\AcademicManagementCareer;
-use App\Models\AcademicManagementPeriod;
 use App\Models\AnswerBank;
-use App\Models\Career;
-use App\Models\Evaluation;
 use App\Models\QuestionBank;
-use App\Models\QuestionEvaluation;
 use App\Service\ServiceArea;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Facades\File;
-use Symfony\Component\Console\Question\Question;
 
 class QuestionImagesImport implements ToCollection
 {
@@ -22,6 +16,7 @@ class QuestionImagesImport implements ToCollection
     protected $messages = [];
     protected $extractedPath;
     protected $sigla;
+    protected $validateOnly;
     protected $registeredQuestions = [];
     protected $skippedQuestions = [];
     protected $processedRows = [];
@@ -46,6 +41,7 @@ class QuestionImagesImport implements ToCollection
         $this->excelImportId = $params['excel_import_id'];
         $this->extractedPath = $params['extractedPath'];
         $this->sigla = $params['sigla'];
+        $this->validateOnly = $params['validateOnly'] ?? false;
     }
 
     public function collection(Collection $rows)
@@ -97,28 +93,74 @@ class QuestionImagesImport implements ToCollection
                 $this->messages[] = "Fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
                 continue;
             }
+
+            // Aquí está la línea que faltaba: Procesar la fila
+            $this->processRow($dataRow, $index);
         }
     }
+    private function findImageByHash($directory, $hash)
+    {
+        // Obtener todas las imágenes en el directorio
+        $images = glob($directory . DIRECTORY_SEPARATOR . '*.{jpg,jpeg,png,gif}', GLOB_BRACE);
 
+        // Usar array_map para calcular el hash de cada imagen
+        $imagesWithHashes = array_map(function ($image) {
+            return [
+                'path' => $image,
+                'hash' => hash_file('sha256', $image), // Calcular el hash de la imagen
+            ];
+        }, $images);
+
+        // Filtrar las imágenes que coincidan con el hash proporcionado
+        $matchingImages = array_filter($imagesWithHashes, function ($imageWithHash) use ($hash) {
+            return $imageWithHash['hash'] === $hash;
+        });
+
+        // Devolver solo las rutas de las imágenes que coinciden
+        return array_column($matchingImages, 'path');
+    }
     protected function processRow($dataRow, $index)
     {
+        
         try {
+            // Si solo estamos validando, no procesar la fila
+            if ($this->validateOnly) {
+                return;
+            }
             $areaId = ServiceArea::FindArea($dataRow['area']);
-            $normalizedQuestion = DB::selectOne(
-                "SELECT normalizar_cadena(?) AS normalized",
-                [$dataRow['pregunta']]
-            )->normalized;
+            
+            // Buscar la pregunta en la base de datos
+            $existingQuestion = QuestionBank::where('question', $dataRow['pregunta'])
+                ->where('area_id', $areaId)
+                ->first();
+            
+            if ($existingQuestion) {
+                // Registrar como duplicada
+                $this->duplicateDetails[] = [
+                    'row' => $index + 1,
+                    'pregunta' => $dataRow['pregunta'],
+                    'area' => $dataRow['area'],
+                    'pregunta_existente_id' => $existingQuestion->id
+                ];
+
+                $this->messages[] = "Fila " . ($index + 1) . ": Pregunta duplicada encontrada con ID " . $existingQuestion->id;
+                return;
+            }
+            
             $areaName = $dataRow['area'];
             $imagePath = null;
             // Procesar la imagen si existe
-            $imagePath = null;
             if (!empty($dataRow['imagen'])) {
-                $originalImagePath = public_path($this->extractedPath . DIRECTORY_SEPARATOR . $areaName .
-                    DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+
+                $originalImagePath = $this->extractedPath . DIRECTORY_SEPARATOR . $areaName .
+                    DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
+
                 $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR .
                     $this->sigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+                dd($destinationPath);
                 // Crear la carpeta si no existe
                 $destinationDirectory = dirname($destinationPath);
+
                 if (!File::exists($destinationDirectory)) {
                     File::makeDirectory($destinationDirectory, 0777, true, true);
                     $this->messages[] = "Fila " . ($index + 1) . ": Se creó el directorio para la sigla '{$this->sigla}' y área '{$areaName}'.";
@@ -127,13 +169,23 @@ class QuestionImagesImport implements ToCollection
                     $this->messages[] = "Fila " . ($index + 1) . ": Se usará el directorio existente para la sigla '{$this->sigla}' y área '{$areaName}'.";
                 }
 
-                // Mover la imagen
+                // Verificar si la imagen original existe
                 if (File::exists($originalImagePath)) {
-                    if (File::move($originalImagePath, $destinationPath)) {
-                        $imagePath = asset('images/questions/' . $this->sigla . '/' . $areaName . '/' . basename($dataRow['imagen']));
-                        $this->messages[] = "Fila " . ($index + 1) . ": Imagen movida con éxito: " . basename($dataRow['imagen']);
+                    // Calcular el hash de la imagen original
+                    $imageHash = hash_file('sha256', $originalImagePath); // Puedes usar otros algoritmos como md5, sha1, etc.
+                    // Buscar imagenes con el mismo hash
+                    $matchingImages = $this->findImageByHash($destinationDirectory, $imageHash);
+                    
+                    if (!empty($matchingImages)) {
+                        $this->messages[] = "Fila " . ($index + 1) . ": La imagen '" . basename($dataRow['imagen']) . "' ya existe en el destino con los nombres: " . implode(', ', array_map('basename', $matchingImages));
                     } else {
-                        $this->messages[] = "Fila " . ($index + 1) . ": No se pudo mover la imagen: " . basename($dataRow['imagen']);
+                        // Mover la imagen solo si no existe en el destino
+                        if (File::move($originalImagePath, $destinationPath)) {
+                            $imagePath = 'images'. DIRECTORY_SEPARATOR . 'questions' . $this->sigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
+                            $this->messages[] = "Fila " . ($index + 1) . ": Imagen movida con éxito: " . basename($dataRow['imagen']);
+                        } else {
+                            $this->messages[] = "Fila " . ($index + 1) . ": No se pudo mover la imagen: " . basename($dataRow['imagen']);
+                        }
                     }
                 } else {
                     $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la imagen original: " . basename($dataRow['imagen']);
@@ -145,7 +197,6 @@ class QuestionImagesImport implements ToCollection
                 'area_id' => $areaId,
                 'excel_import_id' => $this->excelImportId,
                 'question' => $dataRow['pregunta'],
-                'question_normalized' => $normalizedQuestion,
                 'description' => $dataRow['descripcion'],
                 'difficulty' => $dataRow['dificultad'],
                 'type' => $dataRow['tipo'],

@@ -40,8 +40,8 @@ class UnitController extends Controller
     {
         $image = $request->file('logo');
         $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $imagePath = asset('images/units/' . $imageName);
-        $image->move(public_path('images/units'), $imageName);
+        $imagePath = asset('images'. DIRECTORY_SEPARATOR .'units' . DIRECTORY_SEPARATOR . $request->name . DIRECTORY_SEPARATOR . 'Logo' . DIRECTORY_SEPARATOR . $imageName);
+        $image->move(public_path('images'. DIRECTORY_SEPARATOR .'units'. DIRECTORY_SEPARATOR . $request->name . DIRECTORY_SEPARATOR . 'Logo'), $imageName);
 
         $unit = new Unit();
         $unit->name = strtolower($request->name);

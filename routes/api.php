@@ -47,6 +47,7 @@ Route::controller(UserController::class)->prefix('user')->group(function(){
     Route::get("/find/{id}",'findById');
 });
 
+
 Route::controller(AuthController::class)->prefix('auth')->group(function(){
     Route::post("/login", "login");
     Route::post("/logout", "logout");

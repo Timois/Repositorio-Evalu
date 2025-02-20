@@ -18,26 +18,20 @@ class ValidationExcelImport extends FormRequest
     {
         return true; // Permitir el acceso al formulario
     }
-
+    
     /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
     {
         $validationFile = $this->file('file_name');
-        $validationCareer = 'required|max:255|regex:/[a-zA-Zñ]+/';
-        $validationSigla = 'required|string|max:10|regex:/[a-zA-Zñ]+/';
         $validationStatus = 'required|in:completado,error';
         if ($validationFile) {
             $validationFile = $validationFile->getClientOriginalName();
             $validationFile = 'required|file|mimes:xlsx,xls,csv|max:10000';
-            $validationCareer = 'required|max:255|regex:/[a-zA-Zñ]+/';
-            $validationSigla = 'required|string|max:10|regex:/[a-zA-Zñ]+/';
             $validationStatus = 'required|in:completado,error';
         }
         return [
-            'career' => $validationCareer,
-            'sigla' => $validationSigla,
             'file_name' => 'required|file|mimes:xlsx,xls,csv|max:10000',
             'status' => $validationStatus,
         ];

@@ -15,10 +15,6 @@ class StudentTest extends Model
         return $this->belongsTo(Student::class);
     }
 
-    public function draft_exams():HasMany{
-        return $this->hasMany(DraftExamResult::class);
-    }
-
     public function evaluations():BelongsTo{
         return $this->belongsTo(Evaluation::class);
     }

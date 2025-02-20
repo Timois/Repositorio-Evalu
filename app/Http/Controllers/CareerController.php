@@ -9,6 +9,7 @@ use App\Http\Requests\ValidationsCareer;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Career;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Worksheet\Validations;
 
 class CareerController extends Controller
@@ -16,7 +17,7 @@ class CareerController extends Controller
 
     public function find()
     {
-        $careers = Career::orderBy('id','ASC')->get();
+        $careers = Career::orderBy('id', 'ASC')->get();
         return response()->json($careers);
     }
 
@@ -27,14 +28,25 @@ class CareerController extends Controller
     {
         // Guardar la imagen en el servidor
         $image = $request->file('logo');
+        $idU = $request->unit_id;
+        $name = DB::table('units')->where('id', '=', $idU)->value('name');
+        $basePath = public_path('images' . DIRECTORY_SEPARATOR . 'units');
+        $imageDirectory = $basePath . DIRECTORY_SEPARATOR . $name . DIRECTORY_SEPARATOR . $request->name . DIRECTORY_SEPARATOR . 'Logo';
+        // Asegurar que el directorio existe antes de mover la imagen
+        if (!file_exists($imageDirectory)) {
+            mkdir($imageDirectory, 0777, true);
+        }
+        // Generar el nombre de la imagen con marca de tiempo
         $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $imagePath = asset('images/careers/' . $imageName);
-        $image->move(public_path('images/careers'), $imageName);
-
+        
+        // Mover la imagen a la ruta generada
+        $image->move($imageDirectory, $imageName);
+        $imageUrl = asset('images/units/' . $name . '/' . $request->name . '/Logo/' . $imageName);
+            
         $career = new Career();
         $career->name = strtolower($request->name);
         $career->initials = strtoupper($request->initials);
-        $career->logo = $imagePath;
+        $career->logo = $imageUrl;
         $career->unit_id = $request->unit_id;
         $career->save();
         return $career;
@@ -50,13 +62,13 @@ class CareerController extends Controller
         $career = Career::find($id);
         if (!$career)
             return ["message:", "La carrera con id:" . $id . " no existe."];
-        if($request->name)
+        if ($request->name)
             $career->name = strtolower($request->name);
-        if($request)
+        if ($request)
             $career->initials = strtoupper($request->initials);
 
-       $image = $request->file('logo');
-        if(!$image){
+        $image = $request->file('logo');
+        if (!$image) {
             $career->save();
             return $career;
         }
@@ -70,29 +82,33 @@ class CareerController extends Controller
         return $career;
     }
 
-    public function findById(string $id) {
+    public function findById(string $id)
+    {
         $career = Career::find($id);
         if (!$career)
             return ["message:", "La carrera con id:" . $id . " no existe."];
         return response()->json($career);
     }
 
-    public function assignManagement(ValidationAssignManagements $request){
+    public function assignManagement(ValidationAssignManagements $request)
+    {
         $academicManagementCareer = new AcademicManagementCareer();
-        $academicManagementCareer->career_id=$request->career_id;
-        $academicManagementCareer->academic_management_id=$request->academic_management_id;
+        $academicManagementCareer->career_id = $request->career_id;
+        $academicManagementCareer->academic_management_id = $request->academic_management_id;
         $academicManagementCareer->save();
         return ["message:", "Gestion asignado exitosamente"];
     }
 
-    public function findAssignManagement(){
+    public function findAssignManagement()
+    {
         $assign = AcademicManagementCareer::get();
         return response()->json($assign);
     }
 
-    public function findByIdAssign(string $careerId) {
+    public function findByIdAssign(string $careerId)
+    {
         $managements = AcademicManagementCareer::where('career_id', $careerId)
-            ->with(['academicManagement' => function($query) {
+            ->with(['academicManagement' => function ($query) {
                 $query->select('id', 'initial_date', 'end_date');
             }])
             ->get();
@@ -100,7 +116,7 @@ class CareerController extends Controller
         if ($managements->isEmpty())
             return response()->json([]);
 
-        $result = $managements->map(function($management) {
+        $result = $managements->map(function ($management) {
             return [
                 'id' => $management->academicManagement->id,
                 'name' => $management->career->name,
@@ -113,7 +129,8 @@ class CareerController extends Controller
         return response()->json($result);
     }
 
-    public function findAndUpdateAssign(ValidationAssignManagements $request, string $id) {
+    public function findAndUpdateAssign(ValidationAssignManagements $request, string $id)
+    {
         $update = AcademicManagementCareer::find($id);
         if (!$update)
             return ["message:", "La gestion academica no existe con el id:" . $id . " no existe."];
@@ -123,9 +140,10 @@ class CareerController extends Controller
     }
 
 
-    public function findPeriodByIdAssign(string $academicManagementCareerId) {
+    public function findPeriodByIdAssign(string $academicManagementCareerId)
+    {
         $periods = AcademicManagementPeriod::where('academic_management_career_id', $academicManagementCareerId)
-            ->with(['period' => function($query) {
+            ->with(['period' => function ($query) {
                 $query->select('id', 'period');
             }])
             ->get();
@@ -133,7 +151,7 @@ class CareerController extends Controller
         if ($periods->isEmpty())
             return response()->json([]);
 
-        $result = $periods->map(function($periods) {
+        $result = $periods->map(function ($periods) {
             return [
                 'id' => $periods->id,
                 'period_id' => $periods->period->id,
@@ -147,10 +165,11 @@ class CareerController extends Controller
     }
 
 
-    public function createAssign(ValidationAssignManagements $request){
+    public function createAssign(ValidationAssignManagements $request)
+    {
         $academicManagementCareer = new AcademicManagementCareer();
-        $academicManagementCareer->career_id=$request->career_id;
-        $academicManagementCareer->academic_management_id=$request->academic_management_id;
+        $academicManagementCareer->career_id = $request->career_id;
+        $academicManagementCareer->academic_management_id = $request->academic_management_id;
         $academicManagementCareer->save();
 
         return ["message:", "Gestion asignado exitosamente"];

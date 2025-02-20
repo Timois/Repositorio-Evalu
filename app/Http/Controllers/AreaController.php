@@ -26,6 +26,7 @@ class AreaController extends Controller
         $area = new Areas(); 
         $area->name = $request->name;
         $area->description = $request->description;
+        $area->career_id = $request->career_id;
         $area->save();
         return $area;
     }

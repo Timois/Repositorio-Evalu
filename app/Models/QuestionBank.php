@@ -27,8 +27,8 @@ class QuestionBank extends Model
         ->withTimestamps();
     }
 
-    public function areas():HasMany{
-        return $this->hasMany(Areas::class);
+    public function areas():BelongsTo{
+        return $this->belongsTo(Areas::class);
     }
     
     public function excel_imports():HasMany{

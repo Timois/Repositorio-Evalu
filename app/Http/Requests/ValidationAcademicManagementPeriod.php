@@ -21,7 +21,6 @@ class ValidationAcademicManagementPeriod extends FormRequest
 
     protected function buscar()
     {
-
         $id = $this->academic_management_career_id;
         $res = AcademicManagementCareer::find($id);
         if (!$res)

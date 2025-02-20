@@ -13,16 +13,10 @@ class ServiceArea
     // Buscar área por nombre o crearla si no existe
     public static function FindArea($name)
     {
-        // Normalizamos la entrada antes de buscar
-        $normalizedName = DB::selectOne("SELECT normalizar_cadena(?) AS normalized", [$name])->normalized;
-
-        // Buscar el área usando la columna normalizada
-        $area = Areas::where('name_normalized', $normalizedName)->first();
-
+        $area = Areas::where('name', $name)->first();
         if (!$area) {
             $area = new Areas();
             $area->name = $name; // Se guarda el nombre original
-            $area->name_normalized = $normalizedName; // Se guarda la versión normalizada
             $area->description = $name;
             $area->save();
         }

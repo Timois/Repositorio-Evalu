@@ -6,6 +6,7 @@ use App\Http\Requests\ValidationQuestionBank;
 use App\Models\QuestionBank;
 use Illuminate\Http\Request;
 use App\Http\Requests\ValidationsQuestionBank;
+use App\Models\Career;
 use PhpOffice\PhpSpreadsheet\Worksheet\Validations;
 
 class QuestionBankController extends Controller
@@ -29,15 +30,14 @@ class QuestionBankController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images/questions'), $imageName);
-            $imagePath = asset('images/questions/' . $imageName);
+            $imagePath = public_path('images'. DIRECTORY_SEPARATOR .'units' . DIRECTORY_SEPARATOR . $request->area_id . DIRECTORY_SEPARATOR . 'Questions' . DIRECTORY_SEPARATOR . $imageName);
         }
 
         $question = new QuestionBank();
         $question->question = $request->question;
         $question->description = $request->description;
+        $question->questtion_type = $request->question_type;
         $question->image = $imagePath;
-        // $question->total_weight = $request->total_weight;
         $question->type = $request->type;
         $question->status = $request->status;
         $question->area_id = $request->area_id;
@@ -58,9 +58,9 @@ class QuestionBankController extends Controller
             $updateData = $request->only([
                 'question',
                 'description',
-                'total_weight',
-                'type',
-                'status'
+                'difficulty',
+                'question_type',
+                'type'
             ]);
 
             // Convert question to lowercase if it exists

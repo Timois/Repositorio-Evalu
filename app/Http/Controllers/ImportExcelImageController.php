@@ -57,19 +57,20 @@ class ImportExcelImageController extends Controller
                 $importParams = [
                     'sigla' => $request->sigla,
                     'extractedPath' => $extractTo,
+                    'excel_import_id' => $excelImportId,
                     'validateOnly' => true
                 ];
-
+                
                 $import = new QuestionImagesImport($importParams);
                 Excel::import($import, $result['excel']);
 
                 $analysis = $import->getImportSummary();
 
                 // Verificar porcentaje de duplicados
-                if ($analysis['total_duplicates'] > 0) {
-                    $totalQuestions = $analysis['total_duplicates'] + $analysis['total_valid'];
-                    $duplicatePercentage = ($analysis['total_duplicates'] / $totalQuestions) * 100;
-
+                if ($analysis['duplicadas']['total'] > 0) {
+                    $totalQuestions = $analysis['duplicadas']['total'] + $analysis['registradas']['total'];
+                    $duplicatePercentage = ($analysis['duplicadas']['total'] / $totalQuestions) * 100;
+                
                     if ($duplicatePercentage > 50) {
                         DB::rollBack();
                         return response()->json([
@@ -77,9 +78,9 @@ class ImportExcelImageController extends Controller
                             'success' => false,
                             'analysis' => [
                                 'total_preguntas' => $totalQuestions,
-                                'duplicadas' => $analysis['total_duplicates'],
+                                'duplicadas' => $analysis['duplicadas']['total'],
                                 'porcentaje_duplicados' => round($duplicatePercentage, 2) . '%',
-                                'detalle_duplicados' => $analysis['duplicate_details']
+                                'detalle_duplicados' => $analysis['duplicadas']['detalle']
                             ]
                         ], 422);
                     }
