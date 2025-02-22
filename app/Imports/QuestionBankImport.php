@@ -175,7 +175,6 @@ class QuestionBankImport implements ToCollection
                         ];
                     }
                 }
-
                 // Guardar respuestas masivamente
                 if (!empty($answersToInsert)) {
                     AnswerBank::insert($answersToInsert);

@@ -22,8 +22,10 @@ use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionEvaluationController;
 use App\Http\Controllers\ResponsibleController;
 use App\Http\Controllers\StudentsImportController;
+use App\Http\Controllers\UsersController;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Row;
 use Symfony\Component\Console\Question\Question;
 
 /*
@@ -47,19 +49,22 @@ Route::controller(UserController::class)->prefix('user')->group(function(){
     Route::get("/find/{id}",'findById');
 });
 
+Route::controller(UsersController::class)->prefix('users')->group(function(){
+    Route::get("/list", "index");
+    Route::get("/find/{id}",'findById');
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::post("/save", "create");
+    Route::post("/assignRole", "assignRole");  
+    Route::post("/assignPermission", "assignCareer");
+    Route::post("/assignDecano", "assignDecano");
+    Route::get("/listUsersRole/{roleName}", "findrols");
+});
 
 Route::controller(AuthController::class)->prefix('auth')->group(function(){
     Route::post("/login", "login");
     Route::post("/logout", "logout");
     Route::post("/refresh", "refresh");
     Route::get("/profile", "me");
-});
-
-Route::controller(UnitController::class)->prefix('unit')->group(function(){
-    Route::post("/save","create");
-    Route::get("/list", "find");
-    Route::post("/edit/{id}", "findAndUpdate");
-    Route::get("/find/{id}",'findById');
 });
 
 Route::controller(CareerController::class)->prefix('career')->group(function(){

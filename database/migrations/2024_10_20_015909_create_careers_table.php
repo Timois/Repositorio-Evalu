@@ -16,9 +16,12 @@ return new class extends Migration
             $table->string('name');
             $table->string('initials');
             $table->string('logo')->nullable();
-            $table->foreignId('unit_id')->constrained('units', 'id')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
+            $table->enum('type', ['dependiente', 'mayor', 'carrera', 'facultad'])->default('mayor');
+            $table->unsignedBigInteger('unit_id')->default(0);
             $table->timestamps();
+
+            // Índice para mejorar el rendimiento de las búsquedas
+            $table->index(['type', 'unit_id']);
         });
     }
 
