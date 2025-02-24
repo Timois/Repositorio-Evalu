@@ -22,8 +22,6 @@ class ImportExcelImageController extends Controller
             // Validar que el archivo sea un ZIP
             $request->validate([
                 'file_name' => 'required|mimetypes:application/zip,application/x-zip-compressed|max:10240',
-                'career' => 'required|max:255|regex:/[a-zA-Zñ]+/',
-                'sigla' => 'required|string|max:10|regex:/[a-zA-Zñ]+/',
                 'status' => 'required|in:completado,error',
             ]);
 
@@ -47,7 +45,8 @@ class ImportExcelImageController extends Controller
             $excelImportId = time();
             $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
             $result = $this->extractZip($zipPath, $extractTo);
-
+            $areaId = $request->area_id;
+            
             if (!$result['success']) {
                 throw new \Exception($result['message']);
             }
@@ -55,7 +54,7 @@ class ImportExcelImageController extends Controller
 
             try {
                 $importParams = [
-                    'sigla' => $request->sigla,
+                    'areaId' => $areaId,
                     'extractedPath' => $extractTo,
                     'excel_import_id' => $excelImportId,
                     'validateOnly' => true
@@ -89,8 +88,6 @@ class ImportExcelImageController extends Controller
                 // Proceder con la importación
                 $importRecordId = DB::table('excel_imports')->insertGetId([
                     'file_name' => $zipFileName,
-                    'career' => strtolower($request->career),
-                    'sigla' => strtoupper($request->sigla),
                     'size' => $fileSize,
                     'status' => $request->status,
                     'file_path' => $result['excel'],

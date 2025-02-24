@@ -3,20 +3,16 @@
 namespace App\Imports;
 
 use App\Models\AnswerBank;
-use App\Models\Areas;
-use App\Models\ExcelImports;
 use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use App\Service\ServiceArea;
-use Illuminate\Support\Facades\DB;
 
 class QuestionBankImport implements ToCollection
 {
     protected $excelImportId;
     protected $areaId;
     protected $messages = [];
-
+    
     // Definir las columnas requeridas
     protected $requiredColumns = [
         'pregunta',
@@ -31,9 +27,10 @@ class QuestionBankImport implements ToCollection
         'respuesta correcta'
     ];
 
-    public function __construct($excelImportId)
+    public function __construct($excelImportId, $areaId)
     {
         $this->excelImportId = $excelImportId;
+        $this->areaId = $areaId;
     }
 
     public function validateFormat($data)
@@ -126,7 +123,6 @@ class QuestionBankImport implements ToCollection
                 $responseMessages[] = "Error en la fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
                 continue;
             }
-
             try {
                 try {
                     // Si la pregunta no existe, insertarla
@@ -172,6 +168,8 @@ class QuestionBankImport implements ToCollection
                             'answer' => $dataRow["opcion$i"],
                             'is_correct' => $esCorrecta,
                             'status' => 'activo',
+                            'created_at' => now(),
+                            'updated_at' => now(),
                         ];
                     }
                 }

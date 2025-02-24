@@ -31,41 +31,41 @@ class CareerController extends Controller
             $image = $request->file('logo');
             $basePath = public_path('images' . DIRECTORY_SEPARATOR . 'units');
 
+            // Convertir la sigla a mayúsculas
+            $initials = strtoupper($request->initials);
+
             // Si es un tipo dependiente (carrera o dependiente), usar el nombre del padre en la ruta
             if (in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])) {
                 $parentUnit = Career::findOrFail($request->unit_id);
                 $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
-                    $parentUnit->type . DIRECTORY_SEPARATOR .
-                    $parentUnit->name . DIRECTORY_SEPARATOR .
-                    $request->name . DIRECTORY_SEPARATOR .
-                    'Logo';
+                    $parentUnit->initials . DIRECTORY_SEPARATOR .
+                    $initials . DIRECTORY_SEPARATOR . 'Logo';
             } else {
                 // Para tipos independientes (mayor o facultad)
                 $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
-                    $request->name . DIRECTORY_SEPARATOR .
-                    $request->type . DIRECTORY_SEPARATOR .
-                    'Logo';
+                    $initials . DIRECTORY_SEPARATOR . 'Logo';
             }
+           
             // Asegurar que el directorio existe
             if (!file_exists($imageDirectory)) {
                 mkdir($imageDirectory, 0777, true);
             }
 
-            // Generar nombre de imagen con marca de tiempo
+            // Generar el nombre de la imagen
             $imageName = time() . '.' . $image->getClientOriginalExtension();
 
-            // Mover la imagen
+            // Mover la imagen con el nuevo nombre
             $image->move($imageDirectory, $imageName);
 
             // Construir URL de la imagen
             $imageUrl = in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])
-                ? asset("images/careers/{$parentUnit->type}/{$parentUnit->name}/{$request->type}/{$request->name}/Logo/{$imageName}")
-                : asset("images/careers/{$request->type}/{$request->name}/Logo/{$imageName}");
-
+                ? asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$imageName}")
+                : asset("images/units/{$initials}/Logo/{$imageName}");
+            
             // Crear la carrera
             $career = new Career();
             $career->name = strtolower($request->name);
-            $career->initials = strtoupper($request->initials);
+            $career->initials = $initials;
             $career->logo = $imageUrl;
             $career->type = $request->type;
             // El unit_id será 0 para tipos independientes y el ID del padre para tipos dependientes
@@ -85,6 +85,7 @@ class CareerController extends Controller
         }
     }
 
+
     /**
      * Display the specified resource.
      */
@@ -93,7 +94,7 @@ class CareerController extends Controller
         try {
             $career = Career::findOrFail($id);
             $oldType = $career->type;
-            $oldName = $career->name;
+            $oldInitials = $career->initials;
             $oldParentId = $career->unit_id;
 
             // Actualizar campos básicos si se proporcionan
@@ -121,24 +122,23 @@ class CareerController extends Controller
                 }
             }
 
+            // Obtener la sigla actualizada
+            $initials = strtoupper($career->initials);
+
             // Manejar la actualización de la imagen si se proporciona
             if ($request->hasFile('logo')) {
                 $image = $request->file('logo');
-                $basePath = public_path('images' . DIRECTORY_SEPARATOR . 'careers');
+                $basePath = public_path('images' . DIRECTORY_SEPARATOR . 'units');
 
                 // Determinar el nuevo directorio según el tipo
                 if (in_array($career->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])) {
                     $parentUnit = Career::findOrFail($career->unit_id);
                     $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
-                        $parentUnit->type . DIRECTORY_SEPARATOR .
-                        $parentUnit->name . DIRECTORY_SEPARATOR .
-                        $career->name . DIRECTORY_SEPARATOR .
-                        'Logo';
+                        $parentUnit->initials . DIRECTORY_SEPARATOR .
+                        $initials . DIRECTORY_SEPARATOR . 'Logo';
                 } else {
                     $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
-                        $career->type . DIRECTORY_SEPARATOR .
-                        $career->name . DIRECTORY_SEPARATOR .
-                        'Logo';
+                        $initials . DIRECTORY_SEPARATOR . 'Logo';
                 }
 
                 // Crear nuevo directorio si no existe
@@ -146,19 +146,21 @@ class CareerController extends Controller
                     mkdir($imageDirectory, 0777, true);
                 }
 
-                // Generar y guardar nueva imagen
+                // Generar y guardar nueva imagen con la sigla
                 $imageName = time() . '.' . $image->getClientOriginalExtension();
                 $image->move($imageDirectory, $imageName);
 
                 // Construir y guardar nueva URL
                 $imageUrl = in_array($career->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])
-                    ? asset("images.DIRECTORY_SEPARATOR.'units{$parentUnit->type}{$parentUnit->name}/{$career->type}/{$career->name}/Logo/{$imageName}")
-                    : asset("images/units/{$career->type}/{$career->name}/Logo/{$imageName}");
+                    ? asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$imageName}")
+                    : asset("images/units/{$initials}/Logo/{$imageName}");
 
                 // Eliminar imagen anterior si existe
-                $oldImagePath = public_path(parse_url($career->logo, PHP_URL_PATH));
-                if (file_exists($oldImagePath)) {
-                    unlink($oldImagePath);
+                if ($career->logo) {
+                    $oldImagePath = public_path(parse_url($career->logo, PHP_URL_PATH));
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
                 }
 
                 $career->logo = $imageUrl;
@@ -169,9 +171,9 @@ class CareerController extends Controller
 
                     if (in_array($career->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])) {
                         $parentUnit = Career::findOrFail($career->unit_id);
-                        $newImageUrl = asset("images/careers/{$parentUnit->type}/{$parentUnit->name}/{$career->type}/{$career->name}/Logo/{$oldImageName}");
+                        $newImageUrl = asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$oldImageName}");
                     } else {
-                        $newImageUrl = asset("images/careers/{$career->type}/{$career->name}/Logo/{$oldImageName}");
+                        $newImageUrl = asset("images/units/{$initials}/Logo/{$oldImageName}");
                     }
 
                     // Mover el archivo físicamente si es necesario
@@ -209,6 +211,7 @@ class CareerController extends Controller
             ], 500);
         }
     }
+
 
     public function findById(string $id)
     {
@@ -261,7 +264,7 @@ class CareerController extends Controller
     {
         $update = AcademicManagementCareer::find($id);
         if (!$update)
-            return ["message:", "La gestion academica no existe con el id:" . $id ];
+            return ["message:", "La gestion academica no existe con el id:" . $id];
         $update->academic_management_id = $request->academic_management_id;
         $update->save();
         return $update;

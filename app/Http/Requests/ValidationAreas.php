@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Career;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,42 +22,48 @@ class ValidationAreas extends FormRequest
     public function rules(): array
     {
         $careerId = $this->input('career_id');
+        $areaId = $this->route('id');
+
+        // Verificar si la carrera existe y si su tipo es "carrera"
+        $career = Career::find($careerId);
+        $isAllowedCareer = $career && $career->type === 'carrera';
+
         $validationName = [
             'required',
             'string',
             'max:50',
             'regex:/^[\pL\s,\-.]+$/u',
-            Rule::unique('areas')->where(function ($query) use ($careerId) {
-                return $query->where('career_id', $careerId);
-            }),
+            Rule::unique('areas')->where(fn($query) => $query->where('career_id', $careerId)),
         ];
-        
+
         $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
-        $validationCareerId = 'required|exists:careers,id';
-        
-        $areaId = $this->route('id'); // Asegúrate de pasar el ID en la ruta
-        
+
+        $validationCareerId = [
+            'required',
+            'exists:careers,id',
+            function ($attribute, $value, $fail) {
+                $career = Career::find($value);
+                if (!$career || $career->type !== 'carrera') {
+                    $fail('Solo se pueden asignar áreas a unidades de tipo "carrera".');
+                }
+            },
+        ];
+
         if ($areaId) {
             $validationName = [
                 'required',
                 'string',
                 'max:50',
                 'regex:/^[\pL\s,\-.]+$/u',
-                Rule::unique('areas')->ignore($areaId)->where(function ($query) use ($careerId) {
-                    return $query->where('career_id', $careerId);
-                }),
+                Rule::unique('areas')->ignore($areaId)->where(fn($query) => $query->where('career_id', $careerId)),
             ];
-        
-            $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
-            $validationCareerId = 'required|exists:careers,id';
         }
-        
+
         return [
             'name' => $validationName,
             'description' => $validationDescription,
-            'career_id' => $validationCareerId, // Asegúrate de incluir career_id en el array de validación
+            'career_id' => $validationCareerId,
         ];
-        
     }
 
     /**
@@ -71,7 +78,6 @@ class ValidationAreas extends FormRequest
             'name.regex' => 'El nombre del área solo puede contener letras, espacios, comas, guiones y puntos.',
             'description.max' => 'La descripción no puede tener más de 255 caracteres.',
             'description.regex' => 'La descripción solo puede contener letras, espacios, comas, guiones y puntos.',
-            'description.regex' => 'Solo debe contener letras',
             'career_id.required' => 'La carrera es obligatoria.',
             'career_id.exists' => 'La carrera seleccionada no existe.',
         ];

@@ -38,7 +38,7 @@ class ExcelImportController extends Controller
             }
 
             // Pre-validate Excel format
-            $tempImport = new QuestionBanKImport(null);
+            $tempImport = new QuestionBanKImport(null, null);
             $data = Excel::toArray($tempImport, $excel);
 
             // Validate format

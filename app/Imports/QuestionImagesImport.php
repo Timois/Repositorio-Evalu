@@ -4,11 +4,13 @@ namespace App\Imports;
 
 use App\Models\AnswerBank;
 use App\Models\QuestionBank;
-use App\Service\ServiceArea;
+use App\Models\Areas;
+use App\Models\Career; // Para obtener la carrera relacionada
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 class QuestionImagesImport implements ToCollection
 {
@@ -21,9 +23,9 @@ class QuestionImagesImport implements ToCollection
     protected $skippedQuestions = [];
     protected $processedRows = [];
     protected $duplicateDetails = [];
+    protected $areaId;
 
     protected $requiredColumns = [
-        'area',
         'pregunta',
         'descripcion',
         'dificultad',
@@ -40,12 +42,17 @@ class QuestionImagesImport implements ToCollection
     {
         $this->excelImportId = $params['excel_import_id'];
         $this->extractedPath = $params['extractedPath'];
-        $this->sigla = $params['sigla'];
+        $this->areaId = $params['areaId'];
         $this->validateOnly = $params['validateOnly'] ?? false;
     }
 
+    /**
+     * Carga la sigla de la carrera asociada al área
+     */
+
     public function collection(Collection $rows)
     {
+
         // Verificar si hay filas en el Excel
         if ($rows->isEmpty()) {
             $this->messages[] = "El archivo Excel está vacío.";
@@ -74,17 +81,17 @@ class QuestionImagesImport implements ToCollection
             if (empty(array_filter($rowArray, function ($value) {
                 return $value !== null && $value !== '';
             }))) {
-                logger()->info('Fila ' . ($index + 1) . ' está vacía, terminando el procesamiento.');
+                Log::info('Fila ' . ($index + 1) . ' está vacía, terminando el procesamiento.');
                 break; // Terminar el procesamiento al encontrar una fila vacía
             }
 
             // Combinar cabeceras con valores de la fila
             $dataRow = array_combine($headers, $rowArray);
 
-            // Validar campos requeridos (excluyendo 'imagen' y 'dificultad)
+            // Validar campos requeridos (excluyendo 'imagen', 'descripcion' y 'dificultad)
             $emptyFields = [];
             foreach ($this->requiredColumns as $column) {
-                if ($column !== 'imagen' && $column !== 'dificultad' && empty($dataRow[$column])) {
+                if ($column !== 'imagen' && $column !== 'dificultad' && $column !== 'descripcion' && empty($dataRow[$column])) {
                     $emptyFields[] = $column;
                 }
             }
@@ -94,10 +101,11 @@ class QuestionImagesImport implements ToCollection
                 continue;
             }
 
-            // Aquí está la línea que faltaba: Procesar la fila
+            // Procesar la fila
             $this->processRow($dataRow, $index);
         }
     }
+
     private function findImageByHash($directory, $hash)
     {
         // Obtener todas las imágenes en el directorio
@@ -119,90 +127,104 @@ class QuestionImagesImport implements ToCollection
         // Devolver solo las rutas de las imágenes que coinciden
         return array_column($matchingImages, 'path');
     }
+
     protected function processRow($dataRow, $index)
     {
-        
         try {
             // Si solo estamos validando, no procesar la fila
             if ($this->validateOnly) {
                 return;
             }
-            $areaId = ServiceArea::FindArea($dataRow['area']);
-            
-            // Buscar la pregunta en la base de datos
-            $existingQuestion = QuestionBank::where('question', $dataRow['pregunta'])
-                ->where('area_id', $areaId)
-                ->first();
-            
-            if ($existingQuestion) {
-                // Registrar como duplicada
-                $this->duplicateDetails[] = [
-                    'row' => $index + 1,
-                    'pregunta' => $dataRow['pregunta'],
-                    'area' => $dataRow['area'],
-                    'pregunta_existente_id' => $existingQuestion->id
-                ];
 
-                $this->messages[] = "Fila " . ($index + 1) . ": Pregunta duplicada encontrada con ID " . $existingQuestion->id;
+            // Usar el área ID del constructor (no del Excel)
+            $areaId = $this->areaId;
+            $imagePath = null;
+            
+            // Obtener la carrera asociada al área
+            $area = DB::table('areas')->where('id', $areaId)->first();
+            if (!$area) {
+                $this->messages[] = "Fila " . ($index + 1) . ": No se encontró el área con ID {$areaId}.";
+                return;
+            }
+
+            $career = DB::table('careers')->where('id', $area->career_id)->first();
+            if (!$career) {
+                $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la carrera para el área con ID {$areaId}.";
+                return;
+            }
+
+            // Obtener la unidad a la que pertenece la carrera
+            $unit = DB::table('careers')->where('id', $career->unit_id)->first();
+            if (!$unit) {
+                $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la unidad para la carrera con ID {$career->id}.";
                 return;
             }
             
-            $areaName = $dataRow['area'];
-            $imagePath = null;
+            $areaName = $area->name;
+            $unitSigla = $unit->initials;  // Usar la sigla de la unidad
+            $careerSigla = $career->initials; // Usar la sigla de la carrera
+
             // Procesar la imagen si existe
             if (!empty($dataRow['imagen'])) {
-
-                $originalImagePath = $this->extractedPath . DIRECTORY_SEPARATOR . $areaName .
-                    DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
-
-                $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR .
-                    $this->sigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
-                dd($destinationPath);
-                // Crear la carpeta si no existe
-                $destinationDirectory = dirname($destinationPath);
-
-                if (!File::exists($destinationDirectory)) {
-                    File::makeDirectory($destinationDirectory, 0777, true, true);
-                    $this->messages[] = "Fila " . ($index + 1) . ": Se creó el directorio para la sigla '{$this->sigla}' y área '{$areaName}'.";
-                } else {
-                    // Si ya existe el directorio, simplemente lo informamos
-                    $this->messages[] = "Fila " . ($index + 1) . ": Se usará el directorio existente para la sigla '{$this->sigla}' y área '{$areaName}'.";
-                }
-
-                // Verificar si la imagen original existe
-                if (File::exists($originalImagePath)) {
-                    // Calcular el hash de la imagen original
-                    $imageHash = hash_file('sha256', $originalImagePath); // Puedes usar otros algoritmos como md5, sha1, etc.
-                    // Buscar imagenes con el mismo hash
-                    $matchingImages = $this->findImageByHash($destinationDirectory, $imageHash);
+                $imagesDirectory = $this->extractedPath . DIRECTORY_SEPARATOR . 'imagenes';
+                
+                // Calcular el hash de la imagen
+                $imageHash = hash_file('sha256', $imagesDirectory . DIRECTORY_SEPARATOR . $dataRow['imagen']);
+               
+                // Buscar la imagen en la carpeta
+                $originalImagePath = $this->findImageByHash($imagesDirectory, $imageHash);
+                
+                if (!empty($originalImagePath)) {
+                    // Ruta destino usando la sigla de la carrera y el nombre del área
+                    $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR . $unitSigla . DIRECTORY_SEPARATOR .
+                        $careerSigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
                     
+                    // Crear la carpeta si no existe
+                    $destinationDirectory = dirname($destinationPath);
+                    if (!File::exists($destinationDirectory)) {
+                        File::makeDirectory($destinationDirectory, 0777, true, true);
+                        $this->messages[] = "Fila " . ($index + 1) . " : Carpeta creada: " . $destinationDirectory;
+                    }
+
+                    // Verificar si la imagen ya existe en el destino
+                    $matchingImages = $this->findImageByHash($destinationDirectory, $imageHash);
                     if (!empty($matchingImages)) {
-                        $this->messages[] = "Fila " . ($index + 1) . ": La imagen '" . basename($dataRow['imagen']) . "' ya existe en el destino con los nombres: " . implode(', ', array_map('basename', $matchingImages));
+                        $this->messages[] = "Fila " . ($index + 1) . ": La imagen '" . basename($dataRow['imagen']) . "' ya existe.";
+                        $relativeImagePath = str_replace(public_path(), '', $matchingImages[0]);
+                        $imagePath = ltrim($relativeImagePath, '/\\');
                     } else {
-                        // Mover la imagen solo si no existe en el destino
-                        if (File::move($originalImagePath, $destinationPath)) {
-                            $imagePath = 'images'. DIRECTORY_SEPARATOR . 'questions' . $this->sigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
-                            $this->messages[] = "Fila " . ($index + 1) . ": Imagen movida con éxito: " . basename($dataRow['imagen']);
+                        // Copiar la imagen si no existe en el destino
+                        if (File::copy($originalImagePath[0], $destinationPath)) {
+                            $imagePath = 'images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR .
+                                $unitSigla . DIRECTORY_SEPARATOR . $careerSigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
+                            $this->messages[] = "Fila " . ($index + 1) . ": Imagen copiada con éxito.";
                         } else {
-                            $this->messages[] = "Fila " . ($index + 1) . ": No se pudo mover la imagen: " . basename($dataRow['imagen']);
+                            $this->messages[] = "Fila " . ($index + 1) . ": No se pudo copiar la imagen.";
                         }
                     }
                 } else {
-                    $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la imagen original: " . basename($dataRow['imagen']);
+                    $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la imagen '" . basename($dataRow['imagen']) . "'.";
                 }
             }
-
-            // Crear la pregunta
-            $question = QuestionBank::create([
-                'area_id' => $areaId,
-                'excel_import_id' => $this->excelImportId,
-                'question' => $dataRow['pregunta'],
-                'description' => $dataRow['descripcion'],
-                'difficulty' => $dataRow['dificultad'],
-                'type' => $dataRow['tipo'],
-                'image' => $imagePath,
-                'status' => 'activo',
-            ]);
+            
+            // Buscar si la pregunta ya existe
+            $existingQuestion = QuestionBank::where('question', $dataRow['pregunta'])
+                ->where('area_id', $areaId)
+                ->exists();
+            
+            if (!$existingQuestion) {
+                // Crear la pregunta
+                $question = QuestionBank::create([
+                    'area_id' => $areaId,
+                    'excel_import_id' => $this->excelImportId,
+                    'question' => $dataRow['pregunta'],
+                    'description' => $dataRow['descripcion'],
+                    'difficulty' => $dataRow['dificultad'],
+                    'type' => $dataRow['tipo'],
+                    'image' => $imagePath,
+                    'status' => 'activo',
+                ]);
+            }
 
             // Procesar las respuestas
             $answers = $this->processAnswers($question, $dataRow);
@@ -212,7 +234,7 @@ class QuestionImagesImport implements ToCollection
                 'row' => $index + 1,
                 'pregunta_id' => $question->id,
                 'pregunta' => $dataRow['pregunta'],
-                'area' => $dataRow['area'],
+                'area' => $areaId,
                 'tipo' => $dataRow['tipo'],
                 'dificultad' => $dataRow['dificultad'],
                 'respuestas' => $answers,
@@ -230,8 +252,10 @@ class QuestionImagesImport implements ToCollection
             ];
 
             $this->messages[] = "Error en fila " . ($index + 1) . ": " . $e->getMessage();
+            Log::error("Error procesando fila " . ($index + 1) . ": " . $e->getMessage());
         }
     }
+
 
     protected function processAnswers($question, $dataRow)
     {
@@ -257,6 +281,8 @@ class QuestionImagesImport implements ToCollection
                     'answer' => $answerText,
                     'is_correct' => $isCorrect,
                     'status' => 'activo',
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
                 $answers[] = [
@@ -268,7 +294,6 @@ class QuestionImagesImport implements ToCollection
 
         return $answers;
     }
-
 
     public function getImportSummary()
     {
@@ -287,7 +312,6 @@ class QuestionImagesImport implements ToCollection
             ]
         ];
     }
-
 
     public function getMessages()
     {
