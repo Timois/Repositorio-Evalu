@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Persona extends Model
 {
@@ -24,4 +24,9 @@ class Persona extends Model
     protected $hidden = [
         'password', // Oculta la contraseña al serializar el modelo
     ];
+
+    public function carrera(): BelongsTo
+    {
+        return $this->belongsTo(Career::class);
+    }
 }

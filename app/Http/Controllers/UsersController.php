@@ -89,14 +89,15 @@ class UsersController extends Controller
 
     public function AssignCareer(Request $request)
     {
+        
         $request->validate([
-            'user_id' => 'required|exists:personas,id', // Asegúrate de que sea 'personas' y no 'users'
+            'user_id' => 'required|exists:users,id', // Asegúrate de que sea 'personas' y no 'users'
             'career_id' => 'required|exists:careers,id',
         ]);
 
         // Obtener el usuario
         $user = Persona::findOrFail($request->user_id);
-
+        
         // Verificar que el usuario tenga el rol de docente o director
         if (!in_array($user->role, ['docente', 'director'])) {
             return response()->json(['message' => 'Solo los usuarios con rol de docente o director pueden ser asignados a una carrera'], 403);
@@ -116,10 +117,27 @@ class UsersController extends Controller
 
         return response()->json(['message' => 'Carrera asignada exitosamente', 'user' => $user]);
     }
+
+    public function listAsingnedDocentes()
+    {
+        // Obtener todos los docentes
+        $docentes = Persona::where('role', 'docente')->with('carrera')->get();
+    
+        return response()->json($docentes);
+    }
+    
+
+    public function listAsingnedDirectores(){
+        
+        // Obtener el usuario
+        $director = Persona::where('role', 'director')->with('carrera')->get();
+        return response()->json($director);
+    }
+
     public function assignDecano(Request $request) {
 
         $request->validate([
-            'user_id' => 'required|exists:personas,id',
+            'user_id' => 'required|exists:users,id',
             'career_id' => 'required|exists:careers,id',
         ]);
 
@@ -131,10 +149,11 @@ class UsersController extends Controller
             return response()->json(['message' => 'Solo los usuarios con rol de decano pueden ser asignados a una carrera'], 403);
         }
 
-        // Verificar que la carrera sea de tipo "facultad"
+        // Verificar que la carrera sea de tipo "facultad" o mayor
         $career = Career::findOrFail($request->career_id);
-        if ($career->type !== 'facultad') {
-            return response()->json(['message' => 'Solo se pueden asignar carreras de tipo "facultad"'], 403);
+        
+        if ($career->type !== 'facultad' && $career->type !== 'mayor') {
+            return response()->json(['message' => 'Solo se pueden asignar carreras de tipo "facultad" o "mayor"'], 403);
         }
 
         // Asignar la unidad al usuario
@@ -142,5 +161,13 @@ class UsersController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Unidad asignada exitosamente', 'user' => $user]);
+    }
+
+    public function listAsingnedDecanos() {
+
+        // Obtener el usuario
+        $decano = Persona::where('role', 'decano')->with('carrera')->get();
+
+        return response()->json($decano);
     }
 }

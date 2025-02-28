@@ -25,7 +25,7 @@ class ValidationEvaluation extends FormRequest
         $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
         $validationTotalScore = 'required|numeric|min:0';
         $validationPassingScore = 'required|numeric|min:0';
-        $validationDateRealization = 'required|date_format:Y-m-d';
+        $validationDateRealization = 'required|date_format:Y-m-d|after:today';
         $validationAcademicPeriod = 'required|exists:academic_management_period,id';
         $validationStatus = 'required|in:activo,inactivo';
         $validationType = 'required|in:web,ocr,app';
@@ -47,7 +47,7 @@ class ValidationEvaluation extends FormRequest
             'description' => $validationdescription,
             'total_score' => $validationTotalScore,
             'passing_score' => $validationPassingScore,
-            'date_realization' => $validationDateRealization,
+            'date_of_realization' => $validationDateRealization,
             'academic_management_period_id' => $validationAcademicPeriod,
             'status' => $validationStatus,
             'type' => $validationType
@@ -85,8 +85,9 @@ class ValidationEvaluation extends FormRequest
             'passing_score.required' => 'El campo puntaje de aprobación es obligatorio.',
             'passing_score.numeric' => 'El campo puntaje de aprobación debe ser un número.',
             'passing_score.min' => 'El campo puntaje de aprobación debe ser mayor o igual a 0.',
-            'date_realization.required' => 'El campo fecha de realización es obligatorio.',
-            'date_realization.date_format' => 'El campo fecha de realización debe tener el formato Y-m-d.',
+            'date_of_realization.required' => 'El campo fecha de realización es obligatorio.',
+            'date_of_realization.date_format' => 'El campo fecha de realización debe tener el formato Y-m-d.',
+            'date_of_realization.after' => 'El campo fecha de realización debe ser después de la fecha actual.',
             'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
             'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
             'status.required' => 'El campo estado es obligatorio.',

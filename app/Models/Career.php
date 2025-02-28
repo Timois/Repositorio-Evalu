@@ -27,7 +27,7 @@ class Career extends Model
 
     // Tipos que son independientes (no tienen padre)
     const INDEPENDENT_TYPES = [self::TYPE_MAYOR, self::TYPE_FACULTAD];
-    
+
     // Tipos que deben tener un padre
     const DEPENDENT_TYPES = [self::TYPE_CARRERA, self::TYPE_DEPENDIENTE];
 
@@ -39,13 +39,15 @@ class Career extends Model
             // Si es tipo independiente (mayor o facultad)
             if (in_array($career->type, self::INDEPENDENT_TYPES)) {
                 $career->unit_id = 0;
-            } 
+            }
             // Si es tipo dependiente (carrera o dependiente)
             elseif (in_array($career->type, self::DEPENDENT_TYPES)) {
-                if ($career->unit_id === 0 || 
+                if (
+                    $career->unit_id === 0 ||
                     !self::where('id', $career->unit_id)
-                         ->whereIn('type', self::INDEPENDENT_TYPES)
-                         ->exists()) {
+                        ->whereIn('type', self::INDEPENDENT_TYPES)
+                        ->exists()
+                ) {
                     throw new \Exception('Una carrera o dependiente debe pertenecer a una facultad o mayor válido.');
                 }
             }
@@ -100,7 +102,7 @@ class Career extends Model
     // Obtener unidades por tipo de padre
     public function scopeByParentType($query, $parentType)
     {
-        return $query->whereHas('parentUnit', function($q) use ($parentType) {
+        return $query->whereHas('parentUnit', function ($q) use ($parentType) {
             $q->where('type', $parentType);
         });
     }
@@ -111,12 +113,19 @@ class Career extends Model
         return in_array($this->type, self::INDEPENDENT_TYPES);
     }
 
-    public function academic_management():BelongsToMany{
+    public function academic_management(): BelongsToMany
+    {
         return $this->belongsToMany(AcademicManagement::class)
             ->withTimestamps();
     }
 
-    public function areas():HasMany{
+    public function areas(): HasMany
+    {
         return $this->hasMany(Areas::class);
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(Persona::class);
     }
 }

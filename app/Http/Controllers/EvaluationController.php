@@ -23,7 +23,7 @@ class EvaluationController extends Controller
         $evaluation->description = $request->description;
         $evaluation->total_score = $request->total_score;
         $evaluation->passing_score = $request->passing_score;
-        $evaluation->date_realization = $request->date_realization;
+        $evaluation->date_of_realization = $request->date_of_realization;
         $evaluation->code = Str::uuid(); // Genera un UUID automáticamente
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
@@ -46,7 +46,7 @@ class EvaluationController extends Controller
                 'description',
                 'total_score',
                 'passing_score', // Se agrega porque estaba en create()
-                'date_realization', // Se agrega porque estaba en create()
+                'date_of_realization', // Se agrega porque estaba en create()
                 'status',
                 'type',
                 'academic_management_period_id'

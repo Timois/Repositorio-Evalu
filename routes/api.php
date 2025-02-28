@@ -57,7 +57,9 @@ Route::controller(UsersController::class)->prefix('users')->group(function(){
     Route::post("/assignRole", "assignRole");  
     Route::post("/assignPermission", "assignCareer");
     Route::post("/assignDecano", "assignDecano");
-    Route::get("/listUsersRole/{roleName}", "findrols");
+    Route::get("/listDocentes", "listAsingnedDocentes");
+    Route::get("/listDecanos", "listAsingnedDecanos");
+    Route::get("/listDirectores", "listAsingnedDirectores");
 });
 
 Route::controller(AuthController::class)->prefix('auth')->group(function(){
