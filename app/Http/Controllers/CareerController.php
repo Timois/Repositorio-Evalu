@@ -17,7 +17,7 @@ class CareerController extends Controller
 
     public function find()
     {
-        $careers = Career::orderBy('id', 'ASC')->get();
+        $careers = Career::orderBy('id', 'ASC')->whereIn('type', ['carrera'])->get();;
         return response()->json($careers);
     }
 
@@ -294,4 +294,10 @@ class CareerController extends Controller
 
         return response()->json($result);
     }
+
+    public function findUnitsMayor() {
+        $units = Career::orderBy('id', 'ASC')->whereIn('type', ['mayor', 'facultad','dependiente'])->get();
+        return response()->json($units);
+    }    
+    
 }

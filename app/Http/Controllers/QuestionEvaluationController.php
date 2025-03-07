@@ -6,25 +6,29 @@ use App\Models\QuestionEvaluation;
 use App\Models\QuestionBank;
 use App\Models\Evaluation;
 use App\Http\Requests\ValidationQuestionEvaluation;
-use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\Console\Question\Question;
+use Illuminate\Support\Facades\Request;
 
 class QuestionEvaluationController extends Controller
 {
     public function CantidadPreguntas(Request $request)
     {
-        // Validación de los parámetros recibidos
+        // Validación para asegurar que al menos uno de los campos tenga valor
         $request->validate([
-            'cantidadFacil' => 'required|integer|min:0',
-            'cantidadMedia' => 'required|integer|min:0',
-            'cantidadDificil' => 'required|integer|min:0',
+            'cantidadFacil' => 'sometimes|integer|min:0',
+            'cantidadMedia' => 'sometimes|integer|min:0',
+            'cantidadDificil' => 'sometimes|integer|min:0',
         ]);
 
-        // Obtener cantidades dinámicas desde el request
-        $cantidadFacil = $request->cantidadFacil;
-        $cantidadMedia = $request->cantidadMedia;
-        $cantidadDificil = $request->cantidadDificil;
+        // Verificar que al menos uno de los parámetros esté presente
+        if (!$request->has('cantidadFacil') && !$request->has('cantidadMedia') && !$request->has('cantidadDificil')) {
+            return response()->json(['error' => 'Al menos uno de los parámetros (cantidadFacil, cantidadMedia, cantidadDificil) debe enviarse'], 422);
+        }
+
+        // Obtener cantidades desde el request (con valores predeterminados de 0)
+        $cantidadFacil = $request->input('cantidadFacil', 0);
+        $cantidadMedia = $request->input('cantidadMedia', 0);
+        $cantidadDificil = $request->input('cantidadDificil', 0);
 
         // Verificar disponibilidad de preguntas
         $disponiblesFacil = QuestionBank::where('dificulty', 'facil')->count();
@@ -55,9 +59,6 @@ class QuestionEvaluationController extends Controller
         // Combinar todas las preguntas en una colección
         $todasPreguntas = $preguntasFaciles->concat($preguntasMedias)
             ->concat($preguntasDificiles);
-
-        // Opcionalmente, puedes mezclar todas las preguntas
-        // $todasPreguntas = $todasPreguntas->shuffle();
 
         return response()->json([
             'preguntas' => $todasPreguntas,

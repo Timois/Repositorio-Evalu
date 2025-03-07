@@ -139,7 +139,7 @@ class QuestionImagesImport implements ToCollection
             // Usar el área ID del constructor (no del Excel)
             $areaId = $this->areaId;
             $imagePath = null;
-            
+
             // Obtener la carrera asociada al área
             $area = DB::table('areas')->where('id', $areaId)->first();
             if (!$area) {
@@ -159,26 +159,26 @@ class QuestionImagesImport implements ToCollection
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la unidad para la carrera con ID {$career->id}.";
                 return;
             }
-            
+
             $areaName = $area->name;
             $unitSigla = $unit->initials;  // Usar la sigla de la unidad
             $careerSigla = $career->initials; // Usar la sigla de la carrera
-
+            $questionType = 'text';
             // Procesar la imagen si existe
             if (!empty($dataRow['imagen'])) {
                 $imagesDirectory = $this->extractedPath . DIRECTORY_SEPARATOR . 'imagenes';
-                
+
                 // Calcular el hash de la imagen
                 $imageHash = hash_file('sha256', $imagesDirectory . DIRECTORY_SEPARATOR . $dataRow['imagen']);
-               
+
                 // Buscar la imagen en la carpeta
                 $originalImagePath = $this->findImageByHash($imagesDirectory, $imageHash);
-                
+
                 if (!empty($originalImagePath)) {
                     // Ruta destino usando la sigla de la carrera y el nombre del área
-                    $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR . $unitSigla . DIRECTORY_SEPARATOR .
-                        $careerSigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
-                    
+                    $destinationPath = public_path('images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR .
+                        $unitSigla . DIRECTORY_SEPARATOR . $careerSigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']));
+
                     // Crear la carpeta si no existe
                     $destinationDirectory = dirname($destinationPath);
                     if (!File::exists($destinationDirectory)) {
@@ -198,6 +198,9 @@ class QuestionImagesImport implements ToCollection
                             $imagePath = 'images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR .
                                 $unitSigla . DIRECTORY_SEPARATOR . $careerSigla . DIRECTORY_SEPARATOR . $areaName . DIRECTORY_SEPARATOR . 'questions' . DIRECTORY_SEPARATOR . basename($dataRow['imagen']);
                             $this->messages[] = "Fila " . ($index + 1) . ": Imagen copiada con éxito.";
+
+                            // Cambiar el tipo de pregunta a 'imagen'
+                            $questionType = 'imagen';
                         } else {
                             $this->messages[] = "Fila " . ($index + 1) . ": No se pudo copiar la imagen.";
                         }
@@ -206,20 +209,21 @@ class QuestionImagesImport implements ToCollection
                     $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la imagen '" . basename($dataRow['imagen']) . "'.";
                 }
             }
-            
+
             // Buscar si la pregunta ya existe
             $existingQuestion = QuestionBank::where('question', $dataRow['pregunta'])
                 ->where('area_id', $areaId)
                 ->exists();
-            
+
             if (!$existingQuestion) {
-                // Crear la pregunta
+                // Crear la pregunta con el tipo correcto
                 $question = QuestionBank::create([
                     'area_id' => $areaId,
                     'excel_import_id' => $this->excelImportId,
                     'question' => $dataRow['pregunta'],
                     'description' => $dataRow['descripcion'],
                     'difficulty' => $dataRow['dificultad'],
+                    'question_type' => $questionType, // Ahora puede ser 'text' o 'imagen'
                     'type' => $dataRow['tipo'],
                     'image' => $imagePath,
                     'status' => 'activo',

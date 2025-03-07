@@ -72,6 +72,7 @@ Route::controller(AuthController::class)->prefix('auth')->group(function(){
 Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::post("/save","create");
     Route::get("/list", "find");
+    Route::get("/listsFacultiesMayor", "findUnitsMayor");
     Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
     Route::post("/assignManagement",'assignManagement');
