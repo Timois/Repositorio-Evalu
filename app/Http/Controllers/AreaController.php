@@ -23,7 +23,7 @@ class AreaController extends Controller
      */
     public function create(ValidationAreas $request)
     {
-        $area = new Areas(); 
+        $area = new Areas();
         $area->name = $request->name;
         $area->description = $request->description;
         $area->career_id = $request->career_id;
@@ -65,5 +65,11 @@ class AreaController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function findAreasByCareer(Request $request, string $career_id)
+    {
+        $areas = Areas::where('career_id', $career_id)->get();
+        return response()->json($areas);
     }
 }

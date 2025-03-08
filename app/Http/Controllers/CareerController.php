@@ -45,7 +45,7 @@ class CareerController extends Controller
                 $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
                     $initials . DIRECTORY_SEPARATOR . 'Logo';
             }
-           
+
             // Asegurar que el directorio existe
             if (!file_exists($imageDirectory)) {
                 mkdir($imageDirectory, 0777, true);
@@ -61,7 +61,7 @@ class CareerController extends Controller
             $imageUrl = in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])
                 ? asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$imageName}")
                 : asset("images/units/{$initials}/Logo/{$imageName}");
-            
+
             // Crear la carrera
             $career = new Career();
             $career->name = strtolower($request->name);
@@ -298,6 +298,6 @@ class CareerController extends Controller
     public function findUnitsMayor() {
         $units = Career::orderBy('id', 'ASC')->whereIn('type', ['mayor', 'facultad','dependiente'])->get();
         return response()->json($units);
-    }    
-    
+    }
+
 }

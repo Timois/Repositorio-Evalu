@@ -54,7 +54,7 @@ Route::controller(UsersController::class)->prefix('users')->group(function(){
     Route::get("/find/{id}",'findById');
     Route::post("/edit/{id}", "findAndUpdate");
     Route::post("/save", "create");
-    Route::post("/assignRole", "assignRole");  
+    Route::post("/assignRole", "assignRole");
     Route::post("/assignPermission", "assignCareer");
     Route::post("/assignDecano", "assignDecano");
     Route::get("/listDocentes", "listAsingnedDocentes");
@@ -118,6 +118,7 @@ Route::controller(PeriodExtensionController::class)->prefix('period_extension')-
 Route::controller(AreaController::class)->prefix("areas")->group(function(){
     Route::post("/save", "create");
     Route::get("/list", "find");
+    Route::get("/listByCareer/{career_id}", "findAreasByCareer");
     Route::post("/edit/{id}", "findAndUpdate");
 });
 
@@ -132,7 +133,7 @@ Route::controller(ImportExcelImageController::class)->prefix('excel_import_image
     Route::post("/savezip", "saveimgezip");
     Route::get("/list", "find");
     Route::post("/edit/{id}", "findAndUpdate");
-}); 
+});
 
 Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(function(){
     Route::post("/save", "create");
@@ -169,7 +170,7 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
 Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
     Route::post("/save", "create");
     Route::get("/list", "find");
-    Route::post("/edit/{id}", "findAndUpdate"); 
+    Route::post("/edit/{id}", "findAndUpdate");
     Route::get("/find/{id}",'findById');
     Route::post("/import", "import");
 });
