@@ -120,6 +120,7 @@ Route::controller(AreaController::class)->prefix("areas")->group(function(){
     Route::get("/list", "find");
     Route::get("/listByCareer/{career_id}", "findAreasByCareer");
     Route::post("/edit/{id}", "findAndUpdate");
+    Route::get("/listQuestions/{id}", "questionsByArea");
 });
 
 Route::controller(ExcelImportController::class)->prefix('excel_import')->group(function(){

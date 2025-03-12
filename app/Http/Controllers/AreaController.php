@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ValidationAreas;
 use App\Models\Areas;
 use App\Models\Period;
+use App\Models\QuestionBank;
 use Illuminate\Http\Request;
 
 class AreaController extends Controller
@@ -37,15 +38,15 @@ class AreaController extends Controller
     public function findAndUpdate(ValidationAreas $request, string $id)
     {
         $area = Areas::find($id);
-        if(!$area)
-            return ["message:", "La area con el id:". $id . " no existe."];
+        if (!$area)
+            return ["message:", "La area con el id:" . $id . " no existe."];
         if ($request->name)
             $area->name = $request->name;
         if ($request->description)
             $area->description = $request->description;
 
-            $area->save();
-            return $area;
+        $area->save();
+        return $area;
     }
 
     /**
@@ -54,7 +55,7 @@ class AreaController extends Controller
     public function findById(Request $request, string $id)
     {
         $area = Areas::find($id);
-        if(!$area)
+        if (!$area)
             return ["message:", "La area con el id:" . $id . "no existe"];
         return response()->json($area);
     }
@@ -71,5 +72,16 @@ class AreaController extends Controller
     {
         $areas = Areas::where('career_id', $career_id)->get();
         return response()->json($areas);
+    }
+
+    public function questionsByArea(Request $request, string $area_id)
+    {
+        $questions = QuestionBank::where('area_id', $area_id)->get();
+
+        if ($questions->isEmpty()) {
+            return response()->json(['message' => 'No hay preguntas para esta área'], 404);
+        }
+
+        return response()->json($questions);
     }
 }
