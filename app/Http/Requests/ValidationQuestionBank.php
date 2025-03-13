@@ -25,15 +25,18 @@ class ValidationQuestionBank extends FormRequest
             $validationQuestion = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√\?\¿]+$/u|unique:bank_questions,question';
             $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
             $validateImage = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
-            $validateTotalWeight = 'required|numeric|min:0';
+            $validationQuestionType = 'required|in:text,imagen';
+            $validationDificulty = 'required|in:facil,medio,dificil';
             $validateType = 'required|in:multiple,una opcion';
             $validateStatus = 'required|in:activo,inactivo';
+            
             $bankQuestion = $this->route("id");
             if ($bankQuestion) {
                 $validationQuestion = 'required|string|max:255|regex:/^[\pL\s,\-.\d\(\)\[\]\+\*\/=\^_°√\?\¿]+$/u|unique:bank_questions,question,' . $bankQuestion;
                 $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
                 $validateImage = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
-                $validateTotalWeight = 'required|numeric|min:0';
+                $validationQuestionType = 'required|in:text,imagen';
+                $validationDificulty = 'required|in:facil,medio,dificil';
                 $validateType = 'required|in:multiple,una opcion';
                 $validateStatus = 'required|in:activo,inactivo';
             }
@@ -41,9 +44,12 @@ class ValidationQuestionBank extends FormRequest
                 'question' => $validationQuestion,
                 'description' => $validationDescription,            
                 'image' => $validateImage,
-                'total_weight' => $validateTotalWeight,
+                'question_type' => $validationQuestionType,
+                'dificulty' => $validationDificulty,
                 'type' => $validateType,
-                'status' => $validateStatus
+                'status' => $validateStatus,
+                'excel_import_id' => 'nullable|integer', // Cambia string a integer
+                'area_id' => 'required|exists:areas,id',  // Valida que el área exista
             ];
         }
         protected function prepareForValidation()
@@ -70,13 +76,16 @@ class ValidationQuestionBank extends FormRequest
                 'image.image' => 'El archivo subido debe ser una imagen válida.',
                 'image.mimes' => 'La imagen debe estar en uno de los siguientes formatos: jpeg, png, jpg, webp, svg.',
                 'image.max' => 'La imagen no debe superar los 2 MB.',
-                'total_weight.required' => 'La nota total es obligatorio.',
-                'total_weight.numeric' => 'La nota total debe ser un valor numérico.',
-                'total_weight.min' => 'La nota total debe ser mayor o igual a 0.',
+                'question_type.required' => 'El tipo de pregunta es obligatorio.',
+                'question_type.in' => 'El tipo de pregunta debe ser "text" o "imagen".',
+                'dificulty.required' => 'La dificultad es obligatoria.',
+                'dificulty.in' => 'La dificultad debe ser "facil", "medio" o "dificil".',
                 'type.required' => 'El tipo es obligatorio.',
                 'type.in' => 'El tipo debe ser "multiple" o "una opcion".',
                 'status.required' => 'El estado es obligatorio.',            
                 'status.in' => 'El estado debe ser "activo" o "inactivo".',
+                'area_id.required' => 'El área es obligatorio.',
+                'area_id.exists' => 'El área no existe.',
             ];
         }
 }

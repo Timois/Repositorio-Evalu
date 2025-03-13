@@ -52,8 +52,8 @@ class ExcelImportController extends Controller
 
             // Continue with import logic
             $excelName = time() . '.' . $excel->getClientOriginalName();
-            $name_path = public_path('private'. DIRECTORY_SEPARATOR .'exams'. DIRECTORY_SEPARATOR . $excelName);
-            
+            $name_path = public_path('private' . DIRECTORY_SEPARATOR . 'exams' . DIRECTORY_SEPARATOR . $excelName);
+
             $importExcel = new ExcelImports();
             $importExcel->file_name = $excelName;
             $importExcel->size = $fileSize;
@@ -62,7 +62,7 @@ class ExcelImportController extends Controller
             $importExcel->save();
 
             // Move the file
-            $path = $excel->move(public_path('private'. DIRECTORY_SEPARATOR .'exams'), $excelName);
+            $path = $excel->move(public_path('private' . DIRECTORY_SEPARATOR . 'exams'), $excelName);
 
             // Perform actual import
             $import = new QuestionBanKImport($importExcel->id, $area_id);

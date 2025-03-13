@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationQuestionBank;
 use App\Models\QuestionBank;
-use Illuminate\Http\Request;
-use App\Http\Requests\ValidationsQuestionBank;
-use App\Models\Career;
-use PhpOffice\PhpSpreadsheet\Worksheet\Validations;
+use App\Models\ExcelImports;
 
 class QuestionBankController extends Controller
 {
@@ -30,20 +27,45 @@ class QuestionBankController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $imagePath = public_path('images'. DIRECTORY_SEPARATOR .'units' . DIRECTORY_SEPARATOR . $request->area_id . DIRECTORY_SEPARATOR . 'Questions' . DIRECTORY_SEPARATOR . $imageName);
+            $imagePath = public_path('images' . DIRECTORY_SEPARATOR . 'units' . DIRECTORY_SEPARATOR . $request->area_id . DIRECTORY_SEPARATOR . 'Questions' . DIRECTORY_SEPARATOR . $imageName);
+        }
+
+        // Obtener el ID de importación manual o el proporcionado
+        $excelImportId = $request->excel_import_id;
+        if (!$excelImportId) {
+            // Obtener o crear el registro para importaciones manuales
+            $excelImportId = $this->setupManualImport();
         }
 
         $question = new QuestionBank();
         $question->question = $request->question;
         $question->description = $request->description;
-        $question->questtion_type = $request->question_type;
+        $question->question_type = $request->question_type;
         $question->image = $imagePath;
         $question->type = $request->type;
         $question->status = $request->status;
         $question->area_id = $request->area_id;
-        $question->excel_import_id = $request->excel_import_id;
+        $question->excel_import_id = $excelImportId;
         $question->save();
         return $question;
+    }
+
+    private function setupManualImport()
+    {
+        // Verifica si ya existe un registro manual
+        $manualImport = ExcelImports::where('file_name', 'manual_creation')->first();
+        
+        if (!$manualImport) {
+            // Crear el registro especial para creaciones manuales
+            $manualImport = new ExcelImports();
+            $manualImport->file_name = 'manual_creation';
+            $manualImport->size = 0;
+            $manualImport->status = 'completado';
+            $manualImport->file_path = 'none'; // No hay archivo asociado
+            $manualImport->save();
+        }
+        
+        return $manualImport->id;
     }
 
     /**
@@ -131,6 +153,5 @@ class QuestionBankController extends Controller
         ];
 
         return response()->json($question);
-        
     }
 }
