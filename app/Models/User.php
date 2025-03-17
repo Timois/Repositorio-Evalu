@@ -1,13 +1,11 @@
 <?php
 
 namespace App\Models;
-
-
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Model implements JWTSubject
+class User extends Authenticatable implements JWTSubject
 {
    
     protected $table = 'users';

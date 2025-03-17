@@ -20,14 +20,14 @@ class UsersController extends Controller
 
     public function findById($id)
     {
-        $user = Persona::findOrFail($id);
+        $user = User::findOrFail($id);
         return response()->json($user);
     }
 
     public function findrols($roleName)
     {
         // Buscar usuarios con el tipo de rol especificado
-        $users = Persona::where('role', $roleName)->get();
+        $users = User::where('role', $roleName)->get();
 
         return response()->json($users);
     }
@@ -42,7 +42,7 @@ class UsersController extends Controller
             'role' => 'required|in:admin,docente,director,decano',
         ]);
 
-        $user = Persona::findOrFail($id);
+        $user = User::findOrFail($id);
         $user->name = $request->name;
         // $user->ci = $request->ci;
         $user->email = $request->email;
@@ -60,7 +60,7 @@ class UsersController extends Controller
             'role' => 'required|in:admin,docente,director,decano',
         ]);
 
-        $user = Persona::findOrFail($request->user_id);
+        $user = User::findOrFail($request->user_id);
         $user->role = $request->role;
         $user->save();
 
@@ -71,15 +71,15 @@ class UsersController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
             'role' => 'required|in:admin,docente,director,decano',
 
         ]);
 
-        $user = Persona::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password,
+            'password' => bcrypt($request->password),
             'role' => $request->role,
             'career_id' => null,
         ]);
@@ -96,7 +96,7 @@ class UsersController extends Controller
         ]);
 
         // Obtener el usuario
-        $user = Persona::findOrFail($request->user_id);
+        $user = User::findOrFail($request->user_id);
         
         // Verificar que el usuario tenga el rol de docente o director
         if (!in_array($user->role, ['docente', 'director'])) {
@@ -121,7 +121,7 @@ class UsersController extends Controller
     public function listAsingnedDocentes()
     {
         // Obtener todos los docentes
-        $docentes = Persona::where('role', 'docente')->with('carrera')->get();
+        $docentes = User::where('role', 'docente')->with('carrera')->get();
     
         return response()->json($docentes);
     }
@@ -130,7 +130,7 @@ class UsersController extends Controller
     public function listAsingnedDirectores(){
         
         // Obtener el usuario
-        $director = Persona::where('role', 'director')->with('carrera')->get();
+        $director = User::where('role', 'director')->with('carrera')->get();
         return response()->json($director);
     }
 
@@ -142,7 +142,7 @@ class UsersController extends Controller
         ]);
 
         // Obtener el usuario
-        $user = Persona::findOrFail($request->user_id);
+        $user = User::findOrFail($request->user_id);
 
         // Verificar que el usuario tenga el rol de decano
         if ($user->role !== 'decano') {
@@ -166,7 +166,7 @@ class UsersController extends Controller
     public function listAsingnedDecanos() {
 
         // Obtener el usuario
-        $decano = Persona::where('role', 'decano')->with('carrera')->get();
+        $decano = User::where('role', 'decano')->with('carrera')->get();
 
         return response()->json($decano);
     }

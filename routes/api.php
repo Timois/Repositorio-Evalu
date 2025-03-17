@@ -44,7 +44,7 @@ use Symfony\Component\Console\Question\Question;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::controller(UserController::class)->prefix('user')->group(function(){
+Route::controller(UsersController::class)->prefix('user')->group(function(){
     Route::post("/save","saveuser");
     Route::get("/list", "create");
     Route::post("/edit/{id}", "findAndUpdate");
@@ -68,11 +68,12 @@ Route::controller(AuthUserController::class)->prefix('users')->group(function(){
     Route::post("/login", "login");
     Route::post("/logout", "logout");
     Route::get("/profile", "me");
+    Route::post("/refresh", "refresh");
 });
 
-Route::controller(AuthStudentController::class)->prefix('auth')->group(function(){
-    Route::post("/login", "login");
-    Route::post("/logout", "logout");
+Route::controller(AuthStudentController::class)->prefix('students')->group(function(){
+    Route::post("/login", "loginStudent");
+    Route::post("/logout", "logoutStudent");
     Route::post("/refresh", "refresh");
     Route::get("/profile", "me");
 });

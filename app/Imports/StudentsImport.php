@@ -9,17 +9,14 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 
 class StudentsImport implements ToCollection, WithHeadingRow
 {
-    protected $requiredColumns = ['ci', 'nombre', 'apellido_paterno', 'apellido_materno', 'fecha_de_nacimiento', 'telefono'];
+    protected $requiredColumns = ['ci', 'nombre', 'apellido paterno', 'apellido materno', 'fecha de nacimiento', 'telefono'];
     protected $results = [];
     
     public function collection(Collection $rows)
     {   
-        dd($this->requiredColumns, $rows);
         // Validar cabeceras
         $headers = $rows->first()->keys()->toArray();
         
