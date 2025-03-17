@@ -2,59 +2,36 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Model implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $table = 'students';
-
+   
+    protected $table = 'users';
     protected $fillable = [
-        'ci',
-        'birthdate',
+        'name',
+        'email',    
         'password',
-        'status'
+        'role',
+        'career_id', // Asegúrate de incluir este campo si lo vas a asignar
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Los atributos que deben estar ocultos para la serialización.
      *
-     * @var array<int, string>
+     * @var array
      */
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', // Oculta la contraseña al serializar el modelo
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
-
-    public function generarPassword()
+    public function carrera(): BelongsTo
     {
-        // Eliminar cualquier carácter que no sea un número (maneja d/m/Y y d-m-Y)
-        $fechaNumerica = preg_replace('/\D/', '', $this->birthdate);
-        // Concatenar con la cédula de identidad
-        return $this->ci . $fechaNumerica;
+        return $this->belongsTo(Career::class);
     }
-
 
     // Métodos requeridos por JWT
     public function getJWTIdentifier()

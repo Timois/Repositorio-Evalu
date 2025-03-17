@@ -19,6 +19,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
     
     public function collection(Collection $rows)
     {   
+        dd($this->requiredColumns, $rows);
         // Validar cabeceras
         $headers = $rows->first()->keys()->toArray();
         

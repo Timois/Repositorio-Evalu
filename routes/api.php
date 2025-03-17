@@ -5,6 +5,8 @@ use App\Http\Controllers\AcademicManagementPeriodController;
 use App\Http\Controllers\AnswerBankController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthStudentController;
+use App\Http\Controllers\AuthUserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -62,7 +64,13 @@ Route::controller(UsersController::class)->prefix('users')->group(function(){
     Route::get("/listDirectores", "listAsingnedDirectores");
 });
 
-Route::controller(AuthController::class)->prefix('auth')->group(function(){
+Route::controller(AuthUserController::class)->prefix('users')->group(function(){
+    Route::post("/login", "login");
+    Route::post("/logout", "logout");
+    Route::get("/profile", "me");
+});
+
+Route::controller(AuthStudentController::class)->prefix('auth')->group(function(){
     Route::post("/login", "login");
     Route::post("/logout", "logout");
     Route::post("/refresh", "refresh");
