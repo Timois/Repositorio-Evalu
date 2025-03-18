@@ -22,6 +22,7 @@ class QuestionBankController extends Controller
      */
     public function create(ValidationQuestionBank $request)
     {
+        
         // Manejar la imagen si está presente
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -36,7 +37,7 @@ class QuestionBankController extends Controller
             // Obtener o crear el registro para importaciones manuales
             $excelImportId = $this->setupManualImport();
         }
-
+        
         $question = new QuestionBank();
         $question->question = $request->question;
         $question->description = $request->description;
@@ -47,6 +48,7 @@ class QuestionBankController extends Controller
         $question->area_id = $request->area_id;
         $question->excel_import_id = $excelImportId;
         $question->save();
+        
         return $question;
     }
 
