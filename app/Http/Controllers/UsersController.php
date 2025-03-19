@@ -38,15 +38,15 @@ class UsersController extends Controller
             'name' => 'required|string',
             // 'ci' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string',
-            'role' => 'required|in:admin,docente,director,decano',
+            'password' => 'required|string|confirmed',
+            'role' => 'in:admin,docente,director,decano',
         ]);
 
         $user = User::findOrFail($id);
         $user->name = $request->name;
         // $user->ci = $request->ci;
         $user->email = $request->email;
-        $user->password = $request->password;
+        $user->password = bcrypt($request->password);
         $user->role = $request->role;
         $user->save();
 
@@ -72,7 +72,7 @@ class UsersController extends Controller
             'name' => 'required|string',
             'email' => 'required|email',
             'password' => 'required|string|min:6|confirmed',
-            'role' => 'required|in:admin,docente,director,decano',
+            'role' => 'in:admin,docente,director,decano',
 
         ]);
 
