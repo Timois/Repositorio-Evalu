@@ -126,6 +126,6 @@ class Career extends Model
 
     public function users(): HasMany
     {
-        return $this->hasMany(Persona::class);
+        return $this->hasMany(User::class);
     }
 }

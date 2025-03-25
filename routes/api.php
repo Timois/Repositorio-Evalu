@@ -20,11 +20,14 @@ use App\Http\Controllers\ImportStudentController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
+use App\Http\Controllers\PermisionController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionEvaluationController;
 use App\Http\Controllers\ResponsibleController;
+use App\Http\Controllers\RolController;
 use App\Http\Controllers\StudentsImportController;
 use App\Http\Controllers\UsersController;
+use App\Models\Permision;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Row;
@@ -40,10 +43,23 @@ use Symfony\Component\Console\Question\Question;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::controller(PermisionController::class)->prefix('permisions')->group(function(){
+    Route::get("/list", "index");
+    Route::get("/find/{id}",'findById');
+    Route::post("/save", "create");
+    Route::post("/edit/{id}", "findAndUpdate");
+    Route::post("/delete/{id}", "remove");
 });
+
+Route::controller(RolController::class)->prefix('roles')->group(function(){
+    Route::get("/list", "index");
+    Route::get("/find/{id}",'findById');
+    Route::post("/save", "create");
+    Route::post("/edit/{id}", "update");
+    Route::post("/delete/{id}", "remove");
+    Route::post("/removePermision", "removePermision");
+});
+
 Route::controller(UsersController::class)->prefix('user')->group(function(){
     Route::post("/save","saveuser");
     Route::get("/list", "create");
@@ -184,4 +200,5 @@ Route::controller(ImportStudentController::class)->prefix('students')->group(fun
     Route::get("/find/{id}",'findById');
     Route::post("/import", "import");
 });
+
 
