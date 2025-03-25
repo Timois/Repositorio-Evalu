@@ -60,24 +60,13 @@ Route::controller(RolController::class)->prefix('roles')->group(function(){
     Route::post("/removePermision", "removePermision");
 });
 
-Route::controller(UsersController::class)->prefix('user')->group(function(){
-    Route::post("/save","saveuser");
-    Route::get("/list", "create");
-    Route::post("/edit/{id}", "findAndUpdate");
-    Route::get("/find/{id}",'findById');
-});
-
 Route::controller(UsersController::class)->prefix('users')->group(function(){
     Route::get("/list", "index");
     Route::get("/find/{id}",'findById');
     Route::post("/edit/{id}", "findAndUpdate");
     Route::post("/save", "create");
-    Route::post("/assignRole", "assignRole");
     Route::post("/assignPermission", "assignCareer");
-    Route::post("/assignDecano", "assignDecano");
-    Route::get("/listDocentes", "listAsingnedDocentes");
-    Route::get("/listDecanos", "listAsingnedDecanos");
-    Route::get("/listDirectores", "listAsingnedDirectores");
+    Route::post("/deactivate", "deactivate");
 });
 
 Route::controller(AuthUserController::class)->prefix('users')->group(function(){

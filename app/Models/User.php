@@ -19,6 +19,8 @@ class User extends Authenticatable implements JWTSubject
         'career_id', // Asegúrate de incluir este campo si lo vas a asignar
     ];
 
+    public $guard_name = 'persona';
+
     /**
      * Los atributos que deben estar ocultos para la serialización.
      *

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['admin', 'docente', 'director', 'decano'])->default('docente')->nullable();
+            $table->enum('status', ['activo', 'inactivo'])->default('activo');
             $table->foreignId('career_id')->nullable()->constrained('careers')->onDelete('cascade'); // Relación 1:1 con carreras
             $table->rememberToken()->nullable();
             $table->timestamps();

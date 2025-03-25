@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ValidationRoles;
 use App\Models\Role;
 use Illuminate\Http\Request;
 
@@ -16,31 +17,25 @@ class RolController extends Controller
 
     public function create(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:20',
-            'permissions' => 'required|array',
-        ]);
         $role = new Role();
-        $role->name = $validated['name'];
-        $role->guard_name = $validated['name'];
+        $role->name = strtoupper($request->name);
+        $role->guard_name = 'persona';
         $role->save();
-        $role->syncPermissions($validated['permissions']);
+        $role->syncPermissions($request->permissions);
         return $role;
     }
 
 
-    public function update(Request $request, $id)
+
+    public function update(ValidationRoles $request, string $id)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:20',
-            'permissions' => 'required|array',
-        ]);
-
         $role = Role::find($id);
-
-        $role->name = $validated['name'];
-        $role->save();
-        $role->syncPermissions($validated['permissions']);
+        if ($role) {
+            $role->name = strtoupper($request->name);
+            $role->guard_name = 'persona';
+            $role->save();
+            $role->syncPermissions($request->permissions);
+        }
         return $role;
     }
 

@@ -23,8 +23,8 @@ class PermisionController extends Controller
             'name' => 'required|string|max:50',
         ]);
         $permision = new Permision();
-        $permision->name = $validate['name'];
-        $permision->guard_name = $validate['name'];
+        $permision->name = strtolower($validate['name']);
+        $permision->guard_name = 'persona';
         $permision->save();
         return $permision;
     }
@@ -37,8 +37,8 @@ class PermisionController extends Controller
         $permision = Permision::find($id);
         if (!$permision)
             return ["message:", "El permiso con el id:" . $id . " no existe."];
-        $permision->name = $validate['name'];
-        $permision->guard_name = 'api';
+        $permision->name = strtolower($validate['name']);
+        $permision->guard_name = 'persona';
         $permision->save();
         return $permision;
     }
