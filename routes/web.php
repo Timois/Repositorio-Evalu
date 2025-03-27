@@ -17,11 +17,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post("/unit", [UnitController::class, 'create']);
-Route::get("/unit", [UnitController::class, 'showAll']);
-Route::get("/unit/{id}", [UnitController::class, 'findById']);
-Route::put("/unit/{id}", [UnitController::class, 'update']);
-Route::delete("/unit/{id}", [UnitController::class, 'remove']);
 
 
 

@@ -7,19 +7,50 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 class UserSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run()
     {
-        DB::table('users')->insert([
-            'name' => Str::random(10),
-            'email' => Str::random(10).'@example.com',
-            'password' => Hash::make('password'),
+        // Lista de usuarios
+        $users = [
+            [
+                'name' => 'Administrador',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('password123'),
+                'role' => 'admin'
+            ],
+            [
+                'name' => 'Super Administrador',
+                'email' => 'superadmin@example.com',
+                'password' => Hash::make('password123'),
+                'role' => 'super-admin'
+            ],
+            [
+                'name' => 'Docente chapatin',
+                'email' => 'usuario@example.com',
+                'password' => Hash::make('password123'),
+                'role' => ['docente', 'admin']
+            ]
+        ];
 
-        ]);
+        foreach ($users as $userData) {
+            $user = User::firstOrCreate(
+                ['email' => $userData['email']],
+                [
+                    'name' => $userData['name'],
+                    'password' => $userData['password']
+                ]
+            );
+
+            // Asignar rol al usuario
+            $user->assignRole($userData['role']);
+        }
+
+        $this->command->info('✅ Usuarios creados correctamente.');
     }
     
 }

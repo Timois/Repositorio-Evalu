@@ -25,7 +25,7 @@ class AuthUserController extends Controller
         }
 
         $credentials = $request->only('email', 'password');
-        
+
         try {
             if (!$token = Auth::guard('persona')->attempt($credentials)) {
                 return response()->json(['error' => 'Credenciales incorrectas'], 401);
@@ -47,7 +47,18 @@ class AuthUserController extends Controller
             return response()->json(['error' => 'Token inválido o sesión cerrada'], 401);
         }
 
-        return response()->json($user);
+        // Cargar roles y sus permisos
+        $user->load('roles.permissions');
+
+        // Extraer los permisos de los roles
+        $permissions = $user->roles->flatMap(function ($role) {
+            return $role->permissions->pluck('name');
+        })->unique()->values();
+
+        return response()->json([
+            'user' => $user,
+            'permissions' => $permissions
+        ]);
     }
 
     public function logout()

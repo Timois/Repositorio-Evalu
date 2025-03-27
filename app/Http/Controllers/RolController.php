@@ -18,7 +18,7 @@ class RolController extends Controller
     public function create(Request $request)
     {
         $role = new Role();
-        $role->name = strtoupper($request->name);
+        $role->name = strtolower($request->name);
         $role->guard_name = 'persona';
         $role->save();
         $role->syncPermissions($request->permissions);
@@ -31,7 +31,7 @@ class RolController extends Controller
     {
         $role = Role::find($id);
         if ($role) {
-            $role->name = strtoupper($request->name);
+            $role->name = strtolower($request->name);
             $role->guard_name = 'persona';
             $role->save();
             $role->syncPermissions($request->permissions);

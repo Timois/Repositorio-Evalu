@@ -43,6 +43,30 @@ use Symfony\Component\Console\Question\Question;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+Route::controller(AuthUserController::class)->prefix('users')->group(function(){
+    Route::post("/login", "login");
+    Route::post("/logout", "logout");
+    Route::get("/profile", "me");
+    Route::post("/refresh", "refresh");
+});
+
+Route::controller(AuthStudentController::class)->prefix('students')->group(function(){
+    Route::post("/login", "loginStudent");
+    Route::post("/logout", "logoutStudent");
+    Route::post("/refresh", "refresh");
+    Route::get("/profile", "me");
+});
+Route::group(['middleware' => ['auth:persona','role:admin']], function () { 
+    Route::controller(UsersController::class)->prefix('users')->group(function(){
+        Route::get("/list", "index")->middleware('permision:ver-usuarios');
+        Route::get("/find/{id}",'findById')->middleware('permision:ver--porId');
+        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-usuarios');
+        Route::post("/save", "create")->middleware('permision:crear-usuarios');
+        Route::post("/assignPermission", "assignCareer")->middleware('permission:asignar-carrera');
+        Route::post("/deactivate", "deactivate")->middleware('permision:desactivar-usuarios');
+    });
+ });
+ 
 Route::controller(PermisionController::class)->prefix('permisions')->group(function(){
     Route::get("/list", "index");
     Route::get("/find/{id}",'findById');
@@ -59,30 +83,6 @@ Route::controller(RolController::class)->prefix('roles')->group(function(){
     Route::post("/delete/{id}", "remove");
     Route::post("/removePermision", "removePermision");
 });
-
-Route::controller(UsersController::class)->prefix('users')->group(function(){
-    Route::get("/list", "index");
-    Route::get("/find/{id}",'findById');
-    Route::post("/edit/{id}", "findAndUpdate");
-    Route::post("/save", "create");
-    Route::post("/assignPermission", "assignCareer");
-    Route::post("/deactivate", "deactivate");
-});
-
-Route::controller(AuthUserController::class)->prefix('users')->group(function(){
-    Route::post("/login", "login");
-    Route::post("/logout", "logout");
-    Route::get("/profile", "me");
-    Route::post("/refresh", "refresh");
-});
-
-Route::controller(AuthStudentController::class)->prefix('students')->group(function(){
-    Route::post("/login", "loginStudent");
-    Route::post("/logout", "logoutStudent");
-    Route::post("/refresh", "refresh");
-    Route::get("/profile", "me");
-});
-
 Route::controller(CareerController::class)->prefix('career')->group(function(){
     Route::post("/save","create");
     Route::get("/list", "find");
