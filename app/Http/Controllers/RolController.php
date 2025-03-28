@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationRoles;
 use App\Models\Role;
+use GuzzleHttp\Psr7\Message;
 use Illuminate\Http\Request;
 
 class RolController extends Controller
@@ -17,10 +18,14 @@ class RolController extends Controller
 
     public function create(Request $request)
     {
-        $role = new Role();
-        $role->name = strtolower($request->name);
-        $role->guard_name = 'persona';
-        $role->save();
+        $validate = $request->validate([
+            'name' => 'required',
+        ]);
+
+        $role = Role::create([
+            'name' => strtolower($request->name),
+            'guard_name' => 'persona',
+        ]);
         $role->syncPermissions($request->permissions);
         return $role;
     }
@@ -42,8 +47,11 @@ class RolController extends Controller
     public function remove($id)
     {
         $role = Role::find($id);
+        if (!$role) {
+            return response()->json(['message' => 'Rol no encontrado'], 404);
+        }
         $role->delete();
-        return $role;
+        return response()->json(['message' => 'Rol eliminado exitosamente']);
     }
 
     public function removePermission($role_id, $permission_id)
