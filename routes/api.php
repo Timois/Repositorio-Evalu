@@ -72,7 +72,7 @@ Route::group(['middleware' => ['auth:persona','role:admin']], function () {
         Route::get("/find/{id}",'findById');
         Route::post("/edit/{id}", "findAndUpdate");
         Route::post("/save", "create");
-        Route::post("/assignPermission", "assignCareer");   
+        Route::post("/assignCareer", "assignCareer");   
         Route::post("/deactivate", "deactivate");
     });
     Route::controller(PermisionController::class)->prefix('permissions')->group(function(){
@@ -92,17 +92,17 @@ Route::group(['middleware' => ['auth:persona','role:admin']], function () {
         Route::post("/removePermision", "removePermision");
     });
     Route::controller(CareerController::class)->prefix('career')->group(function(){
-        Route::post("/save","create")->middleware('permision:crear-carreras');
-        Route::get("/list", "find")->middleware('permision:ver-carreras');
-        Route::get("/listsFacultiesMayor", "findUnitsMayor")->middleware('permision:ver-unidades');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-carreras');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-carreras-porId');
-        Route::post("/assignManagement",'assignManagement')->middleware('permision:asignar-gestiones');
-        Route::get("/findAsign", 'findAssignManagement')->middleware('permision:ver-gestiones-asignadas');
-        Route::get("/findByAssignId/{id}", 'findByIdAssign')->middleware('permision:ver-carreras-asignadas-porId');
-        Route::post("/saveAssign", 'createAssign')->middleware('permision:asignar-carreras-a-gestion');
-        Route::post("/editAssign/{id}", 'findAndUpdateAssign')->middleware('permision:editar-carreras-asignadas');
-        Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign')->middleware('permision:ver-periodos-asignados');
+        Route::post("/save","create");
+        Route::get("/list", "find");
+        Route::get("/listsFacultiesMayor", "findUnitsMayor");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/assignManagement",'assignManagement');
+        Route::get("/findAsign", 'findAssignManagement');
+        Route::get("/findByAssignId/{id}", 'findByIdAssign');
+        Route::post("/saveAssign", 'createAssign');
+        Route::post("/editAssign/{id}", 'findAndUpdateAssign');
+        Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign');
     });
     
     Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
