@@ -91,7 +91,7 @@ Route::group(['middleware' => ['auth:persona','role:admin']], function () {
         Route::post("/delete/{id}", "remove");
         Route::post("/removePermision", "removePermision");
     });
-    Route::controller(CareerController::class)->prefix('career')->group(function(){
+    Route::controller(CareerController::class)->prefix('careers')->group(function(){
         Route::post("/save","create");
         Route::get("/list", "find");
         Route::get("/listsFacultiesMayor", "findUnitsMayor");
@@ -106,87 +106,87 @@ Route::group(['middleware' => ['auth:persona','role:admin']], function () {
     });
     
     Route::controller(AcademicManagementController::class)->prefix('management')->group(function(){
-        Route::post("/save","create")->middleware('permision:crear-gestiones');
-        Route::get("/list", "find")->middleware('permision:ver-gestiones');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-gestiones');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-gestiones-porId');
+        Route::post("/save","create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
     });
     
     
     Route::controller(PeriodController::class)->prefix('periods')->group(function(){
-        Route::post("/save","create")->middleware('permision:crear-periodos');
-        Route::get("/list", "find")->middleware('permision:ver-periodos');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-periodos');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-periodos-porId');
+        Route::post("/save","create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
     });
     Route::controller(AcademicManagementPeriodController::class)->prefix('academic_management_period')->group(function(){
-        Route::post("/save","create")->middleware('permision:crear-periodos-asignados-gestiones');
-        Route::get("/list", "find")->middleware('permision:ver-periodos-asignados');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-periodos-asignados');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-periodos-asignados-porId');
-        Route::get("/findByIdCareer{id}", "findByIdCareer")->middleware('permision:ver-periodos-asignados-por-carrera');
+        Route::post("/save","create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::get("/findByIdCareer{id}", "findByIdCareer");
     });
     
     
     Route::controller(AreaController::class)->prefix("areas")->group(function(){
-        Route::post("/save", "create")->middleware('permision:crear-areas');
-        Route::get("/list", "find")->middleware('permision:ver-areas');
-        Route::get("/listByCareer/{career_id}", "findAreasByCareer")->middleware('permision:ver-areas-por-carrera');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-areas');
-        Route::get("/listQuestions/{id}", "questionsByArea")->middleware('permision:ver-preguntas-por-area');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::get("/listByCareer/{career_id}", "findAreasByCareer");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/listQuestions/{id}", "questionsByArea");
     });
     
     Route::controller(ExcelImportController::class)->prefix('excel_import')->group(function(){
-        Route::post("/save", "create")->middleware('permision:importar-excel');
-        Route::get("/list", "find")->middleware('permision:ver-importaciones');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-importaciones');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
     });
     
     Route::controller(ImportExcelImageController::class)->prefix('excel_import_image')->group(function(){
-        Route::post("/save", "create")->middleware('permision:importar-excel-con-imagenes');
-        Route::post("/savezip", "saveimgezip")->middleware('permision:guardar-excel-con-imagenes');
-        Route::get("/list", "find")->middleware('permision:ver-importaciones-con-imagenes');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-importaciones-con-imagenes');
+        Route::post("/save", "create");
+        Route::post("/savezip", "saveimgezip");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
     });
     
     Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(function(){
-        Route::post("/save", "create")->middleware('permision:crear-respuestas');
-        Route::get("/list", "find")->middleware('permision:ver-respuestas');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-respuestas');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-respuestas-porId');
-        Route::post("/unsubscribe", "remove")->middleware('permision:eliminar-respuestas');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/unsubscribe", "remove");
     });
     
     Route::controller(QuestionBankController::class)->prefix('bank_questions')->group(function(){
-        Route::post("/save", "create")->middleware('permision:crear-preguntas');
-        Route::get("/list", "find")->middleware('permision:ver-preguntas');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-preguntas');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-preguntas-porId');
-        Route::post("/unsubscribe", "remove")->middleware('permision:dar-baja-preguntas');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/unsubscribe", "remove");
     });
     
     Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
-        Route::post("/save", "create")->middleware('permision:crear-evaluaciones');
-        Route::get("/list", "find")->middleware('permision:ver-evaluaciones');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-evaluaciones');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-evaluaciones-porId');
-        Route::get("/listAssignedQuestions", "ListAssignedQuestions")->middleware('permision:ver-preguntas-asignadas');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::get("/listAssignedQuestions", "ListAssignedQuestions");
     });
     
     Route::controller(QuestionEvaluationController::class)->prefix('question_evaluation')->group(function(){
         Route::post("/save", "create")->middleware('permision:crear-preguntas-evaluaciones');
-        Route::post("asignQuestion", "assignRandomQuestion")->middleware('permision:asignar-preguntas-evaluaciones');
-        Route::get("listAssignedQuestions", "listAssignedQuestions")->middleware('permision:ver-preguntas-asignadas');
-        Route::post("assignScores", "assignScores")->middleware('permision:asignar-puntajes-evaluaciones');
-        Route::get("listAssignedScores", "listAssignedScores")->middleware('permision:ver-puntajes-asignados');
+        Route::post("asignQuestion", "assignRandomQuestion");
+        Route::get("listAssignedQuestions", "listAssignedQuestions");
+        Route::post("assignScores", "assignScores");
+        Route::get("listAssignedScores", "listAssignedScores");
     });
     
     Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
-        Route::post("/save", "create")->middleware('permision:importar-postulantes');
-        Route::get("/list", "find")->middleware('permision:ver-importaciones-de-postulantes');
-        Route::post("/edit/{id}", "findAndUpdate")->middleware('permision:editar-importaciones-de-postulantes');
-        Route::get("/find/{id}",'findById')->middleware('permision:buscar-importaciones-de-postulantes-porId');
-        Route::post("/import", "import")->middleware('permision:importar-postulantes');
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/import", "import");
     });
     
  });
