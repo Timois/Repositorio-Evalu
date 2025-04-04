@@ -67,6 +67,28 @@ class AuthUserController extends Controller
         return response()->json(['message' => 'Sesión cerrada correctamente']);
     }
 
+    public function generateToken(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
+
+        if (!$token = Auth::guard('persona')->attempt($credentials)) {
+            return response()->json(['error' => 'Credenciales incorrectas'], 401);
+        }
+
+        $user = Auth::guard('persona')->user();
+
+        $customClaims = [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'role' => $user->role,
+        ];
+        
+        $tokenWithClaims = Auth::guard('persona')->claims($customClaims)->attempt($credentials);
+
+        return $this->respondWithToken($tokenWithClaims);
+    }
+
     public function refresh()
     {
         return $this->respondWithToken(Auth::guard('persona')->refresh());
