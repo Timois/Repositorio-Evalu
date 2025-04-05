@@ -30,39 +30,51 @@ class UsersController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => 'nullable|string|min:6',
             'role' => 'required|array|min:1',
             'career_id' => 'nullable|exists:careers,id',
         ]);
 
+        $roles = $request->role;
+        $careerId = $request->career_id;
+
+        // Validar que roles especiales no tengan carrera
+        if ($careerId && collect($roles)->intersect(['admin', 'super-admin', 'decano'])->isNotEmpty()) {
+            return response()->json([
+                'errors' => [
+                    'career_id' => ['Los usuarios con rol de admin, super-admin o decano no deben tener una carrera asignada.']
+                ]
+            ], 422);
+        }
+
         $user = User::findOrFail($id);
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->password = bcrypt($request->password);
+
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->password);
+        }
+
         $user->save();
 
-        $user->syncRoles($request->role);
+        $user->syncRoles($roles);
 
-        if ($request->filled('career_id')) {
-            if ($user->hasAnyRole(['docente', 'director'])) {
-                $career = Career::findOrFail($request->career_id);
-                if ($career->type === 'carrera') {
-                    $user->career_id = $career->id;
-                    $user->save();
-                } else {
-                    return response()->json([
-                        'errors' => [
-                            'career_id' => ['Solo se pueden asignar carreras de tipo "carrera"']
-                        ]
-                    ], 422);
-                }
+        // Si se asignó carrera, verificar tipo
+        if ($careerId) {
+            $career = Career::findOrFail($careerId);
+            if ($career->type === 'carrera') {
+                $user->career_id = $career->id;
+                $user->save();
             } else {
                 return response()->json([
                     'errors' => [
-                        'user_id' => ['Solo los usuarios con rol de docente o director pueden ser asignados a una carrera']
+                        'career_id' => ['Solo se pueden asignar carreras de tipo "carrera".']
                     ]
                 ], 422);
             }
+        } else {
+            $user->career_id = null;
+            $user->save();
         }
 
         return response()->json([
@@ -71,6 +83,7 @@ class UsersController extends Controller
             'roles' => $user->getRoleNames()
         ]);
     }
+
 
     public function create(Request $request)
     {
@@ -82,6 +95,19 @@ class UsersController extends Controller
             'career_id' => 'nullable|exists:careers,id',
         ]);
 
+        $roles = $request->role;
+        $careerId = $request->career_id;
+
+        // Si tiene rol admin, super-admin o decano, NO debe tener carrera asignada
+        if ($careerId && collect($roles)->intersect(['admin', 'super-admin', 'decano'])->isNotEmpty()) {
+            return response()->json([
+                'errors' => [
+                    'career_id' => ['Los usuarios con rol de admin, super-admin o decano no deben tener una carrera asignada.']
+                ]
+            ], 422);
+        }
+
+        // Crear usuario sin carrera inicialmente
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -89,25 +115,18 @@ class UsersController extends Controller
             'career_id' => null,
         ]);
 
-        $user->syncRoles($request->role);
+        $user->syncRoles($roles);
 
-        if ($request->filled('career_id')) {
-            if ($user->hasAnyRole(['docente', 'director'])) {
-                $career = Career::findOrFail($request->career_id);
-                if ($career->type === 'carrera') {
-                    $user->career_id = $career->id;
-                    $user->save();
-                } else {
-                    return response()->json([
-                        'errors' => [
-                            'career_id' => ['Solo se pueden asignar carreras de tipo "carrera"']
-                        ]
-                    ], 422);
-                }
+        // Si se asignó una carrera, verificar que sea de tipo "carrera"
+        if ($careerId) {
+            $career = Career::findOrFail($careerId);
+            if ($career->type === 'carrera') {
+                $user->career_id = $career->id;
+                $user->save();
             } else {
                 return response()->json([
                     'errors' => [
-                        'user_id' => ['Solo los usuarios con rol de docente o director pueden ser asignados a una carrera']
+                        'career_id' => ['Solo se pueden asignar carreras de tipo "carrera".']
                     ]
                 ], 422);
             }
@@ -120,6 +139,7 @@ class UsersController extends Controller
         ]);
     }
 
+
     public function AssignCareer(Request $request)
     {
         $request->validate([
@@ -128,26 +148,27 @@ class UsersController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
+        $career = Career::findOrFail($request->career_id);
 
-        if (!$user->hasAnyRole(['docente', 'director'])) {
+        // Validar que el usuario NO tenga roles especiales
+        if ($user->hasAnyRole(['admin', 'super-admin', 'decano'])) {
             return response()->json([
                 'errors' => [
-                    'user_id' => ['Solo los usuarios con rol de docente o director pueden ser asignados a una carrera']
+                    'user_id' => ['No se puede asignar una carrera a un usuario con rol de admin, super-admin o decano.']
                 ]
             ], 422);
         }
 
-        $career = Career::findOrFail($request->career_id);
-
+        // Validar que la carrera sea del tipo correcto
         if ($career->type !== 'carrera') {
             return response()->json([
                 'errors' => [
-                    'career_id' => ['Solo se pueden asignar carreras de tipo "carrera"']
+                    'career_id' => ['Solo se pueden asignar carreras de tipo "carrera".']
                 ]
             ], 422);
         }
 
-        $user->career_id = $request->career_id;
+        $user->career_id = $career->id;
         $user->save();
 
         return response()->json([
