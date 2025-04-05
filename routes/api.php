@@ -191,6 +191,58 @@ Route::group(['middleware' => ['auth:persona','role:admin']], function () {
     
  });
  
+ Route::group(['middleware' => ['auth:persona', 'role:docente']], function () {
+    Route::controller(QuestionBankController::class)->prefix('bank_questions')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/unsubscribe", "remove");
+    });
+
+    Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/unsubscribe", "remove");
+    });
+
+    Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::get("/listAssignedQuestions", "ListAssignedQuestions");
+    });
+
+    Route::controller(QuestionEvaluationController::class)->prefix('question_evaluation')->group(function(){
+        Route::post("/save", "create")->middleware('permision:crear-preguntas-evaluaciones');
+        Route::post("asignQuestion", "assignRandomQuestion");
+        Route::get("listAssignedQuestions", "listAssignedQuestions");
+        Route::post("assignScores", "assignScores");
+        Route::get("listAssignedScores", "listAssignedScores");
+    });
+    Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/find/{id}",'findById');
+        Route::post("/import", "import");
+    });
+    Route::controller(ExcelImportController::class)->prefix('excel_import')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+    });
+    
+    Route::controller(ImportExcelImageController::class)->prefix('excel_import_image')->group(function(){
+        Route::post("/save", "create");
+        Route::post("/savezip", "saveimgezip");
+        Route::get("/list", "find");
+        Route::post("/edit/{id}", "findAndUpdate");
+    });
+ });
 
 
 
