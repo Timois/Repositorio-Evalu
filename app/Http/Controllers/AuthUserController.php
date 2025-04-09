@@ -30,7 +30,18 @@ class AuthUserController extends Controller
             if (!$token = Auth::guard('persona')->attempt($credentials)) {
                 return response()->json(['error' => 'Credenciales incorrectas'], 401);
             }
-            return response()->json(['token' => $token], 200);
+            $user = Auth::guard('persona')->user();
+
+            return response()->json([
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'nombre' => $user->name, // o el campo que tengas
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames() // asegúrate de tener este campo en la tabla/modelo
+                    // puedes añadir más información aquí si lo deseas
+                ]
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al generar el token',
@@ -38,7 +49,6 @@ class AuthUserController extends Controller
             ], 500);
         }
     }
-
     public function me()
     {
         $user = Auth::guard('persona')->user();

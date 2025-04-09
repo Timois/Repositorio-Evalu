@@ -17,7 +17,7 @@ class CareerController extends Controller
 
     public function find()
     {
-        $careers = Career::orderBy('id', 'ASC')->whereIn('type', ['carrera'])->get();;
+        $careers = Career::orderBy('id', 'ASC')->whereIn('type', ['carrera'])->get();
         return response()->json($careers);
     }
 

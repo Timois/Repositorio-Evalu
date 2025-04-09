@@ -3,9 +3,7 @@
 namespace App\Imports;
 
 use App\Models\AnswerBank;
-use App\Models\QuestionBank;
-use App\Models\Areas;
-use App\Models\Career; // Para obtener la carrera relacionada
+use App\Models\QuestionBank; 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
