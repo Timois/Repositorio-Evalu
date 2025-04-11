@@ -79,14 +79,14 @@ Route::controller(UsersController::class)->prefix('users')->group(function(){
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-usuarios');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-usuarios');
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-usuarios');
-    Route::post("/assignCareer", "assignCareer")->middleware('auth:persona', 'permission:asignar-gestiones');
+    Route::post("/assignCareer", "assignCareer")->middleware('auth:persona', 'permission:asignar-carreras-a-usuarios');
     Route::post("/deactivate", "deactivate")->middleware('auth:persona', 'permission:eliminar-usuarios');
 });
 
 // Rutas de Permisos
 Route::controller(PermisionController::class)->prefix('permissions')->group(function(){
     Route::get("/list", "index")->middleware('auth:persona', 'permission:ver-permisos');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-permisos');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-permisos-por-id');
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-permisos');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-permisos');
     Route::post("/delete/{id}", "remove")->middleware('auth:persona', 'permission:eliminar-permisos');
@@ -104,17 +104,17 @@ Route::controller(RolController::class)->prefix('roles')->group(function(){
 
 // Rutas de Carreras
 Route::controller(CareerController::class)->prefix('careers')->group(function(){
-    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-carreras');
+    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-unidades-academicas');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-carreras');
-    Route::get("/listsFacultiesMayor", "findUnitsMayor")->middleware('auth:persona', 'permission:ver-carreras');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-carreras');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-carreras');
+    Route::get("/listsFacultiesMayor", "findUnitsMayor")->middleware('auth:persona', 'permission:ver-unidades-academicas');
+    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-unidades-academicas');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-unidades-por-id');
     Route::post("/assignManagement", 'assignManagement')->middleware('auth:persona', 'permission:asignar-gestiones');
     Route::get("/findAsign", 'findAssignManagement')->middleware('auth:persona', 'permission:ver-gestiones-asignadas');
-    Route::get("/findByAssignId/{id}", 'findByIdAssign')->middleware('auth:persona', 'permission:ver-gestiones-asignadas');
-    Route::post("/saveAssign", 'createAssign')->middleware('auth:persona', 'permission:crear-gestiones');
-    Route::post("/editAssign/{id}", 'findAndUpdateAssign')->middleware('auth:persona', 'permission:editar-gestiones');
-    Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign')->middleware('auth:persona', 'permission:ver-periodos-asignados');
+    Route::get("/findByAssignId/{id}", 'findByIdAssign')->middleware('auth:persona', 'permission:ver-gestiones-asignadas-por-id');
+    // Route::post("/saveAssign", 'createAssign')->middleware('auth:persona', 'permission:crear-gestiones');
+    Route::post("/editAssign/{id}", 'findAndUpdateAssign')->middleware('auth:persona', 'permission:editar-asignaciones');
+    Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign')->middleware('auth:persona', 'permission:ver--asignados-por-id');
 });
 
 // Rutas de Gestión Académica
@@ -122,7 +122,7 @@ Route::controller(AcademicManagementController::class)->prefix('management')->gr
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-gestiones');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-gestiones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-gestiones');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-gestiones');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-gestiones-por-id');
 });
 
 // Rutas de Periodos
@@ -130,14 +130,14 @@ Route::controller(PeriodController::class)->prefix('periods')->group(function(){
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-periodos');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-periodos');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodos');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-periodos');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-periodos-por-id');
 });
 
 // Rutas de Áreas
 Route::controller(AreaController::class)->prefix("areas")->group(function(){
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-areas');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-areas');
-    Route::get("/listByCareer/{career_id}", "findAreasByCareer")->middleware('auth:persona', 'permission:ver-areas');
+    Route::get("/listByCareer/{career_id}", "findAreasByCareer")->middleware('auth:persona', 'permission:ver-areas-por-id');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-areas');
     Route::get("/listQuestions/{id}", "questionsByArea")->middleware('auth:persona', 'permission:ver-preguntas-por-area');
 });
@@ -162,7 +162,7 @@ Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(fu
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-respuestas');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-respuestas');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-respuestas');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-respuestas');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-respuestas-por-id');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-respuestas');
 });
 
@@ -171,6 +171,7 @@ Route::controller(QuestionBankController::class)->prefix('bank_questions')->grou
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-preguntas');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-preguntas');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-preguntas');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-preguntas');
 });
+
