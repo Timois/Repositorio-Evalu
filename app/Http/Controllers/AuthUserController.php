@@ -30,25 +30,46 @@ class AuthUserController extends Controller
             if (!$token = Auth::guard('persona')->attempt($credentials)) {
                 return response()->json(['error' => 'Credenciales incorrectas'], 401);
             }
+
             $user = Auth::guard('persona')->user();
+
+            // Obtener permisos agrupados por roles
+            $rolesPermissions = $user->roles->mapWithKeys(function ($role) {
+                return [$role->name => $role->permissions->pluck('name')];
+            });
 
             return response()->json([
                 'token' => $token,
                 'user' => [
-                    'id' => $user->id,
-                    'nombre' => $user->name, // o el campo que tengas
+                    'nombre' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->getRoleNames() // asegúrate de tener este campo en la tabla/modelo
-                    // puedes añadir más información aquí si lo deseas
-                ]
+                    'career_id' => $user->career_id,
+                ],
+                'permissions' => $user->getAllPermissions()->pluck('name'), // todos los permisos
+                'roles_permissions' => $rolesPermissions, // permisos por cada rol
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al generar el token',
-                'details' => $e->getMessage(), // Mostrar detalles del error
+                'details' => $e->getMessage(),
             ], 500);
         }
     }
+
+    public function refreshPermissions()
+    {
+        $user = Auth::guard('persona')->user();
+
+        $rolesPermissions = $user->roles->mapWithKeys(function ($role) {
+            return [$role->name => $role->permissions->pluck('name')];
+        });
+
+        return response()->json([
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'roles_permissions' => $rolesPermissions,
+        ]);
+    }
+
     public function me()
     {
         $user = Auth::guard('persona')->user();

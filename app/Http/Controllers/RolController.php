@@ -55,6 +55,16 @@ class RolController extends Controller
         }
     }
 
+    public function findById(string $id)
+    {
+        $role = Role::with('permissions')->find($id);
+
+        if (!$role) {
+            return response()->json(["message" => "El rol con id: $id no existe."], 404);
+        }
+
+        return response()->json($role);
+    }
 
 
     public function update(Request $request, string $id)

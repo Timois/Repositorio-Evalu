@@ -46,6 +46,7 @@ use Symfony\Component\Console\Question\Question;
 Route::controller(AuthUserController::class)->prefix('users')->group(function(){
     Route::post("/login", "login");
     Route::post("/logout", "logout");
+    Route::get("/refreshPermissions", "refreshPermissions");
     Route::get("/profile", "me");
     Route::post("/refresh", "refresh");
 });
@@ -94,7 +95,7 @@ Route::controller(PermisionController::class)->prefix('permissions')->group(func
 // Rutas de Roles
 Route::controller(RolController::class)->prefix('roles')->group(function(){
     Route::get("/list", "index")->middleware('auth:persona', 'permission:ver-roles');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-roles');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-roles-por-id');
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-roles');
     Route::post("/edit/{id}", "update")->middleware('auth:persona', 'permission:editar-roles');
     Route::post("/delete/{id}", "remove")->middleware('auth:persona', 'permission:eliminar-roles');

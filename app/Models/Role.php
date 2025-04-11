@@ -2,18 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Spatie\Permission\Traits\HasPermissions;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class Role extends Model
+class Role extends SpatieRole
 {
-    use HasFactory;
-    use HasPermissions;
-
+    // No necesitas usar HasPermissions aquí, ya lo trae SpatieRole
     protected $table = 'roles';
+
     protected $fillable = [
         'name',
-        'guard_name', 
+        'guard_name',
     ];
 }
+
