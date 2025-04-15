@@ -25,9 +25,10 @@ class AuthUserController extends Controller
         }
 
         $credentials = $request->only('email', 'password');
-
+       
         try {
             if (!$token = Auth::guard('persona')->attempt($credentials)) {
+                
                 return response()->json(['error' => 'Credenciales incorrectas'], 401);
             }
 
@@ -44,9 +45,9 @@ class AuthUserController extends Controller
                     'nombre' => $user->name,
                     'email' => $user->email,
                     'career_id' => $user->career_id,
+                    'role' => $user->roles->pluck('name'),
                 ],
                 'permissions' => $user->getAllPermissions()->pluck('name'), // todos los permisos
-                'roles_permissions' => $rolesPermissions, // permisos por cada rol
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

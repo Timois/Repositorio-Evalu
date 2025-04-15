@@ -70,6 +70,7 @@ class PermissionSeeder extends Seeder
             'ver-importaciones-de-postulantes',
             'editar-importaciones-de-postulantes',
             'buscar-importaciones-de-postulantes-porId',
+            'ver-postulantes',
             'crear-respuestas',
             'editar-respuestas',
             'ver-respuestas',

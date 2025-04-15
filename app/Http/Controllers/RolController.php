@@ -6,6 +6,7 @@ use App\Http\Requests\ValidationRoles;
 use App\Models\Role;
 use GuzzleHttp\Psr7\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class RolController extends Controller
 {
@@ -72,13 +73,37 @@ class RolController extends Controller
         try {
             $role = Role::findOrFail($id);
 
-            $request->validate([
-                'name' => 'required|string|max:50|unique:roles,name,' . $id . ',id,guard_name,persona',
+            // Validación básica primero
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:50',
                 'permissions' => 'sometimes|array',
             ], [
-                'name.unique' => 'Ya existe un rol con este nombre.',
                 'name.required' => 'El nombre del rol es obligatorio.'
             ]);
+
+            // Validación manual para nombre único considerando guard_name
+            if ($request->name !== $role->name) {
+                $existingRole = Role::where('name', strtolower($request->name))
+                    ->where('guard_name', 'persona')
+                    ->where('id', '!=', $id)
+                    ->first();
+
+                if ($existingRole) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => ['name' => ['Ya existe un rol con este nombre.']],
+                        'message' => 'Error de validación'
+                    ], 422);
+                }
+            }
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                    'message' => 'Error de validación'
+                ], 422);
+            }
 
             $role->update([
                 'name' => strtolower($request->name),
@@ -99,12 +124,6 @@ class RolController extends Controller
                 'success' => false,
                 'message' => 'Rol no encontrado'
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'errors' => $e->errors(),
-                'message' => 'Error de validación'
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
