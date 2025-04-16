@@ -161,7 +161,7 @@ class QuestionImagesImport implements ToCollection
             $areaName = $area->name;
             $unitSigla = $unit->initials;  // Usar la sigla de la unidad
             $careerSigla = $career->initials; // Usar la sigla de la carrera
-            $questionType = 'text';
+            $questionType = 'texto';
             // Procesar la imagen si existe
             if (!empty($dataRow['imagen'])) {
                 $imagesDirectory = $this->extractedPath . DIRECTORY_SEPARATOR . 'imagenes';
@@ -198,7 +198,7 @@ class QuestionImagesImport implements ToCollection
                             $this->messages[] = "Fila " . ($index + 1) . ": Imagen copiada con éxito.";
 
                             // Cambiar el tipo de pregunta a 'imagen'
-                            $questionType = 'imagen';
+                            $questionType = '   ';
                         } else {
                             $this->messages[] = "Fila " . ($index + 1) . ": No se pudo copiar la imagen.";
                         }
