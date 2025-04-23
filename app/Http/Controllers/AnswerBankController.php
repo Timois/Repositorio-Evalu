@@ -75,4 +75,20 @@ class AnswerBankController extends Controller
         $answer->save();
         return $answer;
     }
+
+    public function findByIdQuestion(string $id)
+    {
+        $answer = AnswerBank::where('bank_question_id', $id)->get();
+        if (!$answer)
+            return ["message:", "La respuesta con el id:" . $id . " no existe."];
+
+        // sacar la cantidad de total de respuestas por pregunta
+        $totalAnswers = AnswerBank::where('bank_question_id', $id)->count();
+        $answer = [
+            'answers' => $answer,
+            'totalAnswers' => $totalAnswers
+        ];
+
+        return response()->json($answer);
+    }
 }

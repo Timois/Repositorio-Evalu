@@ -171,6 +171,7 @@ Route::controller(AnswerBankController::class)->prefix('bank_answers')->group(fu
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-respuestas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-respuestas-por-id');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-respuestas');
+    Route::get("/findByIdQuestion/{id}", 'findByIdQuestion')->middleware('auth:persona', 'permission:ver-respuestas-por-pregunta');
 });
 
 // Rutas de Banco de Preguntas

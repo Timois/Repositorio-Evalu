@@ -86,6 +86,7 @@ class PermissionSeeder extends Seeder
             'ver-areas-por-id',
             'ver-preguntas-por-id',
             'ver-respuestas-por-id',
+            'ver-respuestas-por-pregunta',
         ];
 
         // Crear permisos si no existen

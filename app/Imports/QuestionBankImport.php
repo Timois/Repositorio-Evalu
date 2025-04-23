@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\AnswerBank;
 use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\ToCollection;
 
 class QuestionBankImport implements ToCollection
@@ -12,8 +13,15 @@ class QuestionBankImport implements ToCollection
     protected $excelImportId;
     protected $areaId;
     protected $messages = [];
-    
-    // Definir las columnas requeridas
+
+    // Contadores
+    protected $countTotal = 0;
+    protected $countInserted = 0;
+    protected $countRepeated = 0;
+
+    // Repetidas para archivo
+    protected $repeatedRows = [];
+
     protected $requiredColumns = [
         'pregunta',
         'descripcion',
@@ -37,27 +45,21 @@ class QuestionBankImport implements ToCollection
     {
         $messages = [];
 
-        // Verificar si hay datos
         if (empty($data) || empty($data[0])) {
             return ['El archivo Excel está vacío'];
         }
 
-        // Obtener las cabeceras
         $headers = $data[0][0];
-
-        // Verificar columnas faltantes
         $missingColumns = array_diff($this->requiredColumns, $headers);
         if (!empty($missingColumns)) {
-            $messages[] = "Faltan las siguientes columnas requeridas: " . implode(', ', $missingColumns);
+            $messages[] = "Faltan columnas: " . implode(', ', $missingColumns);
         }
 
-        // Verificar columnas extras no permitidas
         $extraColumns = array_diff($headers, $this->requiredColumns);
         if (!empty($extraColumns)) {
-            $messages[] = "El archivo contiene columnas no permitidas: " . implode(', ', $extraColumns);
+            $messages[] = "Columnas no permitidas: " . implode(', ', $extraColumns);
         }
 
-        // Verificar que haya al menos una fila de datos además de las cabeceras
         if (count($data[0]) < 2) {
             $messages[] = "El archivo no contiene datos para importar";
         }
@@ -67,19 +69,14 @@ class QuestionBankImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-        $headers = [];
-        $responseMessages = [];
-
-        // Verificar si hay filas en el Excel
         if ($rows->isEmpty()) {
             $this->messages[] = "El archivo Excel está vacío.";
             return;
         }
 
-        // Obtener las cabeceras del Excel
         $headers = $rows[0]->toArray();
+        $responseMessages = [];
 
-        // Validar que los headers coincidan con los required columns
         $headersDiff = array_diff($this->requiredColumns, $headers);
         if (!empty($headersDiff)) {
             $this->messages[] = "Columnas faltantes: " . implode(', ', $headersDiff);
@@ -87,76 +84,65 @@ class QuestionBankImport implements ToCollection
         }
 
         foreach ($rows as $index => $row) {
-            // Saltar la primera fila (headers)
-            if ($index === 0) {
-                continue;
-            }
+            if ($index === 0) continue;
 
+            $this->countTotal++;
             $rowArray = $row->toArray();
 
-            // Verificar si la fila está completamente vacía
-            if (empty(array_filter($rowArray, function ($value) {
-                return $value !== null && $value !== '';
-            }))) {
-                logger()->info('Fila ' . ($index + 1) . ' está vacía, terminando el procesamiento.');
-                break; // Terminar el procesamiento al encontrar una fila vacía
+            if (empty(array_filter($rowArray, fn($value) => $value !== null && $value !== ''))) {
+                break;
             }
 
-            // Asegurarse de que tengan la misma longitud
             if (count($headers) !== count($rowArray)) {
-                $responseMessages[] = "Error en la fila " . ($index + 1) . ": El número de columnas no coincide con los encabezados.";
+                $responseMessages[] = "Error en la fila " . ($index + 1) . ": número de columnas no coincide.";
                 continue;
             }
 
-            // Crear array asociativo con los datos de la fila
             $dataRow = array_combine($headers, $rowArray);
 
-           // Validar campos requeridos (excluyendo 'imagen', 'descripcion' y 'dificultad)
-           $emptyFields = [];
-           foreach ($this->requiredColumns as $column) {
-               if ($column !== 'imagen' && $column !== 'dificultad' && $column !== 'descripcion' && empty($dataRow[$column])) {
-                   $emptyFields[] = $column;
-               }
-           }
+            $emptyFields = [];
+            foreach ($this->requiredColumns as $column) {
+                if (!in_array($column, ['imagen', 'dificultad', 'descripcion']) && empty($dataRow[$column])) {
+                    $emptyFields[] = $column;
+                }
+            }
 
             if (count($emptyFields) > 0) {
-                $responseMessages[] = "Error en la fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
+                $responseMessages[] = "Fila " . ($index + 1) . ": Campos vacíos: " . implode(', ', $emptyFields);
                 continue;
             }
+
+            // 🛑 Verificar si la pregunta ya existe
+            $exists = QuestionBank::where('area_id', $this->areaId)
+                ->where('question', trim($dataRow['pregunta']))
+                ->exists();
+
+            if ($exists) {
+                $this->countRepeated++;
+                $this->repeatedRows[] = $dataRow;
+                $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta repetida, no se insertó.";
+                continue;
+            }
+
             try {
-                try {
-                    // Si la pregunta no existe, insertarla
-                    $dataToInsert = [
-                        'area_id' => $this->areaId,
-                        'excel_import_id' => $this->excelImportId,
-                        'question' => $dataRow['pregunta'],
-                        'description' => $dataRow['descripcion'],
-                        'type' => $dataRow['tipo'],
-                        'image' => basename($dataRow['imagen']),
-                        'status' => 'activo',
-                    ];
-            
-                    $saveQuest = QuestionBank::create($dataToInsert);
-            
-                    $responseMessages[] = [
-                        'success' => true,
-                        'message' => "Fila " . ($index + 1) . ": Pregunta '{$dataRow['pregunta']}' importada correctamente."
-                    ];
-                    
-                } catch (\Exception $e) {
-                    $responseMessages[] = [
-                        'success' => false,
-                        'message' => "Error en la fila " . ($index + 1) . ": " . $e->getMessage()
-                    ];
-                }
+                $dataToInsert = [
+                    'area_id' => $this->areaId,
+                    'excel_import_id' => $this->excelImportId,
+                    'question' => $dataRow['pregunta'],
+                    'description' => $dataRow['descripcion'],
+                    'type' => $dataRow['tipo'],
+                    'image' => basename($dataRow['imagen']),
+                    'status' => 'activo',
+                ];
+
+                $saveQuest = QuestionBank::create($dataToInsert);
+                $this->countInserted++;
 
                 $respuestasCorrectas = [];
-
-                // Procesar respuestas
                 if ($dataRow['tipo'] === 'multiple') {
                     $respuestasCorrectas = array_map('intval', explode(',', $dataRow['respuesta correcta']));
                 } else {
-                    array_push($respuestasCorrectas, $dataRow['respuesta correcta']);
+                    $respuestasCorrectas[] = $dataRow['respuesta correcta'];
                 }
 
                 $answersToInsert = [];
@@ -173,19 +159,39 @@ class QuestionBankImport implements ToCollection
                         ];
                     }
                 }
-                // Guardar respuestas masivamente
+
                 if (!empty($answersToInsert)) {
                     AnswerBank::insert($answersToInsert);
-                    $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta y respuestas guardadas exitosamente.";
                 }
+
+                $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta y respuestas guardadas.";
             } catch (\Exception $e) {
-                //dd($e->getMessage());
-                $responseMessages[] = "Error en la fila " . ($index + 1) . ": " . $e->getMessage();
-                logger()->error("Error en importación fila " . ($index + 1) . ": " . $e->getMessage());
+                $responseMessages[] = "Fila " . ($index + 1) . ": Error al guardar. " . $e->getMessage();
             }
         }
-        // dd($saveQuest);
 
+        // Generar resumen
+        $responseMessages[] = "Resumen: Total procesadas: {$this->countTotal}, Insertadas: {$this->countInserted}, Repetidas: {$this->countRepeated}";
+
+        // Generar archivo CSV de repetidas (si hay)
+        if (count($this->repeatedRows) > 0) {
+            $filename = 'repetidas_' . now()->format('Ymd_His') . '.csv';
+            $filePath = storage_path("app/public/{$filename}");
+            $fp = fopen($filePath, 'w');
+
+            fputcsv($fp, $this->requiredColumns); // encabezado
+            foreach ($this->repeatedRows as $row) {
+                fputcsv($fp, array_map(fn($key) => $row[$key] ?? '', $this->requiredColumns));
+            }
+
+            fclose($fp);
+
+            $responseMessages[] = [
+                'success' => false,
+                'download_repetidas' => asset("storage/{$filename}"),
+                'message' => 'Algunas preguntas estaban repetidas. Puedes descargar el listado.'
+            ];
+        }
 
         $this->messages = $responseMessages;
     }
