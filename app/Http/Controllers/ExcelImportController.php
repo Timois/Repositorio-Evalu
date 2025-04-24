@@ -67,7 +67,7 @@ class ExcelImportController extends Controller
             // Perform actual import
             $import = new QuestionBanKImport($importExcel->id, $area_id);
             Excel::import($import, $path);
-
+            
             // Get import messages
             $messages = $import->getMessages();
 

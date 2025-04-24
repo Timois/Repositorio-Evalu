@@ -3,7 +3,7 @@
 namespace App\Imports;
 
 use App\Models\AnswerBank;
-use App\Models\QuestionBank; 
+use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -209,25 +209,33 @@ class QuestionImagesImport implements ToCollection
             }
 
             // Buscar si la pregunta ya existe
-            $existingQuestion = QuestionBank::where('question', $dataRow['pregunta'])
+            $exists = QuestionBank::where('question', $dataRow['pregunta'])
                 ->where('area_id', $areaId)
                 ->exists();
 
-            if (!$existingQuestion) {
-                // Crear la pregunta con el tipo correcto
-                $question = QuestionBank::create([
-                    'area_id' => $areaId,
-                    'excel_import_id' => $this->excelImportId,
-                    'question' => $dataRow['pregunta'],
-                    'description' => $dataRow['descripcion'],
-                    'difficulty' => $dataRow['dificultad'],
-                    'question_type' => $questionType, // Ahora puede ser 'text' o 'imagen'
-                    'type' => $dataRow['tipo'],
-                    'image' => $imagePath,
-                    'status' => 'activo',
-                ]);
+            if ($exists) {
+                // Duplicada → registrar y salir
+                $this->duplicateDetails[] = [
+                    'row' => $index + 1,
+                    'pregunta' => $dataRow['pregunta'],
+                    'area' => $this->areaId,
+                    'motivo' => 'Pregunta duplicada en la base de datos',
+                ];
+                $this->messages[] = "Fila " . ($index + 1) . ": Pregunta duplicada, no registrada.";
+                return;
             }
-
+            // Crear la pregunta
+            $question = QuestionBank::create([
+                'area_id'        => $this->areaId,
+                'excel_import_id'=> $this->excelImportId,
+                'question'       => $dataRow['pregunta'],
+                'description'    => $dataRow['descripcion'],
+                'difficulty'     => $dataRow['dificultad'],
+                'question_type'  => $questionType,
+                'type'           => $dataRow['tipo'],
+                'image'          => $imagePath,
+                'status'         => 'activo',
+            ]);
             // Procesar las respuestas
             $answers = $this->processAnswers($question, $dataRow);
 
@@ -249,7 +257,7 @@ class QuestionImagesImport implements ToCollection
             $this->skippedQuestions[] = [
                 'row' => $index + 1,
                 'pregunta' => $dataRow['pregunta'],
-                'area' => $dataRow['area'],
+                'area' => $this->areaId,
                 'motivo' => $e->getMessage()
             ];
 
@@ -305,8 +313,8 @@ class QuestionImagesImport implements ToCollection
                 'detalle' => $this->registeredQuestions
             ],
             'no_registradas' => [
-                'total' => count($this->skippedQuestions),
-                'detalle' => $this->skippedQuestions
+                'total' => count($this->duplicateDetails),
+                'detalle' => $this->duplicateDetails
             ],
             'duplicadas' => [
                 'total' => count($this->duplicateDetails),
