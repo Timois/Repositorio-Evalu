@@ -130,6 +130,7 @@ Route::controller(AcademicManagementPeriodController::class)->prefix('academic_m
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-periodos-asignados');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodo-asignado');
     Route::get("/findByIdCareer/{id}", 'findByIdCareer')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-id');
+    Route::get("/findPeriodsByCareerManagement/{career_id}/{academic_management_id}", 'findPeriodsByCareerManagement')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-carrera-y-gestion');
 });
 
 // Rutas de Periodos
@@ -188,4 +189,11 @@ Route::controller(ImportStudentController::class)->prefix('students')->group(fun
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-postulantes');
     Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:editar-alumnos');
     Route::get("/findByName/{id}", "findByName")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
+});
+
+Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
+    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-evaluaciones');
+    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
+    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-evaluaciones-por-id');
 });

@@ -87,6 +87,7 @@ class PermissionSeeder extends Seeder
             'ver-preguntas-por-id',
             'ver-respuestas-por-id',
             'ver-respuestas-por-pregunta',
+            'ver-periodos-asignados-por-carrera-y-gestion',
         ];
 
         // Crear permisos si no existen
