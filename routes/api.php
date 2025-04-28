@@ -4,15 +4,10 @@ use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\AcademicManagementPeriodController;
 use App\Http\Controllers\AnswerBankController;
 use App\Http\Controllers\AreaController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthStudentController;
 use App\Http\Controllers\AuthUserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\UnitController;
 use App\Http\Controllers\CareerController;
-use App\Http\Controllers\EvaluationAreaScoreController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\ImportExcelImageController;
@@ -22,15 +17,8 @@ use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\PermisionController;
 use App\Http\Controllers\QuestionBankController;
-use App\Http\Controllers\QuestionEvaluationController;
-use App\Http\Controllers\ResponsibleController;
 use App\Http\Controllers\RolController;
-use App\Http\Controllers\StudentsImportController;
 use App\Http\Controllers\UsersController;
-use App\Models\Permision;
-use App\Models\Student;
-use Maatwebsite\Excel\Row;
-use Symfony\Component\Console\Question\Question;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,7 +100,6 @@ Route::controller(CareerController::class)->prefix('careers')->group(function(){
     Route::post("/assignManagement", 'assignManagement')->middleware('auth:persona', 'permission:asignar-gestiones');
     Route::get("/findAsign", 'findAssignManagement')->middleware('auth:persona', 'permission:ver-gestiones-asignadas');
     Route::get("/findByAssignId/{id}", 'findByIdAssign')->middleware('auth:persona', 'permission:ver-gestiones-asignadas-por-id');
-    // Route::post("/saveAssign", 'createAssign')->middleware('auth:persona', 'permission:crear-gestiones');
     Route::post("/editAssign/{id}", 'findAndUpdateAssign')->middleware('auth:persona', 'permission:editar-asignaciones');
     Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign')->middleware('auth:persona', 'permission:ver-periodos-asignados');
 });

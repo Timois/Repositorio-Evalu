@@ -240,7 +240,7 @@ class CareerController extends Controller
     {
         $managements = AcademicManagementCareer::where('career_id', $careerId)
             ->with(['academicManagement' => function ($query) {
-                $query->select('id', 'initial_date', 'end_date');
+                $query->select('id', 'year','initial_date', 'end_date');
             }])
             ->get();
 
@@ -250,6 +250,7 @@ class CareerController extends Controller
         $result = $managements->map(function ($management) {
             return [
                 'id' => $management->academicManagement->id,
+                'year' => $management->academicManagement->year,
                 'name' => $management->career->name,
                 'initial_date' => $management->academicManagement->initial_date,
                 'end_date' => $management->academicManagement->end_date,

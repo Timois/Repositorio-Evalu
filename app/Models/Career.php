@@ -113,12 +113,6 @@ class Career extends Model
         return in_array($this->type, self::INDEPENDENT_TYPES);
     }
 
-    public function academic_management(): BelongsToMany
-    {
-        return $this->belongsToMany(AcademicManagement::class)
-            ->withTimestamps();
-    }
-
     public function areas(): HasMany
     {
         return $this->hasMany(Areas::class);
@@ -127,5 +121,11 @@ class Career extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function academicManagementCareer(): HasMany
+    {
+        return $this->hasMany(AcademicManagementCareer::class)
+            ->withTimestamps();
     }
 }

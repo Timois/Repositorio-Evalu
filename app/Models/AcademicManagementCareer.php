@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AcademicManagementCareer extends Model
 {
@@ -18,7 +19,7 @@ class AcademicManagementCareer extends Model
         return $this->belongsTo(Career::class);
     }
 
-    public function academicManagementPeriod(): BelongsTo {
-        return $this->belongsTo(AcademicManagementPeriod::class);
+    public function academicManagementPeriod(): HasMany {
+        return $this->hasMany(AcademicManagementPeriod::class);
     }
 }
