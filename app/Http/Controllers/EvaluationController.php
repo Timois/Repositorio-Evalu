@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAssignQuestion;
 use App\Http\Requests\ValidationEvaluation;
+use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
 use App\Models\QuestionEvaluation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+
 class EvaluationController extends Controller
 {
     public function find()
@@ -39,7 +41,7 @@ class EvaluationController extends Controller
         try {
             // Busca la evaluación por su ID
             $evaluation = Evaluation::findOrFail($id);
-    
+
             // Captura los datos editables del request
             $updateData = $request->only([
                 'title',
@@ -51,25 +53,25 @@ class EvaluationController extends Controller
                 'type',
                 'academic_management_period_id'
             ]);
-    
+
             // Convierte 'title' a mayúsculas si está presente
             if (isset($updateData['title'])) {
                 $updateData['title'] = Str::upper($updateData['title']);
             }
-    
+
             // Convierte 'description' a minúsculas si está presente
             if (isset($updateData['description'])) {
                 $updateData['description'] = Str::lower($updateData['description']);
             }
-    
+
             // Evitar que se actualice el UUID `code`
             if (isset($updateData['code'])) {
                 unset($updateData['code']);
             }
-    
+
             // Actualiza los datos en el modelo
             $evaluation->update($updateData);
-    
+
             // Retorna la respuesta exitosa
             return response()->json([
                 'message' => 'Evaluación actualizada exitosamente',
@@ -86,7 +88,7 @@ class EvaluationController extends Controller
             ], 500);
         }
     }
-    
+
 
 
     public function findById(string $id)
@@ -103,5 +105,16 @@ class EvaluationController extends Controller
     {
         $questions = QuestionEvaluation::get();
         return response()->json($questions);
+    }
+
+    public function findPeriodById(string $id)
+    {
+        $evaluation = AcademicManagementPeriod::with('period')->where('id', $id)->first();
+
+        if (!$evaluation) {
+            return response()->json(["message" => "La evaluación con el id: " . $id . " no existe."], 404);
+        }
+
+        return response()->json($evaluation);   
     }
 }

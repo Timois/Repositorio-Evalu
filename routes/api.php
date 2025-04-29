@@ -183,4 +183,5 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-evaluaciones-por-id');
+    Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
 });

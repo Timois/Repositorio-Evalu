@@ -10,7 +10,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Evaluation extends Model
 {
     protected $table = 'evaluations';
-
+    protected $fillable = [
+        'title',
+        'description',
+        'total_score',
+        'passing_score',
+        'date_of_realization',
+        'code',
+        'status',
+        'type',
+        'academic_management_period_id'
+    ];
     public function academicManagementPeriod()
     {
         return $this->belongsTo(AcademicManagementPeriod::class, 'academic_management_period_id');

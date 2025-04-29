@@ -32,7 +32,7 @@ class ValidationEvaluation extends FormRequest
         $evaluation = $this->route("id");
 
         if ($evaluation) {
-            $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u' . $evaluation;
+            $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
             $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
             $validationTotalScore = 'required|numeric|min:0';
             $validationPassingScore = 'required|numeric|min:0';

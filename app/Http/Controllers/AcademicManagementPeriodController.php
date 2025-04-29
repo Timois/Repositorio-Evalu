@@ -50,24 +50,24 @@ class AcademicManagementPeriodController extends Controller
     }
 
     // Filtrar los periodos asignados a una carrera en una gestion academica
-        public function findPeriodsByCareerManagement($career_id, $academic_management_id)
-        {
-            $relation = AcademicManagementCareer::where('career_id', $career_id)
-                ->where('academic_management_id', $academic_management_id)
-                ->first();
+    public function findPeriodsByCareerManagement($career_id, $academic_management_id)
+    {
+        $relation = AcademicManagementCareer::where('career_id', $career_id)
+            ->where('academic_management_id', $academic_management_id)
+            ->first();
 
-            if (!$relation) {
-                return response()->json([
-                    "message" => "No se encontró relación entre la carrera y la gestión académica."
-                ], 404);
-            }
-
-            // Buscar los periodos que pertenecen a esa relación
-            $periods = AcademicManagementPeriod::where('academic_management_career_id', $relation->id)
-                ->with(['period']) 
-                ->orderBy('initial_date', 'ASC')
-                ->get();
-
-            return response()->json($periods);
+        if (!$relation) {
+            return response()->json([
+                "message" => "No se encontró relación entre la carrera y la gestión académica."
+            ], 404);
         }
+
+        // Buscar los periodos que pertenecen a esa relación
+        $periods = AcademicManagementPeriod::where('academic_management_career_id', $relation->id)
+            ->with(['period'])
+            ->orderBy('initial_date', 'ASC')
+            ->get();
+
+        return response()->json($periods);
+    }
 }
