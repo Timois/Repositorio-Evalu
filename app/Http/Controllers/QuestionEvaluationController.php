@@ -6,6 +6,7 @@ use App\Models\QuestionEvaluation;
 use App\Models\QuestionBank;
 use App\Models\Evaluation;
 use App\Http\Requests\ValidationQuestionEvaluation;
+use App\Models\Areas;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 
@@ -13,54 +14,61 @@ class QuestionEvaluationController extends Controller
 {
     public function CantidadPreguntas(Request $request)
     {
-        // Validación para asegurar que al menos uno de los campos tenga valor
+        // Validar entrada
         $request->validate([
+            'area_id' => 'required|integer|exists:areas,id',
             'cantidadFacil' => 'sometimes|integer|min:0',
             'cantidadMedia' => 'sometimes|integer|min:0',
             'cantidadDificil' => 'sometimes|integer|min:0',
         ]);
 
-        // Verificar que al menos uno de los parámetros esté presente
+        $area_id = $request->input('area_id');
+
+        // Obtener el área
+        $area = Areas::find($area_id);
+
         if (!$request->has('cantidadFacil') && !$request->has('cantidadMedia') && !$request->has('cantidadDificil')) {
             return response()->json(['error' => 'Al menos uno de los parámetros (cantidadFacil, cantidadMedia, cantidadDificil) debe enviarse'], 422);
         }
 
-        // Obtener cantidades desde el request (con valores predeterminados de 0)
         $cantidadFacil = $request->input('cantidadFacil', 0);
         $cantidadMedia = $request->input('cantidadMedia', 0);
         $cantidadDificil = $request->input('cantidadDificil', 0);
 
-        // Verificar disponibilidad de preguntas
-        $disponiblesFacil = QuestionBank::where('dificulty', 'facil')->count();
-        $disponiblesMedio = QuestionBank::where('dificulty', 'medio')->count();
-        $disponiblesDificil = QuestionBank::where('dificulty', 'dificil')->count();
+        // Filtrar por área
+        $disponiblesFacil = QuestionBank::where('dificulty', 'facil')->where('area_id', $area_id)->count();
+        $disponiblesMedio = QuestionBank::where('dificulty', 'medio')->where('area_id', $area_id)->count();
+        $disponiblesDificil = QuestionBank::where('dificulty', 'dificil')->where('area_id', $area_id)->count();
 
-        // Ajustar cantidades si no hay suficientes preguntas disponibles
         $cantidadFacil = min($cantidadFacil, $disponiblesFacil);
         $cantidadMedia = min($cantidadMedia, $disponiblesMedio);
         $cantidadDificil = min($cantidadDificil, $disponiblesDificil);
 
-        // Obtener preguntas aleatorias según la dificultad especificada
         $preguntasFaciles = QuestionBank::where('dificulty', 'facil')
+            ->where('area_id', $area_id)
             ->inRandomOrder()
             ->take($cantidadFacil)
             ->get();
 
         $preguntasMedias = QuestionBank::where('dificulty', 'medio')
+            ->where('area_id', $area_id)
             ->inRandomOrder()
             ->take($cantidadMedia)
             ->get();
 
         $preguntasDificiles = QuestionBank::where('dificulty', 'dificil')
+            ->where('area_id', $area_id)
             ->inRandomOrder()
             ->take($cantidadDificil)
             ->get();
 
-        // Combinar todas las preguntas en una colección
-        $todasPreguntas = $preguntasFaciles->concat($preguntasMedias)
-            ->concat($preguntasDificiles);
+        $todasPreguntas = $preguntasFaciles->concat($preguntasMedias)->concat($preguntasDificiles);
 
         return response()->json([
+            'area' => [
+                'id' => $area->id,
+                'nombre' => $area->name 
+            ],
             'preguntas' => $todasPreguntas,
             'total' => $todasPreguntas->count(),
             'distribucion' => [
@@ -75,7 +83,7 @@ class QuestionEvaluationController extends Controller
             ]
         ]);
     }
-
+    
     public function assignRandomQuestions(ValidationQuestionEvaluation $request)
     {
         try {

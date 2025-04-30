@@ -17,6 +17,7 @@ use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\PermisionController;
 use App\Http\Controllers\QuestionBankController;
+use App\Http\Controllers\QuestionEvaluationController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsersController;
 
@@ -182,6 +183,11 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-evaluaciones');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-evaluaciones-por-id');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:buscar-evaluaciones-porId');
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
 });
+
+Route::controller(QuestionEvaluationController::class)->prefix('question_evaluations')->group(function(){
+    Route::post("/cantity", "cantidadPreguntas")->middleware('auth:persona', 'permission:asignar-cantidad-preguntas');
+    Route::post("/assign", "AssignRandomQuestions")->middleware('auth:persona', 'permission:generar-pruebas-aleatorias');
+}); 
