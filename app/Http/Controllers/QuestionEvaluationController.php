@@ -8,7 +8,8 @@ use App\Models\Evaluation;
 use App\Http\Requests\ValidationQuestionEvaluation;
 use App\Models\Areas;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
+
 
 class QuestionEvaluationController extends Controller
 {
@@ -17,9 +18,9 @@ class QuestionEvaluationController extends Controller
         // Validar entrada
         $request->validate([
             'area_id' => 'required|integer|exists:areas,id',
-            'cantidadFacil' => 'sometimes|integer|min:0',
-            'cantidadMedia' => 'sometimes|integer|min:0',
-            'cantidadDificil' => 'sometimes|integer|min:0',
+            'cantidadFacil' => 'nullable|integer|min:0',
+            'cantidadMedia' => 'nullable|integer|min:0',
+            'cantidadDificil' => 'nullable|integer|min:0',
         ]);
 
         $area_id = $request->input('area_id');
@@ -67,7 +68,7 @@ class QuestionEvaluationController extends Controller
         return response()->json([
             'area' => [
                 'id' => $area->id,
-                'nombre' => $area->name 
+                'nombre' => $area->name
             ],
             'preguntas' => $todasPreguntas,
             'total' => $todasPreguntas->count(),
@@ -83,41 +84,38 @@ class QuestionEvaluationController extends Controller
             ]
         ]);
     }
-    
+
     public function assignRandomQuestions(ValidationQuestionEvaluation $request)
     {
         try {
             DB::beginTransaction();
-
             $evaluation = Evaluation::findOrFail($request->evaluation_id);
             $questionsPerArea = $request->questions_per_area;
-
             $assignedQuestions = [];
             $currentTotalScore = 0;
 
             foreach ($questionsPerArea as $areaId => $config) {
                 $availableQuestions = QuestionBank::where('area_id', $areaId)->get();
-
+            
                 if ($availableQuestions->count() < $config['quantity']) {
                     throw new \Exception("No hay suficientes preguntas para el área $areaId");
-                }
-
+                }               
                 $selectedQuestions = $availableQuestions->random($config['quantity']);
                 $scorePerQuestion = $config['score'] / $config['quantity'];
-
+            
                 foreach ($selectedQuestions as $question) {
                     $assignedQuestion = new QuestionEvaluation();
                     $assignedQuestion->evaluation_id = $request->evaluation_id;
                     $assignedQuestion->question_id = $question->id;
                     $assignedQuestion->score = $scorePerQuestion;
                     $assignedQuestion->save();
-
+            
                     $assignedQuestions[] = $assignedQuestion;
-
+            
                     $currentTotalScore += $scorePerQuestion;
                 }
             }
-
+            
             DB::commit();
 
             return response()->json([
@@ -132,5 +130,33 @@ class QuestionEvaluationController extends Controller
                 'message' => 'Error al asignar preguntas: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function disponibles(Request $request)
+    {
+        $request->validate([
+            'area_id' => 'required|exists:areas,id',
+        ]);
+
+        $areaId = $request->input('area_id');
+
+        $facil = QuestionBank::where('area_id', $areaId)
+            ->where('dificulty', 'facil')
+            ->count();
+
+        $media = QuestionBank::where('area_id', $areaId)
+            ->where('dificulty', 'medio')
+            ->count();
+
+        $dificil = QuestionBank::where('area_id', $areaId)
+            ->where('dificulty', 'dificil')
+            ->count();
+
+        return response()->json([
+            'area_id' => (int)$areaId,
+            'facil' => $facil,
+            'media' => $media,
+            'dificil' => $dificil
+        ]);
     }
 }

@@ -91,6 +91,7 @@ class PermissionSeeder extends Seeder
             'ver-informacion-del-periodo-asignado',
             'generar-pruebas-aleatorias',
             'asignar-cantidad-preguntas',
+            'ver-preguntas-disponibles',
         ];
 
         // Crear permisos si no existen

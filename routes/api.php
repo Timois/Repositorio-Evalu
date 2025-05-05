@@ -190,4 +190,5 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
 Route::controller(QuestionEvaluationController::class)->prefix('question_evaluations')->group(function(){
     Route::post("/cantity", "cantidadPreguntas")->middleware('auth:persona', 'permission:asignar-cantidad-preguntas');
     Route::post("/assign", "AssignRandomQuestions")->middleware('auth:persona', 'permission:generar-pruebas-aleatorias');
+    Route::get("/list", "disponibles")->middleware('auth:persona', 'permission:ver-preguntas-disponibles');
 }); 
