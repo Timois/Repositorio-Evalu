@@ -159,4 +159,17 @@ class QuestionEvaluationController extends Controller
             'dificil' => $dificil
         ]);
     }
+    public function find()
+    {
+        $questions = QuestionEvaluation::orderBy('id', 'ASC')->get();
+        return response()->json($questions);
+    }
+
+    public function findById(string $id)
+    {
+        $question = QuestionEvaluation::where('evaluation_id', $id)->get();
+        if (!$question)
+            return ["message:", "La pregunta con id:" . $id . " no existe."];
+        return response()->json($question);
+    }
 }

@@ -29,6 +29,8 @@ class ValidationEvaluation extends FormRequest
         $validationAcademicPeriod = 'required|exists:academic_management_period,id';
         $validationStatus = 'required|in:activo,inactivo';
         $validationType = 'required|in:web,ocr,app';
+        $validationQualifiedStudents = 'integer|min:0';
+        $validationDisqualifiedStudents = 'integer|min:0';
         $evaluation = $this->route("id");
 
         if ($evaluation) {
@@ -40,6 +42,8 @@ class ValidationEvaluation extends FormRequest
             $validationAcademicPeriod = 'required|exists:academic_management_period,id';
             $validationStatus = 'required|in:activo,inactivo';
             $validationType = 'required|in:web,ocr,app';
+            $validationQualifiedStudents = 'integer|min:0';
+            $validationDisqualifiedStudents = 'integer|min:0';
         }
 
         return [
@@ -49,6 +53,8 @@ class ValidationEvaluation extends FormRequest
             'passing_score' => $validationPassingScore,
             'date_of_realization' => $validationDateRealization,
             'academic_management_period_id' => $validationAcademicPeriod,
+            'qualified_students' => $validationQualifiedStudents,
+            'disqualified_students' => $validationDisqualifiedStudents,
             'status' => $validationStatus,
             'type' => $validationType
         ];
@@ -88,6 +94,10 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization.required' => 'El campo fecha de realización es obligatorio.',
             'date_of_realization.date_format' => 'El campo fecha de realización debe tener el formato Y-m-d.',
             'date_of_realization.after' => 'El campo fecha de realización debe ser después de la fecha actual.',
+            'qualified_students.integer' => 'El campo estudiantes calificados debe ser un número entero.',
+            'qualified_students.min' => 'El campo estudiantes calificados debe ser mayor o igual a 0.',
+            'disqualified_students.integer' => 'El campo estudiantes descalificados debe ser un número entero.',
+            'disqualified_students.min' => 'El campo estudiantes descalificados debe ser mayor o igual a 0.',
             'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
             'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
             'status.required' => 'El campo estado es obligatorio.',

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->double('passing_score')->nullable();
             $table->uuid('code')->unique();
             $table->date('date_of_realization')->nullable();  
+            $table->integer('qualified_students')->nullable();
+            $table->integer('disqualified_students')->nullable();
             $table->enum('status', ['activo', 'inactivo'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
             $table->foreignId('academic_management_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');

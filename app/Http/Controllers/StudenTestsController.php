@@ -22,6 +22,7 @@ class StudenTestsController extends Controller
         return response()->json($test);
     }
 
+    
     public function create(ValidationStudentTest $request){
         $test = new StudentTest();
         $test->evaluation_id = $request->evaluation_id;
@@ -35,7 +36,7 @@ class StudenTestsController extends Controller
         $test->not_answered = $request->not_answered;
         $test->status = $request->status;
         $test->save();
-        return $test;
+        return response()->json($test);
     }
 
     public function findAndUpdate(ValidationStudentTest $request, string $id){
@@ -61,6 +62,7 @@ class StudenTestsController extends Controller
         if ($request->status)
             $test->status = $request->status;
         $test->save();
-        return $test;
+        return response()->json($test);
     }
+
 }

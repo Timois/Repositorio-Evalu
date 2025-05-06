@@ -191,4 +191,6 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
     Route::post("/cantity", "cantidadPreguntas")->middleware('auth:persona', 'permission:asignar-cantidad-preguntas');
     Route::post("/assign", "AssignRandomQuestions")->middleware('auth:persona', 'permission:generar-pruebas-aleatorias');
     Route::get("/list", "disponibles")->middleware('auth:persona', 'permission:ver-preguntas-disponibles');
+    Route::get("listAssigned","find")->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
 }); 
