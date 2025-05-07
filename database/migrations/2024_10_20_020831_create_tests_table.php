@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('correct_answers')->nullable();  // respuestas correctas que hizo el estudiante
             $table->string('incorrect_answers')->nullable();   // respuestas incorrectas que hizo el estudiante
             $table->string('not_answered')->nullable();   // respuestas no respondidas que hizo el estudiante
+            $table->json('questions_order')->nullable();
             $table->enum('status',['evaluado','corregido'])->default('evaluado'); // Estado de la prueba
             $table->timestamps();
         });

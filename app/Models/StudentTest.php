@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudentTest extends Model
 {
-    protected $table = 'student_test';
+    protected $table = 'student_tests';
     
-
+    protected $casts = [
+        'questions_order' => 'array', // convierte automáticamente el JSON a array
+    ];
     public function student():BelongsTo{
         return $this->belongsTo(Student::class);
     }

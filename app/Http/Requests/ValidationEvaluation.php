@@ -30,7 +30,6 @@ class ValidationEvaluation extends FormRequest
         $validationStatus = 'required|in:activo,inactivo';
         $validationType = 'required|in:web,ocr,app';
         $validationQualifiedStudents = 'integer|min:0';
-        $validationDisqualifiedStudents = 'integer|min:0';
         $evaluation = $this->route("id");
 
         if ($evaluation) {
@@ -43,7 +42,6 @@ class ValidationEvaluation extends FormRequest
             $validationStatus = 'required|in:activo,inactivo';
             $validationType = 'required|in:web,ocr,app';
             $validationQualifiedStudents = 'integer|min:0';
-            $validationDisqualifiedStudents = 'integer|min:0';
         }
 
         return [
@@ -54,7 +52,6 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization' => $validationDateRealization,
             'academic_management_period_id' => $validationAcademicPeriod,
             'qualified_students' => $validationQualifiedStudents,
-            'disqualified_students' => $validationDisqualifiedStudents,
             'status' => $validationStatus,
             'type' => $validationType
         ];
@@ -96,8 +93,6 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization.after' => 'El campo fecha de realización debe ser después de la fecha actual.',
             'qualified_students.integer' => 'El campo estudiantes calificados debe ser un número entero.',
             'qualified_students.min' => 'El campo estudiantes calificados debe ser mayor o igual a 0.',
-            'disqualified_students.integer' => 'El campo estudiantes descalificados debe ser un número entero.',
-            'disqualified_students.min' => 'El campo estudiantes descalificados debe ser mayor o igual a 0.',
             'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
             'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
             'status.required' => 'El campo estado es obligatorio.',

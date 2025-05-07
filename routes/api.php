@@ -19,6 +19,7 @@ use App\Http\Controllers\PermisionController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionEvaluationController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\StudenTestsController;
 use App\Http\Controllers\UsersController;
 
 /*
@@ -194,3 +195,12 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
     Route::get("listAssigned","find")->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
 }); 
+
+Route::controller(StudenTestsController::class)->prefix('student_tests')->group(function(){
+    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-pruebas');
+    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
+    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-pruebas');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-pruebas-por-id');
+    Route::post("/assignRandomEvaluation", "assignRandomEvaluation")->middleware('auth:persona', 'permission:asignar-preguntas-evaluaciones');
+    Route::get("/findStudentsByEvaluation/{id}", 'getStudentsByEvaluation')->middleware('auth:persona', 'permission:ver-postulantes-por-evaluacion');
+});

@@ -92,6 +92,7 @@ class PermissionSeeder extends Seeder
             'generar-pruebas-aleatorias',
             'asignar-cantidad-preguntas',
             'ver-preguntas-disponibles',
+            'ver-postulantes-por-evaluacion'
         ];
 
         // Crear permisos si no existen

@@ -30,7 +30,6 @@ class EvaluationController extends Controller
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
         $evaluation->qualified_students = $request->qualified_students;
-        $evaluation->disqualified_students = $request->disqualified_students;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
 
@@ -52,7 +51,6 @@ class EvaluationController extends Controller
                 'passing_score', // Se agrega porque estaba en create()
                 'date_of_realization', // Se agrega porque estaba en create()
                 'qualified_students',
-                'disqualified_students',
                 'status',
                 'type',
                 'academic_management_period_id'
