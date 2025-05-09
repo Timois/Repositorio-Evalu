@@ -176,7 +176,7 @@ Route::controller(QuestionBankController::class)->prefix('bank_questions')->grou
 Route::controller(ImportStudentController::class)->prefix('students')->group(function(){
     Route::post("/import", "import")->middleware('auth:persona', 'permission:importar-postulantes');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-postulantes');
-    Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:editar-alumnos');
+    Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
     Route::get("/findByName/{id}", "findByName")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
 });
 
@@ -203,4 +203,5 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->group(
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-pruebas-por-id');
     Route::post("/assignRandomEvaluation", "assignRandomEvaluation")->middleware('auth:persona', 'permission:asignar-preguntas-evaluaciones');
     Route::get("/findStudentsByEvaluation/{id}", 'getStudentsByEvaluation')->middleware('auth:persona', 'permission:ver-postulantes-por-evaluacion');
+    Route::get("/listQuestionsByStudent/{id}", 'getQuestionsWithAnswers')->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
 });

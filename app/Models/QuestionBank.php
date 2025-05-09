@@ -22,9 +22,8 @@ class QuestionBank extends Model
         'status',
     ];
 
-    public function bank_answers():BelongsTo{
-        return $this->belongsTo(AnswerBank::class)
-        ->withTimestamps();
+    public function bank_answers():HasMany{
+        return $this->hasMany(AnswerBank::class, 'bank_question_id');
     }
 
     public function areas():BelongsTo{

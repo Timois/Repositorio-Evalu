@@ -91,8 +91,6 @@ class EvaluationController extends Controller
         }
     }
 
-
-
     public function findById(string $id)
     {
         $evaluation = Evaluation::find($id);

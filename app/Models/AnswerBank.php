@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class AnswerBank extends Model
 {
@@ -21,7 +19,7 @@ class AnswerBank extends Model
       'status',
   ];
 
-   public function bank_questions():HasMany{
-        return $this->hasMany(QuestionBank::class);
+   public function bank_questions():BelongsTo{
+        return $this->belongsTo(QuestionBank::class);
    }
 }
