@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class UserStudent extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -19,7 +20,7 @@ class UserStudent extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $table = 'students';
-
+    protected $guard_name = 'api';
     protected $fillable = [
         'ci',
         'birthdate',
@@ -67,4 +68,5 @@ class UserStudent extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
 }

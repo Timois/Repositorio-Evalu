@@ -130,6 +130,7 @@ class QuestionBankImport implements ToCollection
                     'excel_import_id' => $this->excelImportId,
                     'question' => $dataRow['pregunta'],
                     'description' => $dataRow['descripcion'],
+                    'dificulty' => $dataRow['dificultad'],
                     'type' => $dataRow['tipo'],
                     'image' => basename($dataRow['imagen']),
                     'status' => 'activo',

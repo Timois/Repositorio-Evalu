@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +15,7 @@ class QuestionBank extends Model
         'excel_import_id',
         'question',
         'description',
+        'dificulty',
         'type',
         'image',
         'total_weight',

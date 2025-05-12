@@ -92,14 +92,23 @@ class PermissionSeeder extends Seeder
             'generar-pruebas-aleatorias',
             'asignar-cantidad-preguntas',
             'ver-preguntas-disponibles',
-            'ver-postulantes-por-evaluacion'
+            'ver-postulantes-por-evaluacion',
+            'ver-resultados',
         ];
 
         // Crear permisos si no existen
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'persona']);
         }
-
+        $permissionsStudent = [
+            'ver-resultados',
+            'ver-preguntas-asignadas',
+            'ver-evaluaciones',
+        ];
+        // Crear permisos para postulantes
+        foreach ($permissionsStudent as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'api']);
+        }
         $this->command->info('✅ Permisos creados correctamente.');
     }
 }

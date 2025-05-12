@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Models;
+
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Result extends Model
+{
+    protected $table = 'results';
+    protected $fillable = [
+        'student_test_id',
+        'qualification',
+        'maximum_score',
+        'minimum_score',
+        'exam_duration',
+        'status',
+    ];
+
+    public function studentTest():HasMany{
+        return $this->hasMany(StudentTest::class);
+    }
+}

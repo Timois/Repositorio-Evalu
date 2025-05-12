@@ -230,7 +230,7 @@ class QuestionImagesImport implements ToCollection
                 'excel_import_id'=> $this->excelImportId,
                 'question'       => $dataRow['pregunta'],
                 'description'    => $dataRow['descripcion'],
-                'difficulty'     => $dataRow['dificultad'],
+                'dificulty'     => $dataRow['dificultad'],
                 'question_type'  => $questionType,
                 'type'           => $dataRow['tipo'],
                 'image'          => $imagePath,

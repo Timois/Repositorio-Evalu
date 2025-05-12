@@ -20,4 +20,7 @@ class StudentTest extends Model
     public function evaluations():BelongsTo{
         return $this->belongsTo(Evaluation::class);
     }
+    public function results():HasMany{
+        return $this->hasMany(Result::class);
+    }
 }

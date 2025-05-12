@@ -18,9 +18,11 @@ use App\Http\Controllers\PeriodExtensionController;
 use App\Http\Controllers\PermisionController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionEvaluationController;
+use App\Http\Controllers\ResultsController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\StudenTestsController;
 use App\Http\Controllers\UsersController;
+use LDAP\Result;
 
 /*
 |--------------------------------------------------------------------------
@@ -205,3 +207,22 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->group(
     Route::get("/findStudentsByEvaluation/{id}", 'getStudentsByEvaluation')->middleware('auth:persona', 'permission:ver-postulantes-por-evaluacion');
     Route::get("/listQuestionsByStudent/{id}", 'getQuestionsWithAnswers')->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
 });
+
+Route::controller(ResultsController::class)->prefix('results')->group(function(){
+    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-resultados');
+    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-resultados');
+    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-resultados');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-resultados-por-id');
+});
+
+Route::middleware('auth:api')->group(function () {
+    Route::controller(ResultsController::class)->prefix('results')->group(function(){
+        Route::get("/list", "find")->middleware('auth:api', 'permission:ver-resultados');
+        Route::get("/find/{id}", 'findById')->middleware('auth:api', 'permission:ver-resultados-por-id');
+    });
+    Route::controller(StudenTestsController::class)->prefix('student_tests')->group(function(){
+        Route::get("/list", "find")->middleware('auth:api', 'permission:ver-evaluaciones');
+        Route::get("/find/{id}", 'findById')->middleware('auth:api', 'permission:ver-pruebas-por-id');
+    });
+});
+
