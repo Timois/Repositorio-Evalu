@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+
+use function Laravel\Prompts\password;
+
 class UserSeeder extends Seeder
 {
     /**
@@ -34,7 +37,7 @@ class UserSeeder extends Seeder
                 'email' => 'usuario@example.com',
                 'password' => Hash::make('password123'),
                 'role' => ['docente', 'admin']
-            ]
+            ],
         ];
 
         foreach ($users as $userData) {

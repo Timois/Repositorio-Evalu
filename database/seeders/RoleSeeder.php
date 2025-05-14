@@ -18,12 +18,26 @@ class RoleSeeder extends Seeder
         $superAdminRole = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'persona']);
         $docenteRole = Role::firstOrCreate(['name' => 'docente', 'guard_name' => 'persona']);
         $postulanteRole = Role::firstOrCreate(['name' => 'postulante', 'guard_name' => 'api']);
-        // Asignar permisos a los roles
-        $adminRole->syncPermissions(Permission::all()); 
 
-        $superAdminRole->syncPermissions(Permission::all()); // 🔥 Super-Admin tiene todos los permisos
-        $docenteRole->syncPermissions(['ver-unidades-por-id']);
-        $postulanteRole->syncPermissions(['ver-resultados', 'ver-preguntas-asignadas'], 'ver-evaluaciones');
-        $this->command->info('✅ Roles creados correctamente.');
+        // Asignar permisos a admin y super-admin (guard persona)
+        $allPersonaPermissions = Permission::where('guard_name', 'persona')->get();
+        $adminRole->syncPermissions($allPersonaPermissions);
+        $superAdminRole->syncPermissions($allPersonaPermissions);
+
+        // Asignar permisos a docente (guard persona)
+        $docentePermissions = Permission::where('name', 'ver-unidades-por-id')
+            ->where('guard_name', 'persona')
+            ->get();
+        $docenteRole->syncPermissions($docentePermissions);
+
+        // Asignar permisos a postulante (guard api)
+        $postulantePermissions = Permission::whereIn('name', [
+            'ver-resultados',
+            'ver-preguntas-asignadas',
+            'ver-evaluaciones',
+        ])->where('guard_name', 'api')->get();
+        $postulanteRole->syncPermissions($postulantePermissions);
+
+        $this->command->info('✅ Roles y permisos asignados correctamente.');
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\ResultsController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\StudenTestsController;
 use App\Http\Controllers\UsersController;
+use App\Models\Evaluation;
 use LDAP\Result;
 
 /*
@@ -223,6 +224,11 @@ Route::middleware('auth:api')->group(function () {
     Route::controller(StudenTestsController::class)->prefix('student_tests')->group(function(){
         Route::get("/list", "find")->middleware('auth:api', 'permission:ver-evaluaciones');
         Route::get("/find/{id}", 'findById')->middleware('auth:api', 'permission:ver-pruebas-por-id');
+    });
+
+    Route::controller(EvaluationController::class)->prefix('evaluations')->group(function(){
+        Route::get("/list", "find")->middleware('auth:api', 'permission:ver-evaluaciones');
+        Route::get("/find/{id}", 'findById')->middleware('auth:api', 'permission:buscar-evaluaciones-porId');
     });
 });
 
