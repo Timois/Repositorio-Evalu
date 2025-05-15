@@ -38,4 +38,8 @@ class QuestionBank extends Model
     {
         return $this->belongsTo(QuestionEvaluation::class, 'question_evaluation_id');
     }
+    public function studentAnswer()
+    {
+        return $this->hasMany(StudentAnswer::class);
+    }
 }

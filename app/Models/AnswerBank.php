@@ -22,4 +22,8 @@ class AnswerBank extends Model
    public function bank_questions():BelongsTo{
         return $this->belongsTo(QuestionBank::class);
    }
+   public function student_answer()
+   {
+       return $this->hasMany(StudentAnswer::class);
+   }
 }

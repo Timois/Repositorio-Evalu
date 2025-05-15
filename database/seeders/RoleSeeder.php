@@ -35,6 +35,7 @@ class RoleSeeder extends Seeder
             'ver-resultados',
             'ver-preguntas-asignadas',
             'ver-evaluaciones',
+            'ver-id-del-estudiante-por-ci',
         ])->where('guard_name', 'api')->get();
         $postulanteRole->syncPermissions($postulantePermissions);
 

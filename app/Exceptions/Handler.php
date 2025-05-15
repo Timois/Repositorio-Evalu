@@ -40,7 +40,7 @@ class Handler extends ExceptionHandler
         });
     }
     public function render($request, Throwable $exception)
-    {
+    {   
         if ($exception instanceof AuthenticationException) {
             return response()->json([
                 'error' => 'Token inválido o sesión cerrada'

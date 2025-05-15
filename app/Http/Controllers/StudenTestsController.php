@@ -27,7 +27,13 @@ class StudenTestsController extends Controller
             return ["message:", "La prueba con id:" . $id . " no existe."];
         return response()->json($test);
     }
-
+    public function findIdByCi(string $ci)
+    {
+        $id = Student::where('ci', $ci)->first();
+        if (!$id)
+            return ["message:", "El estudiante con ci:" . $ci . " no existe."];
+        return response()->json($id);
+    }
 
     public function create(ValidationStudentTest $request)
     {
@@ -125,37 +131,37 @@ class StudenTestsController extends Controller
             "message" => "Evaluación asignada a {$assignedCount} estudiantes con orden aleatorio de preguntas."
         ]);
     }
-        public function getQuestionsWithAnswers($student_test_id)
-        {
-            $test = StudentTest::find($student_test_id);
-            if (!$test)
-                return response()->json(['message' => 'Prueba no encontrada'], 404);
+    public function getQuestionsWithAnswers($student_test_id)
+    {
+        $test = StudentTest::find($student_test_id);
+        if (!$test)
+            return response()->json(['message' => 'Prueba no encontrada'], 404);
 
-            $orderedQuestionIds = json_decode($test->questions_order, true); // Asegura que sea array
+        $orderedQuestionIds = json_decode($test->questions_order, true); // Asegura que sea array
 
-            if (!is_array($orderedQuestionIds)) {
-                return response()->json(['message' => 'Formato inválido de preguntas ordenadas'], 400);
-            }
-
-            $questions = QuestionBank::with('bank_answers')
-                ->whereIn('id', $orderedQuestionIds)
-                ->get()
-                ->keyBy('id');
-
-            $orderedQuestions = [];
-            foreach ($orderedQuestionIds as $qid) {
-                if (isset($questions[$qid])) {
-                    $orderedQuestions[] = $questions[$qid];
-                }
-            }
-
-            return response()->json([
-                'student_test_id' => $test->id,
-                'student_id' => $test->student_id,
-                'evaluation_id' => $test->evaluation_id,
-                'questions' => $orderedQuestions
-            ]);
+        if (!is_array($orderedQuestionIds)) {
+            return response()->json(['message' => 'Formato inválido de preguntas ordenadas'], 400);
         }
+
+        $questions = QuestionBank::with('bank_answers')
+            ->whereIn('id', $orderedQuestionIds)
+            ->get()
+            ->keyBy('id');
+
+        $orderedQuestions = [];
+        foreach ($orderedQuestionIds as $qid) {
+            if (isset($questions[$qid])) {
+                $orderedQuestions[] = $questions[$qid];
+            }
+        }
+
+        return response()->json([
+            'student_test_id' => $test->id,
+            'student_id' => $test->student_id,
+            'evaluation_id' => $test->evaluation_id,
+            'questions' => $orderedQuestions
+        ]);
+    }
 
     public function getStudentsByEvaluation($evaluationId)
     {
@@ -165,4 +171,6 @@ class StudenTestsController extends Controller
 
         return response()->json($students);
     }
+
+    
 }

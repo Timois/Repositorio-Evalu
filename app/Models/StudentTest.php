@@ -23,4 +23,7 @@ class StudentTest extends Model
     public function results():HasMany{
         return $this->hasMany(Result::class);
     }
+    public function student_answer():HasMany{
+        return $this->hasMany(StudentAnswer::class);
+    }
 }

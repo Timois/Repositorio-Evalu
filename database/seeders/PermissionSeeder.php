@@ -94,6 +94,7 @@ class PermissionSeeder extends Seeder
             'ver-preguntas-disponibles',
             'ver-postulantes-por-evaluacion',
             'ver-resultados',
+            'ver-id-del-estudiante-por-ci',
         ];
 
         // Crear permisos si no existen
@@ -104,6 +105,7 @@ class PermissionSeeder extends Seeder
             'ver-resultados',
             'ver-preguntas-asignadas',
             'ver-evaluaciones',
+            'ver-id-del-estudiante-por-ci',
         ];
         // Crear permisos para postulantes
         foreach ($permissionsStudent as $permission) {
