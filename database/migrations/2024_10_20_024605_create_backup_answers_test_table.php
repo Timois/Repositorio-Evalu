@@ -12,12 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('backup_answers_test', function (Blueprint $table) {
-            $table->id(); // ID del backup de pregunta caso
-            // $table->foreignId('case_correction_id')->constrained('cases_correction', 'id')->onDelete('cascade'); // Relación con la pregunta
-            $table->string('student_answer'); // Respuesta proporcionada por el estudiante
-            $table->string('correct_answer')->nullable(); // Respuesta corregida (opcional)
-            $table->double('value')->nullable(); // Valor asignado
-            $table->enum('status', ['evaluado', 'corregido'])->default('evaluado'); // Estado del backup
+            $table->id(); // ID del backup de pregunta caso  
+            $table->integer('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
+            $table->integer('question_id')->nullable();
+            $table->integer('answer_id')->nullable(); // ID de la respuesta
+            $table->time('time')->nullable(); // Hora de la respuesta
             $table->timestamps();
         });
     }

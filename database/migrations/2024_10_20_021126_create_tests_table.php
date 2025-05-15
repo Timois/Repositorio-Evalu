@@ -32,7 +32,6 @@ return new class extends Migration
         Schema::create('results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
-            // $table->string('name')->nullable(); // Nombre para mostrar el resultado de la prueba
             $table->double('qualification')->nullable(); // Puntaje obtenido en la prueba
             $table->double('maximum_score')->nullable();   // Puntaje maximo de la prueba
             $table->integer('minimum_score')->nullable();   // Puntaje minimo de la prueba

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('phone_number')->default('');
             $table->string('birthdate')->default('');
             $table->string('password')->default('');
-            $table->enum('status',['activo','inactivo'])->default('inactivo');
+            $table->enum('status',['activo','evaluando','inactivo'])->default('activo');
             $table->timestamps();
         });
     }

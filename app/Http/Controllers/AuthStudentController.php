@@ -41,7 +41,7 @@ class AuthStudentController extends Controller
         // Actualizar estado a activo
         $persona->update(['status' => 'activo']);
         $rol = Role::where('name', 'postulante')->first();
-        
+
         // Generar token JWT con el guard correcto
         $token = Auth::guard('api')->login($persona);
 
@@ -51,7 +51,11 @@ class AuthStudentController extends Controller
         return response()->json([
             'token' => $token,
             'user' => [
-                'nombre' => $persona->name,
+                'nombre_completo' => trim(
+                    $persona->name . ' ' .
+                        ($persona->paternal_surname ?? '') . ' ' .
+                        ($persona->maternal_surname ?? '')
+                ),
                 'ci' => $persona->ci,
                 'role' => $rol->name, // devuelve un array de nombres de roles
             ],

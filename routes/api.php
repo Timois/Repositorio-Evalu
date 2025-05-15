@@ -225,6 +225,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get("/questions/{id}", "getQuestionsWithAnswers");
     });
     Route::controller(StudentAnswersController::class)->prefix('student_answers')->group(function(){
-        Route::post("/save", "store");
+        Route::post("/save", "store");  
+        Route::get("/list/{student_test_id}", "hasAnswered");
+        Route::post("/startTest", "startTest");
     });
 });
