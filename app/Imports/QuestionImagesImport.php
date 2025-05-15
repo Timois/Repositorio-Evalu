@@ -50,7 +50,6 @@ class QuestionImagesImport implements ToCollection
 
     public function collection(Collection $rows)
     {
-
         // Verificar si hay filas en el Excel
         if ($rows->isEmpty()) {
             $this->messages[] = "El archivo Excel está vacío.";
@@ -133,19 +132,20 @@ class QuestionImagesImport implements ToCollection
             if ($this->validateOnly) {
                 return;
             }
-
+            
             // Usar el área ID del constructor (no del Excel)
             $areaId = $this->areaId;
             $imagePath = null;
-
             // Obtener la carrera asociada al área
             $area = DB::table('areas')->where('id', $areaId)->first();
+            
             if (!$area) {
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró el área con ID {$areaId}.";
                 return;
             }
-
+            
             $career = DB::table('careers')->where('id', $area->career_id)->first();
+            
             if (!$career) {
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la carrera para el área con ID {$areaId}.";
                 return;
@@ -157,7 +157,7 @@ class QuestionImagesImport implements ToCollection
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la unidad para la carrera con ID {$career->id}.";
                 return;
             }
-
+            
             $areaName = $area->name;
             $unitSigla = $unit->initials;  // Usar la sigla de la unidad
             $careerSigla = $career->initials; // Usar la sigla de la carrera

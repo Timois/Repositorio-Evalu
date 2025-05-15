@@ -17,6 +17,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
     
     public function collection(Collection $rows)
     {   
+        set_time_limit(300); 
         // Validar cabeceras
         $headers = $rows->first()->keys()->toArray();
         
@@ -71,9 +72,9 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     $this->results[] = $rowResult;
                     continue;
                 }
-
+                $existingCIs = Student::pluck('ci')->toArray();
                 // Verificar CI duplicado
-                if (Student::where('ci', $row['ci'])->exists()) {
+                if (in_array($row['ci'], $existingCIs))  {
                     $rowResult['mensajes'][] = "El CI ya está registrado en la base de datos";
                     $this->results[] = $rowResult;
                     continue;
