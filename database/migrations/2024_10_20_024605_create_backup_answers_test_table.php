@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('backup_answers_test', function (Blueprint $table) {
             $table->id(); // ID del backup de pregunta caso  
-            $table->integer('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
+            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
             $table->integer('question_id')->nullable();
             $table->integer('answer_id')->nullable(); // ID de la respuesta
             $table->time('time')->nullable(); // Hora de la respuesta

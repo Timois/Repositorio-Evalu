@@ -29,6 +29,7 @@ class ValidationEvaluation extends FormRequest
         $validationAcademicPeriod = 'required|exists:academic_management_period,id';
         $validationStatus = 'required|in:activo,inactivo';
         $validationType = 'required|in:web,ocr,app';
+        $validationTime = 'required|integer|min:0';
         $validationQualifiedStudents = 'integer|min:0';
         $evaluation = $this->route("id");
 
@@ -41,6 +42,7 @@ class ValidationEvaluation extends FormRequest
             $validationAcademicPeriod = 'required|exists:academic_management_period,id';
             $validationStatus = 'required|in:activo,inactivo';
             $validationType = 'required|in:web,ocr,app';
+            $validationTime = 'required|integer|min:0';
             $validationQualifiedStudents = 'integer|min:0';
         }
 
@@ -52,6 +54,7 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization' => $validationDateRealization,
             'academic_management_period_id' => $validationAcademicPeriod,
             'qualified_students' => $validationQualifiedStudents,
+            'time' => $validationTime,
             'status' => $validationStatus,
             'type' => $validationType
         ];
@@ -95,6 +98,8 @@ class ValidationEvaluation extends FormRequest
             'qualified_students.min' => 'El campo estudiantes calificados debe ser mayor o igual a 0.',
             'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
             'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
+            'time.required' => 'El campo tiempo es obligatorio.',
+            'time.integer' => 'El campo tiempo debe ser un número entero.',
             'status.required' => 'El campo estado es obligatorio.',
             'status.in' => 'El campo estado debe ser "activo" o "inactivo".',
             'type.required' => 'El campo tipo es obligatorio.',

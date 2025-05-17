@@ -6,6 +6,7 @@ use App\Http\Controllers\AnswerBankController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthStudentController;
 use App\Http\Controllers\AuthUserController;
+use App\Http\Controllers\BackupAnswerTestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\EvaluationController;
@@ -228,5 +229,12 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post("/save", "store");  
         Route::get("/list/{student_test_id}", "hasAnswered");
         Route::post("/startTest", "startTest");
+    });
+
+    Route::controller(BackupAnswerTestController::class)->prefix('backup_answers')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::get("/find/{id}", 'findById');
+        Route::post("/edit/{id}", "findAndUpdate");
     });
 });
