@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->string('description')->nullable();
-            $table->integer('total_score')->nullable();
-            $table->double('passing_score')->nullable();
-            $table->uuid('code')->unique();
+            $table->integer('total_score')->default(100);
+            $table->integer('passing_score');
             $table->date('date_of_realization')->nullable();  
-            $table->integer('time')->nullable();
+            $table->integer('time');
             $table->integer('qualified_students')->nullable();
             $table->enum('status', ['activo', 'inactivo'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
@@ -45,6 +44,14 @@ return new class extends Migration
             $table->double('scores_asigned')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('groups', function (Blueprint $table) {
+            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade');
+            $table->string('name')->unique();
+            $table->string('description');
+            $table->integer('total_students')->nullable();
+            $table->timestamps();
+        });
         
     }
 
@@ -53,6 +60,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('groups'); // Add this line to drop the groups table()
         Schema::dropIfExists('backup_of_generated_questions');
         Schema::dropIfExists('question_evaluation');
         Schema::dropIfExists('evaluations');

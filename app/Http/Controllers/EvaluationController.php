@@ -26,7 +26,6 @@ class EvaluationController extends Controller
         $evaluation->total_score = $request->total_score;
         $evaluation->passing_score = $request->passing_score;
         $evaluation->date_of_realization = $request->date_of_realization;
-        $evaluation->code = Str::uuid(); // Genera un UUID automáticamente
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
         $evaluation->time = $request->time;

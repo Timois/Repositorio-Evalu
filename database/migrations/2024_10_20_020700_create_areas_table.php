@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string("name")->nullable();
             $table->string("description")->nullable();
+            $table->enum('status', ['activo', 'inactivo', 'por-periodo'])->default('activo');
             $table->foreignId('career_id')->constrained('careers', 'id')->onDelete('cascade');
             $table->timestamps();
         });

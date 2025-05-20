@@ -42,4 +42,8 @@ class Evaluation extends Model
    public function backupGenerateQuestions():HasMany{
        return $this->hasMany(BackupGenerateQuestion::class);
    }
+
+    public function groups():HasMany{
+         return $this->hasMany(Group::class);
+    }
 }
