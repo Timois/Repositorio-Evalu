@@ -56,20 +56,6 @@ Route::controller(AuthStudentController::class)->prefix('students')->group(funct
     Route::get("/profile", "me");
 });
 
-// Extensiones de periodos
-Route::controller(PeriodExtensionController::class)->prefix('period_extension')->group(function(){
-    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-periodos');
-    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-periodos');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodos');
-});
-
-// Extensiones de gestión
-Route::controller(ManagementExtensionController::class)->prefix('management_extension')->group(function(){
-    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-gestiones');
-    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-gestiones');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-gestiones');
-});
-
 // Rutas de Usuarios (requieren permisos de administración)
 Route::controller(UsersController::class)->prefix('users')->middleware($authPersona)->group(function(){
     Route::get("/list", "index")->middleware('auth:persona', 'permission:ver-usuarios');
@@ -144,7 +130,8 @@ Route::controller(AreaController::class)->prefix("areas")->middleware($authPerso
     Route::get("/listByCareer/{career_id}", "findAreasByCareer")->middleware('auth:persona', 'permission:ver-areas-por-id');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-areas');
     Route::get("/listQuestions/{id}", "questionsByArea")->middleware('auth:persona', 'permission:ver-preguntas-por-area');
-    Route::post("/unsubscribe{id}", "destroy");
+    Route::get("/cantityQuestions/{id}", "cantityQuestionsByArea");
+    Route::post("/unsubscribe/{id}", "destroy");    
 });
 
 // Rutas de Importación de Excel
@@ -231,11 +218,10 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get("/list/{student_test_id}", "hasAnswered");
         Route::post("/startTest", "startTest");
     });
-
+    
     Route::controller(BackupAnswerTestController::class)->prefix('backup_answers')->group(function(){
         Route::post("/save", "create");
         Route::get("/list", "find");
         Route::get("/find/{id}", 'findById');
-        Route::post("/edit/{id}", "findAndUpdate");
     });
 });

@@ -39,19 +39,6 @@ return new class extends Migration
             $table->foreignId('period_id')->constrained("periods", 'id')->onDelete('cascade');
             $table->timestamps();
         });
-        Schema::create('period_extensions', function (Blueprint $table) {
-            $table->id();
-            $table->dateTime('initial_date')->nullable();
-            $table->dateTime('end_date')->nullable();
-            $table->foreignId('academic_management_period_id')->constrained("academic_management_period", 'id')->onDelete('cascade');
-            $table->timestamps();
-        });
-        Schema::create('management_extensions', function (Blueprint $table) {
-            $table->id();
-            $table->date('date_extension')->nullable();
-            $table->foreignId('academic_management_id')->constrained("academic_management", 'id')->onDelete('cascade');
-            $table->timestamps();
-        });
 
 
     }
@@ -61,8 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('management_extensions');
-        Schema::dropIfExists('period_extensions');
         Schema::dropIfExists('academic_management_period');
         Schema::dropIfExists('academic_management_career');
         Schema::dropIfExists('periods');

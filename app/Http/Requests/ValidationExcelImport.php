@@ -26,13 +26,16 @@ class ValidationExcelImport extends FormRequest
     {
         $validationFile = $this->file('file_name');
         $validationStatus = 'required|in:completado,error';
+        $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
         if ($validationFile) {
             $validationFile = $validationFile->getClientOriginalName();
             $validationFile = 'required|file|mimes:xlsx,xls,csv|max:10000';
             $validationStatus = 'required|in:completado,error';
+            $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
         }
         return [
             'file_name' => 'required|file|mimes:xlsx,xls,csv|max:10000',
+            'description' => $validationDescription,
             'status' => $validationStatus,
         ];
     }   
@@ -40,14 +43,13 @@ class ValidationExcelImport extends FormRequest
     public function messages(): array
     {
         return [
-            'career.required' => 'La carrera es obligatoria.',
-            'career.regex' => 'Solo debe contener letras.',
-            'sigla.required' => 'La sigla es obligatoria.',
-            'sigla.regex' => 'Solo debe contener letras.',
             'file_name.required' => 'El archivo es obligatorio.',
             'file_name.file' => 'El archivo debe ser válido.',
             'file_name.mimes' => 'Solo se permiten archivos de tipo xlsx, xls o csv.',
             'file_name.max' => 'El tamaño máximo permitido del archivo es de 10 MB.',
+            'description.string' => 'La descripción debe ser una cadena de texto.',
+            'description.max' => 'La descripción no puede exceder los 255 caracteres.',
+            'description.regex' => 'La descripción solo puede contener letras, números, espacios y algunos caracteres especiales.',
             'status.required' => 'El estado es obligatorio.',
             'status.in' => 'El estado debe ser uno de: completado o error.',
         ];

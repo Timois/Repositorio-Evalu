@@ -23,7 +23,6 @@ class ValidationEvaluation extends FormRequest
     {
         $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
         $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-        $validationTotalScore = 'required|numeric|min:0';
         $validationPassingScore = 'required|numeric|min:0';
         $validationDateRealization = 'required|date_format:Y-m-d|after:today';
         $validationAcademicPeriod = 'required|exists:academic_management_period,id';
@@ -36,7 +35,6 @@ class ValidationEvaluation extends FormRequest
         if ($evaluation) {
             $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
             $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-            $validationTotalScore = 'required|numeric|min:0';
             $validationPassingScore = 'required|numeric|min:0';
             $validationDateRealization = 'required|date_format:Y-m-d';
             $validationAcademicPeriod = 'required|exists:academic_management_period,id';
@@ -49,7 +47,6 @@ class ValidationEvaluation extends FormRequest
         return [
             'title' => $validationTitle,
             'description' => $validationdescription,
-            'total_score' => $validationTotalScore,
             'passing_score' => $validationPassingScore,
             'date_of_realization' => $validationDateRealization,
             'academic_management_period_id' => $validationAcademicPeriod,

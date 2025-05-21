@@ -23,7 +23,7 @@ class EvaluationController extends Controller
         $evaluation = new Evaluation();
         $evaluation->title = $request->title;
         $evaluation->description = $request->description;
-        $evaluation->total_score = $request->total_score;
+        $evaluation->total_score = 100;
         $evaluation->passing_score = $request->passing_score;
         $evaluation->date_of_realization = $request->date_of_realization;
         $evaluation->status = $request->status;
@@ -32,7 +32,6 @@ class EvaluationController extends Controller
         $evaluation->qualified_students = $request->qualified_students;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
-
         return response()->json($evaluation);
     }
 
@@ -47,7 +46,6 @@ class EvaluationController extends Controller
             $updateData = $request->only([
                 'title',
                 'description',
-                'total_score',
                 'passing_score', // Se agrega porque estaba en create()
                 'date_of_realization', // Se agrega porque estaba en create()
                 'qualified_students',

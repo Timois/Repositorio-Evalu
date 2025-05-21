@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\QuestionImagesImport;
 use App\Models\ExcelImports;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class ImportExcelImageController extends Controller
             $request->validate([
                 'file_name' => 'required|mimetypes:application/zip,application/x-zip-compressed|max:10240',
                 'status' => 'required|in:completado,error',
+                'description' => 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u',
             ]);
 
             // Subir el archivo ZIP
@@ -46,7 +48,7 @@ class ImportExcelImageController extends Controller
             $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
             $result = $this->extractZip($zipPath, $extractTo);
             $areaId = $request->area_id;
-            
+            $description = $request->description;
             if (!$result['success']) {
                 throw new \Exception($result['message']);
             }
@@ -59,7 +61,7 @@ class ImportExcelImageController extends Controller
                     'excel_import_id' => $excelImportId,
                     'validateOnly' => true
                 ];
-                
+
                 $import = new QuestionImagesImport($importParams);
                 Excel::import($import, $result['excel']);
 
@@ -69,7 +71,7 @@ class ImportExcelImageController extends Controller
                 if ($analysis['duplicadas']['total'] > 0) {
                     $totalQuestions = $analysis['duplicadas']['total'] + $analysis['registradas']['total'];
                     $duplicatePercentage = ($analysis['duplicadas']['total'] / $totalQuestions) * 100;
-                
+
                     if ($duplicatePercentage > 50) {
                         DB::rollBack();
                         return response()->json([
@@ -84,13 +86,16 @@ class ImportExcelImageController extends Controller
                         ], 422);
                     }
                 }
-
+                $now = Carbon::now();
                 // Proceder con la importación
                 $importRecordId = DB::table('excel_imports')->insertGetId([
                     'file_name' => $zipFileName,
                     'size' => $fileSize,
                     'status' => $request->status,
+                    'description' => $description,
                     'file_path' => $result['excel'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
 
                 // Importación real

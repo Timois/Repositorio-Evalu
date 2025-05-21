@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('file_name');
             $table->unsignedBigInteger('size');
             $table->enum('status',['completado','error']);
+            $table->string('description');
             $table->string('file_hash')->nullable()->unique();
             $table->string('file_path');
             $table->timestamps();

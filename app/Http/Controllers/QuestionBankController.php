@@ -6,6 +6,8 @@ use App\Http\Requests\ValidationQuestionBank;
 use App\Models\QuestionBank;
 use App\Models\ExcelImports;
 
+use function Pest\Laravel\json;
+
 class QuestionBankController extends Controller
 {
     /**
@@ -22,7 +24,7 @@ class QuestionBankController extends Controller
      */
     public function create(ValidationQuestionBank $request)
     {
-        
+
         // Manejar la imagen si está presente
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -37,7 +39,7 @@ class QuestionBankController extends Controller
             // Obtener o crear el registro para importaciones manuales
             $excelImportId = $this->setupManualImport();
         }
-        
+
         $question = new QuestionBank();
         $question->question = $request->question;
         $question->description = $request->description;
@@ -48,7 +50,7 @@ class QuestionBankController extends Controller
         $question->area_id = $request->area_id;
         $question->excel_import_id = $excelImportId;
         $question->save();
-        
+
         return $question;
     }
 
@@ -56,7 +58,7 @@ class QuestionBankController extends Controller
     {
         // Verifica si ya existe un registro manual
         $manualImport = ExcelImports::where('file_name', 'manual_creation')->first();
-        
+
         if (!$manualImport) {
             // Crear el registro especial para creaciones manuales
             $manualImport = new ExcelImports();
@@ -66,7 +68,7 @@ class QuestionBankController extends Controller
             $manualImport->file_path = 'none'; // No hay archivo asociado
             $manualImport->save();
         }
-        
+
         return $manualImport->id;
     }
 
@@ -156,4 +158,5 @@ class QuestionBankController extends Controller
 
         return response()->json($question);
     }
+
 }

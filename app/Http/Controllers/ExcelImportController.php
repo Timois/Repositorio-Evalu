@@ -58,6 +58,7 @@ class ExcelImportController extends Controller
             $importExcel->file_name = $excelName;
             $importExcel->size = $fileSize;
             $importExcel->status = $request->status;
+            $importExcel->description = $request->description;
             $importExcel->file_path = $name_path;
             $importExcel->save();
 
@@ -117,6 +118,7 @@ class ExcelImportController extends Controller
             return ["message:", "El archivo con el id:" . $id . " no existe"];
         }
         $excel->status = $request->status;
+        $excel->description = $request->description;
         $excel->save();
         return $excel;
     }
@@ -126,6 +128,11 @@ class ExcelImportController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $excel = ExcelImports::find($id);
+        if (!$excel) {
+            return ["message:", "El archivo con el id:" . $id . " no existe"];
+        }
+        $excel->delete();
+        return $excel;
     }
 }
