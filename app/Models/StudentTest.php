@@ -9,7 +9,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class StudentTest extends Model
 {
     protected $table = 'student_tests';
-    
+    protected $fillable = [
+        'evaluation_id',
+        'student_id',
+        'code',
+        'start_time',
+        'end_time',
+        'correct_answers',
+        'incorrect_answers',
+        'not_answered',
+        'score_obtained',
+        'status',
+        'questions_order',
+    ];
     protected $casts = [
         'questions_order' => 'array', // convierte automáticamente el JSON a array
     ];

@@ -144,6 +144,7 @@ Route::controller(AreaController::class)->prefix("areas")->middleware($authPerso
     Route::get("/listByCareer/{career_id}", "findAreasByCareer")->middleware('auth:persona', 'permission:ver-areas-por-id');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-areas');
     Route::get("/listQuestions/{id}", "questionsByArea")->middleware('auth:persona', 'permission:ver-preguntas-por-area');
+    Route::post("/unsubscribe{id}", "destroy");
 });
 
 // Rutas de Importación de Excel

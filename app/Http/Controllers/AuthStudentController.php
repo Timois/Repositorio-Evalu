@@ -38,15 +38,19 @@ class AuthStudentController extends Controller
         if (!Hash::check($request->password, $persona->password)) {
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
-        // Actualizar estado a activo
+
+        // 👉 Verificar si ya está evaluando
+        if ($persona->status === 'evaluando') {
+            return response()->json([
+                'error' => 'Ya ha iniciado su evaluación. No puede iniciar sesión desde otro dispositivo.'
+            ], 403);
+        }
+
+        // ✅ Si no ha iniciado aún, ponerlo como "activo" y continuar
         $persona->update(['status' => 'activo']);
         $rol = Role::where('name', 'postulante')->first();
 
-        // Generar token JWT con el guard correcto
         $token = Auth::guard('api')->login($persona);
-
-        // Opcional: Refrescar modelo desde la base de datos
-        $persona = UserStudent::find($persona->id);
 
         return response()->json([
             'token' => $token,
@@ -57,11 +61,12 @@ class AuthStudentController extends Controller
                         ($persona->maternal_surname ?? '')
                 ),
                 'ci' => $persona->ci,
-                'role' => $rol->name, // devuelve un array de nombres de roles
+                'role' => $rol->name,
             ],
-            'permissions' => $rol->permissions->pluck('name'), // permisos del rol
+            'permissions' => $rol->permissions->pluck('name'),
         ]);
     }
+
 
 
     public function me()

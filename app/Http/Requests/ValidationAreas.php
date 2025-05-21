@@ -37,7 +37,6 @@ class ValidationAreas extends FormRequest
         ];
 
         $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.]+$/u';
-        $validationStatus = 'required|in:activo,inactivo,';
         $validationCareerId = [
             'required',
             'exists:careers,id',
@@ -62,7 +61,6 @@ class ValidationAreas extends FormRequest
         return [
             'name' => $validationName,
             'description' => $validationDescription,
-            'status' => $validationStatus,
             'career_id' => $validationCareerId,
         ];
     }
@@ -79,8 +77,6 @@ class ValidationAreas extends FormRequest
             'name.regex' => 'El nombre del área solo puede contener letras, espacios, comas, guiones y puntos.',
             'description.max' => 'La descripción no puede tener más de 255 caracteres.',
             'description.regex' => 'La descripción solo puede contener letras, espacios, comas, guiones y puntos.',
-            'status.required' => 'El estado es obligatorio.',
-            'status.in' => 'El estado debe ser "activo", "inactivo"',
             'career_id.required' => 'La carrera es obligatoria.',
             'career_id.exists' => 'La carrera seleccionada no existe.',
         ];

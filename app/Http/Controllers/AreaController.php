@@ -27,7 +27,7 @@ class AreaController extends Controller
         $area = new Areas();
         $area->name = $request->name;
         $area->description = $request->description;
-        $area->status = $request->status;
+        $area->status = 'activo';
         $area->career_id = $request->career_id;
         $area->save();
         return $area;
@@ -66,7 +66,12 @@ class AreaController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $area = Areas::find($id);
+        if (!$area)
+            return ["message:", "La area con el id:" . $id . " no existe."];
+        $area->status = 'inactivo';
+        $area->save();
+        return $area;
     }
 
     public function findAreasByCareer(Request $request, string $career_id)

@@ -8,6 +8,7 @@ use App\Models\QuestionBank;
 use App\Models\QuestionEvaluation;
 use App\Models\StudentAnswer;
 use App\Models\StudentTest;
+use App\Models\UserStudent;
 use Illuminate\Http\Request;
 
 class StudentAnswersController extends Controller
@@ -23,7 +24,12 @@ class StudentAnswersController extends Controller
         $studentTest = StudentTest::where('evaluation_id', $request->evaluation_id)
             ->where('student_id', $request->student_id)
             ->first();
-
+        // 🔁 Obtener el estudiante y actualizar su estado a "evaluando"
+        $student = UserStudent::find($request->student_id);
+        if (!$student) {
+            return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        }
+        $student->update(['status' => 'evaluando']);
         if (!$studentTest) {
             // Crear registro nuevo con start_time actual
             $studentTest = StudentTest::create([
@@ -40,7 +46,7 @@ class StudentAnswersController extends Controller
                     'start_time' => now()->format('H:i:s'),
                 ]);
             }
-        }
+        }    
 
         return response()->json([
             'message' => 'Examen iniciado correctamente',
@@ -49,6 +55,7 @@ class StudentAnswersController extends Controller
             'code' => $studentTest->code,
         ], 200);
     }
+
     public function store(Request $request)
     {
         $request->validate([
