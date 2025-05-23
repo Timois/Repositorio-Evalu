@@ -26,12 +26,13 @@ class ValidationExcelImport extends FormRequest
     {
         $validationFile = $this->file('file_name');
         $validationStatus = 'required|in:completado,error';
-        $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
+        $validationDescription = 'string|max:255|regex:/^[a-zA-Z0-9\s,.\-\/]+$/';
         if ($validationFile) {
             $validationFile = $validationFile->getClientOriginalName();
             $validationFile = 'required|file|mimes:xlsx,xls,csv|max:10000';
             $validationStatus = 'required|in:completado,error';
-            $validationDescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
+            $validationDescription = 'string|max:255|regex:/^[a-zA-Z0-9\s,.\-\/]+$/';
+
         }
         return [
             'file_name' => 'required|file|mimes:xlsx,xls,csv|max:10000',

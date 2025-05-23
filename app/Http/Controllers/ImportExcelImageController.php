@@ -24,7 +24,7 @@ class ImportExcelImageController extends Controller
             $request->validate([
                 'file_name' => 'required|mimetypes:application/zip,application/x-zip-compressed|max:10240',
                 'status' => 'required|in:completado,error',
-                'description' => 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u',
+                'description' => 'required|string|max:255|string|max:255|regex:/^[a-zA-Z0-9\s,.\-\/]+$/',
             ]);
 
             // Subir el archivo ZIP

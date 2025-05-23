@@ -53,9 +53,6 @@ class ValidationsAcademicManagement extends FormRequest
                 'after_or_equal:today'  // Solo aplicar en creación nueva
             ];
             $rules['year'][] = 'required';
-            if ($year) {
-                $rules['year'][] = 'date_equals:' . $year;
-            }
         }
         // Si es una edición y se está modificando la fecha inicial
         elseif ($this->has('initial_date')) {
@@ -84,7 +81,6 @@ class ValidationsAcademicManagement extends FormRequest
             'year.numeric' => 'La gestión es un número.',
             'year.digits' => 'El año debe ser de 4 dígitos',
             'year.required' => 'El año es obligatorio.',
-            'year.date_equals' => 'El año debe ser igual al año de fecha inicio',
             'year.unique' => 'El año ya ha sido registrado. Por favor, elige otro.',
             'initial_date.required' => 'La fecha inicio es obligatoria',
             'initial_date.date' => 'La fecha de inicio tiene que ser una fecha',

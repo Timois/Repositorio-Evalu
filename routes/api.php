@@ -139,6 +139,7 @@ Route::controller(ExcelImportController::class)->prefix('excel_import')->middlew
     Route::post("/save", "create")->middleware('auth:persona', 'permission:importar-excel');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-importaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-importaciones');
+    Route::delete("/delete/{id}", "destroy");
 });
 
 // Rutas de Importación de Excel con Imágenes
