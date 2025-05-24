@@ -68,7 +68,7 @@ class ExcelImportController extends Controller
             // Perform actual import
             $import = new QuestionBanKImport($importExcel->id, $area_id);
             Excel::import($import, $path);
-            
+
             // Get import messages
             $messages = $import->getMessages();
 
@@ -102,10 +102,39 @@ class ExcelImportController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function find()
+    public function find($areaId)
     {
-        $importExcel = ExcelImports::orderBy('id', 'ASC')->get();
+        $importExcel = DB::table('excel_imports')
+            ->join('bank_questions', 'excel_imports.id', '=', 'bank_questions.excel_import_id')
+            ->where('bank_questions.area_id', $areaId)
+            ->select('excel_imports.*')
+            ->distinct()
+            ->orderBy('excel_imports.id', 'ASC')
+            ->get();
+        if ($importExcel->isEmpty()) {
+            return response()->json([
+                'message' => 'No se encontraron archivos excel para el área especificada.',
+            ], 404);
+        }
         return response()->json($importExcel);
+    }
+
+    public function findAreaByExcel($excelId)
+    {
+        $area = DB::table('bank_questions')
+            ->join('areas', 'bank_questions.area_id', '=', 'areas.id')
+            ->where('bank_questions.excel_import_id', $excelId)
+            ->select('areas.*')
+            ->distinct()
+            ->get();
+
+        if ($area->isEmpty()) {
+            return response()->json([
+                'message' => 'No se encontró un área asociada al archivo Excel especificado.',
+            ], 404);
+        }
+
+        return response()->json($area);
     }
 
     /**

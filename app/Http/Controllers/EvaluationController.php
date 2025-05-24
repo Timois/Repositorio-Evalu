@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationAssignQuestion;
 use App\Http\Requests\ValidationEvaluation;
+use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
 use App\Models\QuestionEvaluation;
@@ -114,6 +115,37 @@ class EvaluationController extends Controller
             return response()->json(["message" => "La evaluación con el id: " . $id . " no existe."], 404);
         }
 
-        return response()->json($evaluation);   
+        return response()->json($evaluation);
+    }
+
+    public function findEvaluationsByCareer(string $careerId)
+    {
+        // Buscar la gestión académica de la carrera
+        $managementCareer = AcademicManagementCareer::where('career_id', $careerId)->first();
+
+        if (!$managementCareer) {
+            return response()->json([
+                "message" => "No se encontró una gestión académica para la carrera con ID: $careerId"
+            ], 404);
+        }
+
+        // Obtener los periodos de esa gestión académica con sus evaluaciones
+        $periods = AcademicManagementPeriod::with('evaluations')
+            ->where('academic_management_career_id', $managementCareer->id)
+            ->get();
+
+        // Si no hay periodos, retornar mensaje
+        if ($periods->isEmpty()) {
+            return response()->json([
+                "message" => "No se encontraron periodos para la carrera con ID: $careerId"
+            ], 404);
+        }
+
+        // Recopilar evaluaciones de todos los periodos
+        $evaluations = $periods->flatMap(function ($period) {
+            return $period->evaluations;
+        });
+
+        return response()->json($evaluations);
     }
 }

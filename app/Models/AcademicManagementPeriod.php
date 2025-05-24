@@ -17,9 +17,6 @@ class AcademicManagementPeriod extends Model
     public function academicManagementCareer():BelongsTo{
         return $this->belongsTo(AcademicManagementCareer::class);
     }
-    public function periodExtension():HasMany{
-        return $this->hasMany(PeriodExtension::class);
-    }
     
     public function evaluations():HasMany{
         return $this->hasMany(Evaluation::class);

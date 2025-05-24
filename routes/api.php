@@ -132,14 +132,16 @@ Route::controller(AreaController::class)->prefix("areas")->middleware($authPerso
     Route::get("/listQuestions/{id}", "questionsByArea")->middleware('auth:persona', 'permission:ver-preguntas-por-area');
     Route::get("/cantityQuestions/{id}", "cantityQuestionsByArea");
     Route::post("/unsubscribe/{id}", "destroy");    
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-areas-por-id');
 });
 
 // Rutas de Importación de Excel
 Route::controller(ExcelImportController::class)->prefix('excel_import')->middleware($authPersona)->group(function(){
     Route::post("/save", "create")->middleware('auth:persona', 'permission:importar-excel');
-    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-importaciones');
+    Route::get("/list/{id}", "find")->middleware('auth:persona', 'permission:ver-importaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-importaciones');
     Route::delete("/delete/{id}", "destroy");
+    Route::get("/findAreaByExcel/{id}", "findAreaByExcel");
 });
 
 // Rutas de Importación de Excel con Imágenes
@@ -182,7 +184,9 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->middlewar
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:buscar-evaluaciones-porId');
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
+    Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer');
 });
+
 
 Route::controller(QuestionEvaluationController::class)->prefix('question_evaluations')->middleware($authPersona)->group(function(){
     Route::post("/cantity", "cantidadPreguntas")->middleware('auth:persona', 'permission:asignar-cantidad-preguntas');

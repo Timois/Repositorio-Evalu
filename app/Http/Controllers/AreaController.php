@@ -88,9 +88,9 @@ class AreaController extends Controller
         return response()->json($areas);
     }
 
-    public function questionsByArea(string $area_id)
+    public function questionsByArea(string $e)
     {
-        $questions = QuestionBank::where('area_id', $area_id)->get();
+        $questions = QuestionBank::where('excel_import_id', $e)->get();
 
         if ($questions->isEmpty()) {
             return response()->json(['message' => 'No hay preguntas para esta área'], 404);
