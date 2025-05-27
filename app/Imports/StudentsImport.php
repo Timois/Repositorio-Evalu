@@ -14,13 +14,18 @@ class StudentsImport implements ToCollection, WithHeadingRow
 {
     protected $requiredColumns = ['ci', 'nombre', 'apellido paterno', 'apellido materno', 'fecha de nacimiento', 'telefono'];
     protected $results = [];
-    
+    protected $academicManagementPeriodId;
+    public function __construct($academicManagementPeriodId)
+    {
+        $this->academicManagementPeriodId = $academicManagementPeriodId;
+    }
+
     public function collection(Collection $rows)
-    {   
-        set_time_limit(300); 
+    {
+        set_time_limit(300);
         // Validar cabeceras
         $headers = $rows->first()->keys()->toArray();
-        
+
         if (count($headers) !== count($this->requiredColumns)) {
             throw new Exception(json_encode([
                 'error' => true,
@@ -31,7 +36,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
         }
 
         $currentRow = 1; // Contador de filas, empezamos en 1 porque la fila 0 son las cabeceras
-        
+
         foreach ($rows as $row) {
             $currentRow++;
             $rowResult = [
@@ -72,10 +77,15 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     $this->results[] = $rowResult;
                     continue;
                 }
-                $existingCIs = Student::pluck('ci')->toArray();
                 // Verificar CI duplicado
-                if (in_array($row['ci'], $existingCIs))  {
-                    $rowResult['mensajes'][] = "El CI ya está registrado en la base de datos";
+                $existingStudent = Student::where('ci', $row['ci'])->first();
+
+                if ($existingStudent) {
+                    // Asociar al periodo si no está ya asociado
+                    $existingStudent->periods()->syncWithoutDetaching([$this->academicManagementPeriodId]);
+
+                    $rowResult['estado'] = 'éxito';
+                    $rowResult['mensajes'][] = "El CI ya está registrado, se asignó al periodo actual";
                     $this->results[] = $rowResult;
                     continue;
                 }
@@ -97,11 +107,13 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     'password' => $hashedPassword,
                     'status' => 'inactivo',
                 ]);
-                
-                // Si llegamos aquí, todo fue exitoso
+
+                // Asociar al periodo
+                $student->periods()->attach($this->academicManagementPeriodId);
+
                 $rowResult['estado'] = 'éxito';
-                $rowResult['mensajes'][] = "Registro creado exitosamente";
-                
+                $rowResult['mensajes'][] = "Registro creado y asignado al periodo";
+
             } catch (Exception $e) {
                 $rowResult['mensajes'][] = "Error: " . $e->getMessage();
             }

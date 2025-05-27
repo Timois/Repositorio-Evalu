@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('areas', function (Blueprint $table) {
+        Schema::create('academic_management_period_student', function (Blueprint $table) {
             $table->id();
-            $table->string("name");
-            $table->string("description")->nullable();
-            $table->enum('status', ['activo', 'inactivo', 'por-periodo'])->default('activo');
-            $table->foreignId('career_id')->constrained('careers', 'id')->onDelete('cascade');
+            $table->foreignId('academic_management_period_id')
+                ->constrained('academic_management_period', 'id')
+                ->onDelete('cascade');
+            $table->foreignId('student_id')->constrained('students', 'id')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('areas');
+        Schema::dropIfExists('academic_management_period_student');
     }
 };

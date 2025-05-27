@@ -65,6 +65,28 @@ class ValidationAreas extends FormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('name')) {
+            $originalName = $this->input('name');
+            $normalized = $this->normalizeText($originalName);
+
+            $this->merge([
+                'name' => $normalized,
+                'original_name' => $originalName, // para guardar el nombre original si lo necesitas
+            ]);
+        }
+    }
+
+    /**
+     * Elimina acentos y convierte a minúsculas para comparación.
+     */
+    protected function normalizeText(string $text): string
+    {
+        return strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text));
+    }
+
+
     /**
      * Mensajes personalizados para las reglas de validación.
      */

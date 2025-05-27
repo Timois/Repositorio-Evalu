@@ -32,6 +32,7 @@ class PermissionSeeder extends Seeder
             'ver-gestiones-asignadas',
             'editar-carreras-asignadas',
             'ver-periodos-asignados',
+            'editar-periodos-asignados',
             'asignar-periodos',
             'ver-unidades-por-id',
             'crear-periodos',

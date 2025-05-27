@@ -6,30 +6,20 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ValidationStudent extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'ci' => ['required', 'regex:/^[0-9]{7,8}$/', 'unique:students,ci'],
             'name' => ['required', 'string', 'max:255'],
-            'paternal_surname' => ['required', 'string', 'max:25'],
-            'maternal_surname' => ['required', 'string', 'max:25'],
-            'phone_number' => ['required', 'regex:/^[0-9]{9}$/'],
+            'paternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
+            'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
+            'phone_number' => ['required', 'integer', 'unique:students,phone_number'],
             'birthdate' => ['required', 'date', 'before:today'],
-            // Removemos las validaciones de password ya que ahora se genera automáticamente
-            'status' => ['required', 'in|activo,inactivo']
         ];
     }
 
@@ -40,14 +30,25 @@ class ValidationStudent extends FormRequest
             'ci.regex' => 'El CI debe tener 7 o 8 dígitos.',
             'ci.unique' => 'Este CI ya está registrado.',
             'name.required' => 'El nombre es obligatorio.',
-            'paternal_surname.required' => 'El apellido paterno es obligatorio.',
-            'maternal_surname.required' => 'El apellido materno es obligatorio.',
             'phone_number.required' => 'El número de teléfono es obligatorio.',
-            'phone_number.regex' => 'El número de teléfono debe tener 9 dígitos.',
+            'phone_number.integer' => 'El número de teléfono debe ser un número entero.',
+            'phone_number.max' => 'La longitud máxima del número de teléfono es de 20 caracteres.',
+            'phone_number.unique' => 'Este número de teléfono ya está registrado.',
             'birthdate.required' => 'La fecha de nacimiento es obligatoria.',
             'birthdate.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
-            'status.required' => 'El estado es obligatorio.',
-            'status.in' => 'El estado debe ser "activo" o "inactivo".'
+            'surname.required' => 'Debe ingresar al menos un apellido (paterno o materno).',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $paterno = $this->input('paternal_surname');
+            $materno = $this->input('maternal_surname');
+
+            if (empty($paterno) && empty($materno)) {
+                $validator->errors()->add('surname', 'Debe ingresar al menos un apellido (paterno o materno).');
+            }
+        });
     }
 }

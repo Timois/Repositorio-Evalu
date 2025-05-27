@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
@@ -11,6 +13,7 @@ class Student extends Model
 
     protected $fillable = [
         'ci',
+        'academic_management_period_id',
         'name',
         'paternal_surname',
         'maternal_surname',
@@ -19,7 +22,14 @@ class Student extends Model
         'password'
     ];
 
-    public function evaluations():HasMany {
+    public function evaluations(): HasMany
+    {
         return $this->hasMany(StudentTest::class);
+    }
+
+    public function periods(): BelongsToMany
+    {
+        return $this->belongsToMany(AcademicManagementPeriod::class, 'academic_management_period_student')
+            ->withTimestamps();
     }
 }

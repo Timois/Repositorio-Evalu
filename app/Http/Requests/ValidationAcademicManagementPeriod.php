@@ -5,9 +5,7 @@ namespace App\Http\Requests;
 use App\Models\AcademicManagement;
 use App\Models\AcademicManagementCareer;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Carbon;
 
-use function Laravel\Prompts\error;
 
 class ValidationAcademicManagementPeriod extends FormRequest
 {
@@ -48,6 +46,8 @@ class ValidationAcademicManagementPeriod extends FormRequest
             ];
 
         return [
+            'initial_date' => ['required', 'date', 'date_format:Y-m-d H:i:s', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
+            'end_date' => ['required', 'date', 'date_format:Y-m-d H:i:s', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
             'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
         ];
     }

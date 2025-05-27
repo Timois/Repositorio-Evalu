@@ -110,7 +110,7 @@ Route::controller(AcademicManagementController::class)->prefix('management')->mi
 Route::controller(AcademicManagementPeriodController::class)->prefix('academic_management_period')->middleware($authPersona)->group(function(){
     Route::post("/save", "create")->middleware('auth:persona', 'permission:asignar-periodos');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-periodos-asignados');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodo-asignado');
+    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodos-asignados');
     Route::get("/findByIdCareer/{id}", 'findByIdCareer')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-id');
     Route::get("/findPeriodsByCareerManagement/{career_id}/{academic_management_id}", 'findPeriodsByCareerManagement')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-carrera-y-gestion');
 });
@@ -176,6 +176,7 @@ Route::controller(ImportStudentController::class)->prefix('students')->middlewar
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-postulantes');
     Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
     Route::get("/findByName/{id}", "findByName")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
+    Route::post("/save", "store");
 });
 
 Route::controller(EvaluationController::class)->prefix('evaluations')->middleware($authPersona)->group(function(){
