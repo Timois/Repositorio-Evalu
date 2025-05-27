@@ -176,7 +176,8 @@ Route::controller(ImportStudentController::class)->prefix('students')->middlewar
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-postulantes');
     Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
     Route::get("/findByName/{id}", "findByName")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
-    Route::post("/save", "store");
+    Route::post("/save", "store")->middleware('auth:persona', 'permission:registrar-postulantes');
+    Route::get("/findByCareerId/{id}", "findStudentsByCareerId")->middleware('auth:persona', 'permission:ver-postulantes-por-periodo');
 });
 
 Route::controller(EvaluationController::class)->prefix('evaluations')->middleware($authPersona)->group(function(){

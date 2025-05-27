@@ -27,22 +27,22 @@ class AcademicManagementPeriodController extends Controller
             return ["message:", "El periodo con id:" . $id . " no existe."];
         return response()->json($academic_career);
     }
-    public function create(ValidationAcademicManagementPeriod $request)
-    {
-        $academicManagementPeriod = new AcademicManagementPeriod();
-        $academicManagementPeriod->initial_date = $request->initial_date;
-        $academicManagementPeriod->end_date = $request->end_date;
-        $academicManagementPeriod->academic_management_career_id = $request->academic_management_career_id;
-        $academicManagementPeriod->period_id = $request->period_id;
-        if (Carbon::parse($request->end_date)->lt(Carbon::now())) {
-            $academicManagementPeriod->status = "finalizado";
-        } else {
-            $academicManagementPeriod->status = "aperturado";
-        }
+        public function create(ValidationAcademicManagementPeriod $request)
+        {
+            $academicManagementPeriod = new AcademicManagementPeriod();
+            $academicManagementPeriod->initial_date = $request->initial_date;
+            $academicManagementPeriod->end_date = $request->end_date;
+            $academicManagementPeriod->academic_management_career_id = $request->academic_management_career_id;
+            $academicManagementPeriod->period_id = $request->period_id;
+            if (Carbon::parse($request->end_date)->lt(Carbon::now())) {
+                $academicManagementPeriod->status = "finalizado";
+            } else {
+                $academicManagementPeriod->status = "aperturado";
+            }
 
-        $academicManagementPeriod->save();
-        return response()->json()->$academicManagementPeriod;
-    }
+            $academicManagementPeriod->save();
+            return response()->json($academicManagementPeriod);
+        }
 
     public function findAndUpdate(ValidationAcademicManagementPeriod $request, string $id)
     {
@@ -69,7 +69,7 @@ class AcademicManagementPeriodController extends Controller
 
         $update->save();
 
-        return response()->json()->$update;
+        return response()->json($update);
     }
 
 

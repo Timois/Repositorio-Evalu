@@ -95,7 +95,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                 $ciNumbers = preg_replace('/[^0-9]/', '', $row['ci']);
                 $generatedPassword = $ciNumbers . $birthdateNumbers;
                 $hashedPassword = Hash::make($generatedPassword);
-
+                
                 // Crear estudiante
                 $student = Student::create([
                     'ci' => $row['ci'],
@@ -107,7 +107,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     'password' => $hashedPassword,
                     'status' => 'inactivo',
                 ]);
-
+                
                 // Asociar al periodo
                 $student->periods()->attach($this->academicManagementPeriodId);
 

@@ -20,6 +20,7 @@ class ValidationStudent extends FormRequest
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'phone_number' => ['required', 'integer', 'unique:students,phone_number'],
             'birthdate' => ['required', 'date', 'before:today'],
+            'academic_management_period_id' => ['required', 'exists:academic_management_periods,id'],
         ];
     }
 
@@ -37,6 +38,8 @@ class ValidationStudent extends FormRequest
             'birthdate.required' => 'La fecha de nacimiento es obligatoria.',
             'birthdate.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
             'surname.required' => 'Debe ingresar al menos un apellido (paterno o materno).',
+            'academic_management_period_id.required' => 'El ID del período de gestión académica es obligatorio.',
+            'academic_management_period_id.exists' => 'El período académico seleccionado no existe.',
         ];
     }
 

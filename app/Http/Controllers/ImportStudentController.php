@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationStudent;
 use App\Imports\StudentsImport;
+use App\Models\AcademicManagement;
+use App\Models\AcademicManagementCareer;
+use App\Models\AcademicManagementPeriod;
 use App\Models\Student;
 use Exception;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class ImportStudentController extends Controller
@@ -61,10 +65,10 @@ class ImportStudentController extends Controller
             ], 500);
         }
     }
-   
+
     public function store(ValidationStudent $request)
     {
-        
+
         try {
             // Buscar estudiante
             $student = Student::where('ci', $request->ci)->first();
@@ -112,6 +116,27 @@ class ImportStudentController extends Controller
         }
     }
 
+    public function findAndUpdate(Request $request)
+    {
+        $student = Student::find($request->id);
+        if (!$student)
+            return ["message:", "El estudiante con id:" . $request->id . " no existe."];
+        if ($request->ci)
+            $student->ci = $request->ci;
+        if ($request->name)
+            $student->name = $request->name;
+        if ($request->paternal_surname)
+            $student->paternal_surname = $request->paternal_surname;
+        if ($request->maternal_surname)
+            $student->maternal_surname = $request->maternal_surname;
+        if ($request->phone_number)
+            $student->phone_number = $request->phone_number;
+        if ($request->birthdate)
+            $student->birthdate = $request->birthdate;
+        $student->save();
+        return response()->json($student);
+    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -121,6 +146,24 @@ class ImportStudentController extends Controller
         $student = Student::orderBy('id', 'ASC')->get();
         return response()->json($student);
     }
+
+    public function findStudentsByCareerId(string $careerId)
+    {
+        $students = DB::table('academic_management_period_student')
+            ->join('students', 'academic_management_period_student.student_id', '=', 'students.id')
+            ->join('academic_management_period', 'academic_management_period_student.academic_management_period_id', '=', 'academic_management_period.id')
+            ->join('academic_management_career', 'academic_management_period.academic_management_career_id', '=', 'academic_management_career.id')
+            ->join('periods', 'academic_management_period.period_id', '=', 'periods.id')
+            ->where('academic_management_career.career_id', $careerId)
+            ->select('students.*', 'periods.period as registered_period')
+            ->distinct()
+            ->get();
+
+        return response()->json($students);
+    }
+
+
+
 
     public function authenticate($ci, $password)
     {
