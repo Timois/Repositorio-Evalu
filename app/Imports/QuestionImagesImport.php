@@ -22,6 +22,7 @@ class QuestionImagesImport implements ToCollection
     protected $processedRows = [];
     protected $duplicateDetails = [];
     protected $areaId;
+    protected $periodId;
 
     protected $requiredColumns = [
         'pregunta',
@@ -41,6 +42,7 @@ class QuestionImagesImport implements ToCollection
         $this->excelImportId = $params['excel_import_id'];
         $this->extractedPath = $params['extractedPath'];
         $this->areaId = $params['areaId'];
+        $this->periodId = $params['periodId'];
         $this->validateOnly = $params['validateOnly'] ?? false;
     }
 
@@ -111,7 +113,7 @@ class QuestionImagesImport implements ToCollection
         // Usar array_map para calcular el hash de cada imagen
         $imagesWithHashes = array_map(function ($image) {
             return [
-                'path' => $image,
+                    'path' => $image,
                 'hash' => hash_file('sha256', $image), // Calcular el hash de la imagen
             ];
         }, $images);
@@ -236,6 +238,7 @@ class QuestionImagesImport implements ToCollection
                 'image'          => $imagePath,
                 'status'         => 'activo',
             ]);
+              $question->academicManagementPeriods()->attach($this->periodId);
             // Procesar las respuestas
             $answers = $this->processAnswers($question, $dataRow);
 
@@ -265,7 +268,6 @@ class QuestionImagesImport implements ToCollection
             Log::error("Error procesando fila " . ($index + 1) . ": " . $e->getMessage());
         }
     }
-
 
     protected function processAnswers($question, $dataRow)
     {

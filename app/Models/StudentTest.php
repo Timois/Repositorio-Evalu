@@ -29,7 +29,7 @@ class StudentTest extends Model
         return $this->belongsTo(Student::class);
     }
 
-    public function evaluations():BelongsTo{
+    public function evaluation():BelongsTo{
         return $this->belongsTo(Evaluation::class);
     }
     public function results():HasMany{

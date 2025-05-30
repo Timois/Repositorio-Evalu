@@ -25,6 +25,8 @@ class ValidationExcelImport extends FormRequest
     public function rules(): array
     {
         $validationFile = $this->file('file_name');
+        $validationAreaId = 'required|exists:areas,id';
+        $validationPeriodId = 'required|exists:academic_management_period,id';
         $validationStatus = 'required|in:completado,error';
         $validationDescription = 'string|max:255|regex:/^[a-zA-Z0-9\s,.\-\/]+$/';
         if ($validationFile) {
@@ -36,6 +38,8 @@ class ValidationExcelImport extends FormRequest
         }
         return [
             'file_name' => 'required|file|mimes:xlsx,xls,csv|max:10000',
+            'area_id' => $validationAreaId,
+            'academic_management_period_id' => $validationPeriodId,
             'description' => $validationDescription,
             'status' => $validationStatus,
         ];
@@ -53,6 +57,10 @@ class ValidationExcelImport extends FormRequest
             'description.regex' => 'La descripción solo puede contener letras, números, espacios y algunos caracteres especiales.',
             'status.required' => 'El estado es obligatorio.',
             'status.in' => 'El estado debe ser uno de: completado o error.',
+            'area_id.required' => 'El área es obligatoria.',
+            'area_id.exists' => 'El área seleccionado no existe.',
+            'academic_management_period_id.required' => 'El periodo académico es obligatorio.',
+            'academic_management_period_id.exists' => 'El periodo académico seleccionado no existe.',
         ];
     }
     protected function prepareForValidation(): void

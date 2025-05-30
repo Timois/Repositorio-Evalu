@@ -22,18 +22,21 @@ class Student extends Model
         'password'
     ];
 
-    public function evaluations(): HasMany
+    public function evaluations(): BelongsToMany
     {
-        return $this->hasMany(StudentTest::class);
-    }
-
-    public function periods(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            AcademicManagementPeriod::class,
-            'academic_management_period_student',
-            'student_id',                    
-            'academic_management_period_id' 
-        )->withTimestamps();
+        return $this->belongsToMany(Evaluation::class, 'student_tests', 'student_id', 'evaluation_id')
+            ->using(StudentTest::class)
+            ->withPivot([
+                'code',
+                'start_time',
+                'end_time',
+                'correct_answers',
+                'incorrect_answers',
+                'not_answered',
+                'score_obtained',
+                'status',
+                'questions_order',
+            ])
+            ->withTimestamps();
     }
 }

@@ -5,15 +5,14 @@ namespace App\Imports;
 use App\Models\AnswerBank;
 use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\ToCollection;
-
+use Illuminate\Support\Facades\DB;
 class QuestionBankImport implements ToCollection
 {
     protected $excelImportId;
     protected $areaId;
     protected $messages = [];
-
+    protected $periodId;
     // Contadores
     protected $countTotal = 0;
     protected $countInserted = 0;
@@ -26,7 +25,7 @@ class QuestionBankImport implements ToCollection
         'pregunta',
         'descripcion',
         'dificultad',
-        'imagen',   
+        'imagen',
         'tipo',
         'opcion1',
         'opcion2',
@@ -35,10 +34,11 @@ class QuestionBankImport implements ToCollection
         'respuesta correcta'
     ];
 
-    public function __construct($excelImportId, $areaId)
+    public function __construct($excelImportId, $areaId, $periodId)
     {
         $this->excelImportId = $excelImportId;
         $this->areaId = $areaId;
+        $this->periodId = $periodId;
     }
 
     public function validateFormat($data)
@@ -112,62 +112,68 @@ class QuestionBankImport implements ToCollection
                 continue;
             }
 
-            // 🛑 Verificar si la pregunta ya existe
-            $exists = QuestionBank::where('area_id', $this->areaId)
-                ->where('question', trim($dataRow['pregunta']))
-                ->exists();
-
-            if ($exists) {
-                $this->countRepeated++;
-                $this->repeatedRows[] = $dataRow;
-                $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta repetida, no se insertó.";
-                continue;
-            }
-
+            // Procesar cada fila en una transacción independiente
             try {
-                $dataToInsert = [
-                    'area_id' => $this->areaId,
-                    'excel_import_id' => $this->excelImportId,
-                    'question' => $dataRow['pregunta'],
-                    'description' => $dataRow['descripcion'],
-                    'dificulty' => $dataRow['dificultad'],
-                    'type' => $dataRow['tipo'],
-                    'image' => basename($dataRow['imagen']),
-                    'status' => 'activo',
-                ];
+                DB::transaction(function () use ($dataRow, $index, &$responseMessages) {
+                    // Normalizar la pregunta para manejar signos y acentos
+                    $pregunta = mb_convert_encoding(trim($dataRow['pregunta']), 'UTF-8', 'auto');
+                    $exists = QuestionBank::where('area_id', $this->areaId)
+                        ->whereRaw('LOWER(TRIM(question)) = ?', [mb_strtolower($pregunta, 'UTF-8')])
+                        ->exists();
 
-                $saveQuest = QuestionBank::create($dataToInsert);
-                $this->countInserted++;
-
-                $respuestasCorrectas = [];
-                if ($dataRow['tipo'] === 'multiple') {
-                    $respuestasCorrectas = array_map('intval', explode(',', $dataRow['respuesta correcta']));
-                } else {
-                    $respuestasCorrectas[] = $dataRow['respuesta correcta'];
-                }
-
-                $answersToInsert = [];
-                for ($i = 1; $i <= 4; $i++) {
-                    if (!empty($dataRow["opcion$i"])) {
-                        $esCorrecta = in_array($dataRow["opcion$i"], $respuestasCorrectas);
-                        $answersToInsert[] = [
-                            'bank_question_id' => $saveQuest->id,
-                            'answer' => $dataRow["opcion$i"],
-                            'is_correct' => $esCorrecta,
-                            'status' => 'activo',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
+                    if ($exists) {
+                        $this->countRepeated++;
+                        $this->repeatedRows[] = $dataRow;
+                        $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta repetida, no se insertó.";
+                        return;
                     }
-                }
 
-                if (!empty($answersToInsert)) {
-                    AnswerBank::insert($answersToInsert);
-                }
+                    // Insertar la pregunta
+                    $dataToInsert = [
+                        'area_id' => $this->areaId,
+                        'excel_import_id' => $this->excelImportId,
+                        'question' => $pregunta,
+                        'description' => $dataRow['descripcion'],
+                        'dificulty' => $dataRow['dificultad'],
+                        'type' => $dataRow['tipo'],
+                        'image' => basename($dataRow['imagen']),
+                        'status' => 'activo',
+                    ];
+                    $saveQuest = QuestionBank::create($dataToInsert);
+                    $saveQuest->academicManagementPeriod()->attach($this->periodId);
+                    $this->countInserted++;
 
-                $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta y respuestas guardadas.";
+                    // Insertar respuestas
+                    $respuestasCorrectas = [];
+                    if ($dataRow['tipo'] === 'multiple') {
+                        $respuestasCorrectas = array_map('intval', explode(',', $dataRow['respuesta correcta']));
+                    } else {
+                        $respuestasCorrectas[] = $dataRow['respuesta correcta'];
+                    }
+
+                    $answersToInsert = [];
+                    for ($i = 1; $i <= 4; $i++) {
+                        if (!empty($dataRow["opcion$i"])) {
+                            $esCorrecta = in_array($dataRow["opcion$i"], $respuestasCorrectas);
+                            $answersToInsert[] = [
+                                'bank_question_id' => $saveQuest->id,
+                                'answer' => $dataRow["opcion$i"],
+                                'is_correct' => $esCorrecta,
+                                'status' => 'activo',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+
+                    if (!empty($answersToInsert)) {
+                        AnswerBank::insert($answersToInsert);
+                    }
+
+                    $responseMessages[] = "Fila " . ($index + 1) . ": Pregunta y respuestas guardadas.";
+                });
             } catch (\Exception $e) {
-                $responseMessages[] = "Fila " . ($index + 1) . ": Error al guardar. " . $e->getMessage();
+                $responseMessages[] = "Fila " . ($index + 1) . ": Error al guardar. " . $e->getMessage() . " (Código: " . $e->getCode() . ")";
             }
         }
 

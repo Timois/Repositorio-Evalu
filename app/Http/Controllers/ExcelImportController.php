@@ -26,6 +26,7 @@ class ExcelImportController extends Controller
     {
         try {
             $area_id = $request->area_id;
+            $periodId = $request->academic_management_period_id;
             $excel = $request->file('file_name');
             $fileSize = $excel->getSize();
 
@@ -38,7 +39,7 @@ class ExcelImportController extends Controller
             }
 
             // Pre-validate Excel format
-            $tempImport = new QuestionBanKImport(null, null);
+            $tempImport =    new QuestionBankImport(null, null, null);
             $data = Excel::toArray($tempImport, $excel);
 
             // Validate format
@@ -66,7 +67,7 @@ class ExcelImportController extends Controller
             $path = $excel->move(public_path('private' . DIRECTORY_SEPARATOR . 'exams'), $excelName);
 
             // Perform actual import
-            $import = new QuestionBanKImport($importExcel->id, $area_id);
+            $import = new QuestionBanKImport($importExcel->id, $area_id, $periodId);
             Excel::import($import, $path);
 
             // Get import messages
@@ -77,18 +78,13 @@ class ExcelImportController extends Controller
                 'success' => $messages,
             ], 200);
         } catch (\Exception $e) {
-
-            //el id del excel subido eliminar si hubo un error
-            $importExcel = ExcelImports::find($importExcel->id);
-            $importExcel->delete();
-
-            // Limpiar archivos si hubo un error
+            // Eliminar el archivo si fue subido
             if (isset($path) && file_exists($path)) {
                 unlink($path);
             }
 
-            // Eliminar import si hubo un error
-            if (isset($importExcel)) {
+            // Eliminar el registro del import si fue creado
+            if (isset($importExcel) && $importExcel instanceof ExcelImports) {
                 $importExcel->delete();
             }
 
@@ -96,6 +92,8 @@ class ExcelImportController extends Controller
                 'message' => 'Error en la importación',
                 'success' => false,
                 'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_trace' => config('app.debug') ? $e->getTraceAsString() : null, // Solo en desarrollo
             ], 500);
         }
     }

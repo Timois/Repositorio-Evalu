@@ -36,7 +36,7 @@ class ImportExcelImageController extends Controller
             if (!$zipFile->move(public_path("uploads" . DIRECTORY_SEPARATOR), $zipFileName)) {
                 throw new \Exception('No se pudo mover el archivo ZIP al directorio de carga');
             }
-
+ 
             // Obtener el tamaño del archivo
             $fileSize = filesize($zipPath);
             if ($fileSize === 0) {
@@ -48,6 +48,7 @@ class ImportExcelImageController extends Controller
             $extractTo = public_path('uploads' . DIRECTORY_SEPARATOR . 'extracted_files' . DIRECTORY_SEPARATOR . $excelImportId . DIRECTORY_SEPARATOR);
             $result = $this->extractZip($zipPath, $extractTo);
             $areaId = $request->area_id;
+            $periodId = $request->academic_management_period_id;
             $description = $request->description;
             if (!$result['success']) {
                 throw new \Exception($result['message']);
@@ -57,6 +58,7 @@ class ImportExcelImageController extends Controller
             try {
                 $importParams = [
                     'areaId' => $areaId,
+                    'periodId' => $periodId,
                     'extractedPath' => $extractTo,
                     'excel_import_id' => $excelImportId,
                     'validateOnly' => true

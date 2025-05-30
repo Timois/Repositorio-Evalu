@@ -11,21 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('academic_management_period_student', function (Blueprint $table) {
+        Schema::create('academic_management_period_bank_question', function (Blueprint $table) {
             $table->id();
             $table->foreignId('academic_management_period_id')
                 ->constrained('academic_management_period', 'id')
                 ->onDelete('cascade');
-            $table->foreignId('student_id')->constrained('students', 'id')->onDelete('cascade');
+            $table->foreignId('bank_question_id')->constrained('bank_questions', 'id')->onDelete('cascade');
             $table->timestamps();
         });
-    }
+    }   
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('academic_management_period_student');
+        Schema::dropIfExists('academic_management_period_bank_question');
     }
 };

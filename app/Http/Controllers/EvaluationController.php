@@ -19,6 +19,7 @@ class EvaluationController extends Controller
         return response()->json($evaluation);
     }
 
+
     public function create(ValidationEvaluation $request)
     {
         $evaluation = new Evaluation();
@@ -30,7 +31,6 @@ class EvaluationController extends Controller
         $evaluation->status = $request->status;
         $evaluation->type = $request->type;
         $evaluation->time = $request->time;
-        $evaluation->qualified_students = $request->qualified_students;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
         return response()->json($evaluation);

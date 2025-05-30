@@ -31,8 +31,8 @@ class ImportStudentController extends Controller
         ]);
 
         try {
-            $periodId = $request->academic_management_period_id;
-            $import = new StudentsImport($periodId);
+            $evaluationId = $request->evaluation_id;
+            $import = new StudentsImport($evaluationId);
             Excel::import($import, $request->file('file'));
 
             $results = $import->getResults();
@@ -83,13 +83,11 @@ class ImportStudentController extends Controller
                     'data' => $student
                 ]);
             }
-
             // Crear nuevo estudiante
             $birthdate = Carbon::parse($request->birthdate); // o createFromFormat('Y-m-d', $request->birthdate)
             $birthdateNumbers = $birthdate->format('dmY');
             $ciNumbers = preg_replace('/[^0-9]/', '', $request->ci);
             $password = Hash::make($ciNumbers . $birthdateNumbers);
-
 
             $student = Student::create([
                 'ci' => $request->ci,
@@ -101,11 +99,9 @@ class ImportStudentController extends Controller
                 'password' => $password,
             ]);
 
-            $student->periods()->attach($request->academic_management_period_id);
-
             return response()->json([
                 'status' => 'success',
-                'message' => 'Estudiante registrado y asociado al periodo.',
+                'message' => 'Estudiante registrado correctamente',
                 'data' => $student
             ]);
         } catch (Exception $e) {
@@ -162,9 +158,6 @@ class ImportStudentController extends Controller
 
         return response()->json($students);
     }
-
-
-
 
     public function authenticate($ci, $password)
     {
