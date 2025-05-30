@@ -240,7 +240,7 @@ class CareerController extends Controller
     {
         $managements = AcademicManagementCareer::where('career_id', $careerId)
             ->with(['academicManagement' => function ($query) {
-                $query->select('id', 'year','initial_date', 'end_date');
+                $query->select('id', 'year', 'initial_date', 'end_date');
             }])
             ->get();
 
@@ -296,9 +296,26 @@ class CareerController extends Controller
         return response()->json($result);
     }
 
-    public function findUnitsMayor() {
-        $units = Career::orderBy('id', 'ASC')->whereIn('type', ['mayor', 'facultad','dependiente'])->get();
+    public function findUnitsMayor()
+    {
+        $units = Career::orderBy('id', 'ASC')->whereIn('type', ['mayor', 'facultad', 'dependiente'])->get();
         return response()->json($units);
     }
 
+    public function findPeriodsByCareerId(string $careerId)
+    {
+        $periods = DB::table('periods')
+            ->join('academic_management_period', 'periods.id', '=', 'academic_management_period.period_id')
+            ->join('academic_management_career', 'academic_management_period.academic_management_career_id', '=', 'academic_management_career.id')
+            ->join('academic_management', 'academic_management_career.academic_management_id', '=', 'academic_management.id')
+            ->where('academic_management_career.career_id', $careerId)
+            ->select(
+                'periods.*',
+                'academic_management.year as gestion', // o el campo que representa la gestión
+            )
+            ->distinct()
+            ->get();
+
+        return response()->json($periods);
+    }
 }

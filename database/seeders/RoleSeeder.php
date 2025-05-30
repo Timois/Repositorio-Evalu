@@ -25,7 +25,7 @@ class RoleSeeder extends Seeder
         $superAdminRole->syncPermissions($allPersonaPermissions);
 
         // Asignar permisos a docente (guard persona)
-        $docentePermissions = Permission::where('name', 'ver-unidades-por-id')
+        $docentePermissions = Permission::where('name', 'ver-areas', 'ver-periodos')
             ->where('guard_name', 'persona')
             ->get();
         $docenteRole->syncPermissions($docentePermissions);

@@ -85,10 +85,11 @@ class ImportStudentController extends Controller
             }
 
             // Crear nuevo estudiante
-            $birthdate = Carbon::createFromFormat('d-m-Y', $request->birthdate);
+            $birthdate = Carbon::parse($request->birthdate); // o createFromFormat('Y-m-d', $request->birthdate)
             $birthdateNumbers = $birthdate->format('dmY');
             $ciNumbers = preg_replace('/[^0-9]/', '', $request->ci);
             $password = Hash::make($ciNumbers . $birthdateNumbers);
+
 
             $student = Student::create([
                 'ci' => $request->ci,
@@ -100,7 +101,7 @@ class ImportStudentController extends Controller
                 'password' => $password,
             ]);
 
-            $student->periods()->attach($request->periodo_id);
+            $student->periods()->attach($request->academic_management_period_id);
 
             return response()->json([
                 'status' => 'success',

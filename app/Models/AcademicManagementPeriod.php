@@ -27,7 +27,11 @@ class AcademicManagementPeriod extends Model
     }
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class, 'academic_management_period_student')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            Student::class,
+            'academic_management_period_student',
+            'academic_management_period_id', 
+            'student_id'
+        )->withTimestamps();
     }
 }

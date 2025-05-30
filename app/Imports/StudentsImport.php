@@ -63,7 +63,10 @@ class StudentsImport implements ToCollection, WithHeadingRow
                 // Validar apellidos
                 $paternalSurname = trim($row['apellido_paterno'] ?? '');
                 $maternalSurname = trim($row['apellido_materno'] ?? '');
-
+                // Convertir a minúsculas
+                $name = strtolower(trim($row['nombre']));
+                $paternalSurname = strtolower($paternalSurname);
+                $maternalSurname = strtolower($maternalSurname);
                 if (empty($paternalSurname) && empty($maternalSurname)) {
                     $rowResult['mensajes'][] = "Debe proporcionar al menos un apellido (paterno o materno)";
                     $this->results[] = $rowResult;
@@ -99,7 +102,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                 // Crear estudiante
                 $student = Student::create([
                     'ci' => $row['ci'],
-                    'name' => trim($row['nombre']),
+                    'name' => $name,
                     'paternal_surname' => $paternalSurname ?: null,
                     'maternal_surname' => $maternalSurname ?: null,
                     'phone_number' => trim($row['telefono']),

@@ -10,7 +10,6 @@ class ValidationStudent extends FormRequest
     {
         return true;
     }
-
     public function rules(): array
     {
         return [
@@ -20,9 +19,28 @@ class ValidationStudent extends FormRequest
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'phone_number' => ['required', 'integer', 'unique:students,phone_number'],
             'birthdate' => ['required', 'date', 'before:today'],
-            'academic_management_period_id' => ['required', 'exists:academic_management_periods,id'],
+            'academic_management_period_id' => ['required', 'exists:academic_management_period,id'],
         ];
     }
+
+    protected function prepareForValidation()
+    {
+        if($this->has('name')){
+            $this->merge([
+                'name' => strtolower($this->name),
+            ]);
+        }
+        if($this->has('paternal_surname')){
+            $this->merge([
+                'paternal_surname' => strtolower($this->paternal_surname),
+            ]);
+        }
+        if($this->has('maternal_surname')){
+            $this->merge([
+                'maternal_surname' => strtolower($this->maternal_surname),
+            ]);
+        }
+    }   
 
     public function messages()
     {
@@ -36,6 +54,7 @@ class ValidationStudent extends FormRequest
             'phone_number.max' => 'La longitud máxima del número de teléfono es de 20 caracteres.',
             'phone_number.unique' => 'Este número de teléfono ya está registrado.',
             'birthdate.required' => 'La fecha de nacimiento es obligatoria.',
+            'birthdate.date' => 'La fecha de nacimiento debe tener un formato válido (aaaa-mm-dd).',
             'birthdate.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
             'surname.required' => 'Debe ingresar al menos un apellido (paterno o materno).',
             'academic_management_period_id.required' => 'El ID del período de gestión académica es obligatorio.',

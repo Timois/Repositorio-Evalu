@@ -97,6 +97,7 @@ Route::controller(CareerController::class)->prefix('careers')->middleware($authP
     Route::get("/findByAssignId/{id}", 'findByIdAssign')->middleware('auth:persona', 'permission:ver-gestiones-asignadas-por-id');
     Route::post("/editAssign/{id}", 'findAndUpdateAssign')->middleware('auth:persona', 'permission:editar-asignaciones');
     Route::get("/findPeriodByIdAssign/{id}", 'findPeriodByIdAssign')->middleware('auth:persona', 'permission:ver-periodos-asignados');
+    Route::get("/listPeriodsByCareerId/{id}", 'findPeriodsByCareerId');
 });
 
 // Rutas de Gestión Académica
