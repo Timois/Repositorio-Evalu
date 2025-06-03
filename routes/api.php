@@ -178,7 +178,6 @@ Route::controller(ImportStudentController::class)->prefix('students')->middlewar
     Route::get("/find/{id}", "findById")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
     Route::get("/findByName/{id}", "findByName")->middleware('auth:persona', 'permission:buscar-importaciones-de-postulantes-porId');
     Route::post("/save", "store")->middleware('auth:persona', 'permission:registrar-postulantes');
-    Route::get("/findByCareerId/{id}", "findStudentsByCareerId")->middleware('auth:persona', 'permission:ver-postulantes-por-periodo');
 });
 
 Route::controller(EvaluationController::class)->prefix('evaluations')->middleware($authPersona)->group(function(){
@@ -201,7 +200,7 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
 
 Route::controller(StudenTestsController::class)->prefix('student_tests')->middleware($authPersona)->group(function(){
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-pruebas');
-    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
+    Route::get("/list/{id}", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-pruebas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-pruebas-por-id');
     Route::post("/assignRandomEvaluation", "assignRandomEvaluation")->middleware('auth:persona', 'permission:asignar-preguntas-evaluaciones');

@@ -13,13 +13,13 @@ class ValidationStudent extends FormRequest
     public function rules(): array
     {
         return [
-            'ci' => ['required', 'regex:/^[0-9]{7,8}$/', 'unique:students,ci'],
+            'ci' => ['required', 'regex:/^[0-9]{7,8}$/'],
             'name' => ['required', 'string', 'max:255'],
             'paternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
-            'phone_number' => ['required', 'integer', 'unique:students,phone_number'],
+            'phone_number' => ['required', 'integer'],
             'birthdate' => ['required', 'date', 'before:today'],
-            'academic_management_period_id' => ['required', 'exists:academic_management_period,id'],
+            'evaluation_id' => ['required', 'exists:evaluations,id'],
         ];
     }
 
@@ -47,7 +47,6 @@ class ValidationStudent extends FormRequest
         return [
             'ci.required' => 'El CI es obligatorio.',
             'ci.regex' => 'El CI debe tener 7 o 8 dígitos.',
-            'ci.unique' => 'Este CI ya está registrado.',
             'name.required' => 'El nombre es obligatorio.',
             'phone_number.required' => 'El número de teléfono es obligatorio.',
             'phone_number.integer' => 'El número de teléfono debe ser un número entero.',
@@ -57,8 +56,8 @@ class ValidationStudent extends FormRequest
             'birthdate.date' => 'La fecha de nacimiento debe tener un formato válido (aaaa-mm-dd).',
             'birthdate.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
             'surname.required' => 'Debe ingresar al menos un apellido (paterno o materno).',
-            'academic_management_period_id.required' => 'El ID del período de gestión académica es obligatorio.',
-            'academic_management_period_id.exists' => 'El período académico seleccionado no existe.',
+            'evaluation_id.required' => 'El ID de la evaluación es obligatorio.',
+            'evaluation_id.exists' => 'La evaluación seleccionada no existe.',
         ];
     }
 

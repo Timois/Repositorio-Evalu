@@ -17,11 +17,10 @@ class StudentsImport implements ToCollection, WithHeadingRow
 {
     protected $requiredColumns = ['ci', 'nombre', 'apellido_paterno', 'apellido_materno', 'fecha_de_nacimiento', 'telefono'];
     protected $results = [];
-    protected $evaluationId; 
+    protected $evaluationId;
     public function __construct($evaluationId)
     {
         $this->evaluationId = $evaluationId;
-
         // Validar que el examen exista
         if (!Evaluation::find($evaluationId)) {
             throw new Exception("El examen con ID {$evaluationId} no existe.");
@@ -30,6 +29,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows)
     {
+
         set_time_limit(300);
 
         // Validar cabeceras
@@ -70,7 +70,6 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
                 $paternalSurname = trim($row['apellido_paterno'] ?? '');
                 $maternalSurname = trim($row['apellido_materno'] ?? '');
-                $name = strtolower(trim($row['nombre']));
                 $paternalSurname = strtolower($paternalSurname);
                 $maternalSurname = strtolower($maternalSurname);
                 if (empty($paternalSurname) && empty($maternalSurname)) {
@@ -91,34 +90,53 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     $existingStudent = Student::where('ci', $row['ci'])->first();
 
                     if ($existingStudent) {
-
-                        // Verificar si ya está asociado a un examen
-                        if ($existingStudent->evaluations()->exists()) {
-                            $rowResult['mensajes'][] = "El estudiante ya está asociado a un examen";
+                        // Verificar si ya está asociado a este examen
+                        if ($existingStudent->evaluations()->where('evaluation_id', $this->evaluationId)->exists()) {
+                            $rowResult['mensajes'][] = "El estudiante ya está asociado a este examen";
                             $rowResult['estado'] = 'error';
                             return;
                         }
-
-                        // Asociar al examen
-                        StudentTest::create([
-                            'student_id' => $existingStudent->id,
-                            'evaluation_id' => $this->evaluationId,
-                            'code' => $row['code'] ?? null,
-                            'start_time' => $row['start_time'] ? Carbon::parse($row['start_time'])->format('Y-m-d H:i:s') : null,
-                            'end_time' => $row['end_time'] ? Carbon::parse($row['end_time'])->format('Y-m-d H:i:s') : null,
-                            'correct_answers' => $row['correct_answers'] ?? null,
-                            'incorrect_answers' => $row['incorrect_answers'] ?? null,
-                            'not_answered' => $row['not_answered'] ?? null,
-                            'score_obtained' => $row['score_obtained'] ?? null,
-                            'status' => $row['status'] ?? 'evaluado',
-                            'questions_order' => $row['questions_order'] ? json_decode($row['questions_order'], true) : null,
+                        // Asociar evaluación al estudiante
+                        $existingStudent->evaluations()->attach($this->evaluationId, [
+                            'status' => 'evaluado',
+                            'code' => 'TEMP',
+                            'start_time' => null,
+                            'end_time' => null,
+                            'correct_answers' => 0,
+                            'incorrect_answers' => 0,
+                            'not_answered' => 0,
+                            'score_obtained' => 0,
+                            'questions_order' => json_encode([]),
                         ]);
+
+                        // Obtener el registro student_test creado
+                        $studentTest = StudentTest::where('student_id', $existingStudent->id)
+                            ->where('evaluation_id', $this->evaluationId)
+                            ->latest()
+                            ->first();
+
+                        // Obtener evaluación con relaciones necesarias
+                        $evaluation = Evaluation::with([
+                            'academicManagementPeriod.academicManagementCareer.career',
+                            'academicManagementPeriod.academicManagementCareer.academicManagement', // <-- Agregado
+                            'academicManagementPeriod.period'
+                        ])->findOrFail($this->evaluationId);
+
+                        $sigla = $evaluation->academicManagementPeriod->academicManagementCareer->career->initials;
+                        $periodName = $evaluation->academicManagementPeriod->period->level;
+                        $gestion = $evaluation->academicManagementPeriod->academicManagementCareer->academicManagement->year;
+                        $title = str_replace(' ', '', $evaluation->title);
+                        $periodName = str_replace(' ', '', $periodName);
+                        $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
+
+                        // Actualizar el código
+                        $studentTest->update(['code' => $code]);
 
                         $rowResult['estado'] = 'éxito';
                         $rowResult['mensajes'][] = "Estudiante existente asignado al periodo y al examen";
                         return;
                     }
-                    
+
                     $name = strtolower($row['nombre']);
                     $paternalSurname = strtolower($row['apellido_paterno'] ?? '');
                     $maternalSurname = strtolower($row['apellido_materno'] ?? '');
@@ -145,20 +163,43 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         'password' => $hashedPassword,
                         'status' => 'inactivo',
                     ]);
-                    
-                    // Asociar al examen
-                    StudentTest::create([
-                        'student_id' => $student->id,
-                        'evaluation_id' => $this->evaluationId,
-                        'start_time' => null, // O valor desde el Excel
+
+                    // Asociar evaluación al estudiante
+                    $student->evaluations()->attach($this->evaluationId, [
+                        'status' => 'evaluado',
+                        'code' => 'TEMP',
+                        'start_time' => null,
                         'end_time' => null,
-                        'correct_answers' => null,
-                        'incorrect_answers' => null,
-                        'not_answered' => null,
-                        'score_obtained' => null,
-                        'status' => 'evaluado', // O valor por defecto
-                        'questions_order' => null, // O valor desde el Excel
+                        'correct_answers' => 0,
+                        'incorrect_answers' => 0,
+                        'not_answered' => 0,
+                        'score_obtained' => 0,
+                        'questions_order' => json_encode([]),
                     ]);
+
+                    // Obtener el registro student_test creado
+                    $studentTest = StudentTest::where('student_id', $student->id)
+                        ->where('evaluation_id', $this->evaluationId)
+                        ->latest()
+                        ->first();
+
+                    // Obtener evaluación con relaciones necesarias
+                    $evaluation = Evaluation::with([
+                        'academicManagementPeriod.academicManagementCareer.career',
+                        'academicManagementPeriod.academicManagementCareer.academicManagement', // <-- Agregado
+                        'academicManagementPeriod.period'
+                    ])->findOrFail($this->evaluationId);
+
+                    $sigla = $evaluation->academicManagementPeriod->academicManagementCareer->career->initials;
+                    $periodName = $evaluation->academicManagementPeriod->period->level;
+                    $gestion = $evaluation->academicManagementPeriod->academicManagementCareer->academicManagement->year;
+                    $title = str_replace(' ', '', $evaluation->title);
+                    $periodName = str_replace(' ', '', $periodName);
+                    $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
+
+                    // Actualizar el código
+                    $studentTest->update(['code' => $code]);
+
 
                     $rowResult['estado'] = 'éxito';
                     $rowResult['mensajes'][] = "Registro creado, asignado al periodo y al examen";

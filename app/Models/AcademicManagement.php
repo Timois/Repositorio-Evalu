@@ -10,12 +10,8 @@ class AcademicManagement extends Model
 {
     protected $table = "academic_management";
 
-    public function management_extensions():HasMany{
-        return $this->hasMany(ManagementExtension::class);
-    }
-
     
-    public function academicManagementPeriod():BelongsToMany{
+    public function academicManagementCareer():BelongsToMany{
         return $this->belongsToMany(AcademicManagementCareer::class)
         ->withTimestamps();
     }

@@ -29,7 +29,6 @@ class Evaluation extends Model
     }
     public function students_test(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class, 'student_tests', 'evaluation_id', 'student_id');
         return $this->belongsToMany(Student::class, 'student_tests', 'evaluation_id', 'student_id')
             ->using(StudentTest::class)
             ->withPivot([

@@ -9,15 +9,22 @@ use App\Models\QuestionEvaluation;
 use App\Models\Student;
 use App\Models\StudentTest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Str;
 
 class StudenTestsController extends Controller
 {
-    public function find()
+    public function find($evaluationId)
     {
-        $test = StudentTest::orderBy('id', 'asc')->get();
-        return response()->json($test);
+        $students = StudentTest::with('student')
+            ->where('evaluation_id', $evaluationId)
+            ->orderBy('id', 'asc')
+            ->get();
+
+        // Retornamos solo los datos del estudiante
+        $studentData = $students->pluck('student');
+
+        return response()->json($studentData);
     }
 
     public function findById(string $id)
@@ -171,6 +178,4 @@ class StudenTestsController extends Controller
 
         return response()->json($students);
     }
-
-    
 }

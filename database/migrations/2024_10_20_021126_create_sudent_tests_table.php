@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con la evaluaciones
             $table->foreignId('student_id')->constrained('students', 'id')->onDelete('cascade')->unique(); // Relación con la estudiantes
+            $table->string('code')->unique(); // Codigo de la prueba
             $table->time('start_time')->nullable(); // Hora de inicio de la prueba
             $table->time('end_time')->nullable();   // Hora de fin de la prueba
             $table->double('score_obtained')->nullable();   // Calificacion de la prueba
