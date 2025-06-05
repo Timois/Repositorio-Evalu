@@ -6,7 +6,6 @@ use App\Models\Evaluation;
 use App\Models\QuestionBank;
 use App\Models\Student;
 use App\Models\StudentTest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StudentEvaluationController extends Controller

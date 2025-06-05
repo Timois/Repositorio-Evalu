@@ -199,6 +199,8 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
     Route::get("listAssigned","find")->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
     Route::post("/assignQuestion", "asignQuestionsRandom");
+    Route::post("/reactiveStatus/{id}", "completeStudentTest");
+    Route::get("/verifiAssignedQuestions/{id}", "findByEvaluationId");
 }); 
 
 Route::controller(StudenTestsController::class)->prefix('student_tests')->middleware($authPersona)->group(function(){

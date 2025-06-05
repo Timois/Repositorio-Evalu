@@ -40,4 +40,8 @@ class StudentTest extends Pivot
     {
         return $this->hasMany(StudentTestQuestion::class);
     }
+    public function result()
+    {
+        return $this->hasOne(Result::class);
+    }
 }

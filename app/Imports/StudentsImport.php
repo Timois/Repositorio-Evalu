@@ -98,7 +98,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         }
                         // Asociar evaluación al estudiante
                         $existingStudent->evaluations()->attach($this->evaluationId, [
-                            'status' => 'evaluado',
+                            'status' => 'pendiente',
                             'code' => 'TEMP',
                             'start_time' => null,
                             'end_time' => null,
@@ -166,7 +166,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
                     // Asociar evaluación al estudiante
                     $student->evaluations()->attach($this->evaluationId, [
-                        'status' => 'evaluado',
+                        'status' => 'pendiente',
                         'code' => 'TEMP',
                         'start_time' => null,
                         'end_time' => null,

@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationStudent;
 use App\Imports\StudentsImport;
-use App\Models\AcademicManagement;
-use App\Models\AcademicManagementCareer;
-use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
 use App\Models\Student;
 use App\Models\StudentTest;
@@ -106,7 +103,7 @@ class ImportStudentController extends Controller
                     'name' => $request->name,
                     'paternal_surname' => $request->paternal_surname,
                     'maternal_surname' => $request->maternal_surname,
-                    'phone_number' => $request->phone_number,
+                    'phone_number' => $request->phone_number,   
                     'birthdate' => Carbon::parse($request->birthdate),
                     'password' => Hash::make(
                         preg_replace('/[^0-9]/', '', $request->ci) .
@@ -117,7 +114,7 @@ class ImportStudentController extends Controller
 
             // Asignar evaluación
             $student->evaluations()->attach($evaluation->id, [
-                'status' => 'evaluado',
+                'status' => 'pendiente',
                 'code' => 'TEMP',
                 'start_time' => null,
                 'end_time' => null,

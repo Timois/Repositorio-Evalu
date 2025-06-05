@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('incorrect_answers')->nullable();   // respuestas incorrectas que hizo el estudiante
             $table->string('not_answered')->nullable();   // respuestas no respondidas que hizo el estudiante
             $table->json('questions_order')->nullable();
-            $table->enum('status', ['evaluado', 'corregido'])->default('evaluado'); // Estado de la prueba
+            $table->enum('status', ['pendiente', 'completado'])->default('pendiente'); // Estado de la prueba
             $table->timestamps();
         });
         Schema::create('student_test_questions', function (Blueprint $table) {
@@ -39,6 +39,23 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('groups', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con evaluaciones
+            $table->string('name')->unique();
+            $table->string('description');
+            $table->integer('total_students')->nullable();
+            $table->timestamp('start_time')->nullable(); // Fecha y hora de inicio del examen para el grupo
+            $table->timestamp('end_time')->nullable();   // Fecha y hora de fin del examen para el grupo
+            $table->boolean('is_restricted')->default(true); // Si solo los estudiantes del grupo pueden rendir
+            $table->timestamps();
+        });
+        Schema::create('group_student', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');
+            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->timestamps();
+        });
         Schema::create('results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
@@ -49,14 +66,6 @@ return new class extends Migration
             $table->enum('status', ['admitido', 'no_admitido'])->default('evaluado');
             $table->timestamps();
         });
-        Schema::create('student_answers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade');
-            $table->foreignId('question_id')->constrained('bank_questions', 'id')->onDelete('cascade');
-            $table->foreignId('answer_id')->constrained('bank_answers', 'id')->onDelete('cascade');
-            $table->double('score')->nullable(); // opcional
-            $table->timestamps();
-        });
     }
 
     /**
@@ -64,8 +73,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('student_answers');
         Schema::dropIfExists('results');
+        Schema::dropIfExists('groups');
         Schema::dropIfExists('student_questions');
         Schema::dropIfExists('student_tests');
     }

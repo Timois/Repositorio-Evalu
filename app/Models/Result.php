@@ -19,7 +19,8 @@ class Result extends Model
         'status',
     ];
 
-    public function studentTest():HasMany{
-        return $this->hasMany(StudentTest::class);
+    public function studentTest()
+    {
+        return $this->belongsTo(StudentTest::class);
     }
 }

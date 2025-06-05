@@ -44,14 +44,6 @@ return new class extends Migration
             $table->double('scores_asigned')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('groups', function (Blueprint $table) {
-            $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade');
-            $table->string('name')->unique();
-            $table->string('description');
-            $table->integer('total_students')->nullable();
-            $table->timestamps();
-        });
         
     }
 
@@ -60,7 +52,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('groups'); // Add this line to drop the groups table()
         Schema::dropIfExists('backup_of_generated_questions');
         Schema::dropIfExists('question_evaluation');
         Schema::dropIfExists('evaluations');

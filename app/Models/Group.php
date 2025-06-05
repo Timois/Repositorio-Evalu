@@ -15,8 +15,13 @@ class Group extends Model
         'description',
         'total_students',
     ];
-    public function evaluation():BelongsTo
+    public function evaluation()
     {
-        return $this->belongsTo(Evaluation::class, 'evaluation_id');
+        return $this->belongsTo(Evaluation::class);
+    }
+
+    public function students()
+    {
+        return $this->belongsToMany(Student::class)->withTimestamps();
     }
 }
