@@ -42,23 +42,6 @@ class StudenTestsController extends Controller
         return response()->json($id);
     }
 
-    public function create(ValidationStudentTest $request)
-    {
-        $test = new StudentTest();
-        $test->evaluation_id = $request->evaluation_id;
-        $test->student_id = $request->student_id;
-        $test->code = $request->code;
-        $test->start_time = $request->start_time;
-        $test->end_time = $request->end_time;
-        $test->score_obtained = $request->score_obtained;
-        $test->correct_answers = $request->correct_answers;
-        $test->incorrect_answers = $request->incorrect_answers;
-        $test->not_answered = $request->not_answered;
-        $test->status = $request->status;
-        $test->save();
-        return response()->json($test);
-    }
-
     public function findAndUpdate(ValidationStudentTest $request, string $id)
     {
         $test = StudentTest::find($id);

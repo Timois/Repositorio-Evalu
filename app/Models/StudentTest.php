@@ -36,4 +36,8 @@ class StudentTest extends Pivot
     {
         return $this->belongsTo(Evaluation::class);
     }
+    public function studentTestQuestions()
+    {
+        return $this->hasMany(StudentTestQuestion::class);
+    }
 }

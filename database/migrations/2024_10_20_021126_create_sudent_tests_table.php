@@ -28,6 +28,16 @@ return new class extends Migration
             $table->enum('status', ['evaluado', 'corregido'])->default('evaluado'); // Estado de la prueba
             $table->timestamps();
         });
+        Schema::create('student_test_questions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('student_test_id')->constrained('student_tests')->onDelete('cascade');
+            $table->foreignId('question_id')->constrained('bank_questions')->onDelete('cascade');
+            $table->double('score_assigned'); // Puntaje que vale esta pregunta
+            $table->string('student_answer')->nullable(); // Respuesta que dio el estudiante
+            $table->boolean('is_correct')->nullable(); // Si fue correcta o no
+            $table->integer('question_order')->nullable(); // Para mantener el orden único de las preguntas
+            $table->timestamps();
+        });
 
         Schema::create('results', function (Blueprint $table) {
             $table->id();
@@ -56,6 +66,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('student_answers');
         Schema::dropIfExists('results');
+        Schema::dropIfExists('student_questions');
         Schema::dropIfExists('student_tests');
     }
 };

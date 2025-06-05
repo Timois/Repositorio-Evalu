@@ -7,6 +7,8 @@ use App\Models\QuestionBank;
 use App\Models\Evaluation;
 use App\Http\Requests\ValidationQuestionEvaluation;
 use App\Models\Areas;
+use App\Models\StudentTest;
+use App\Models\StudentTestQuestion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -26,8 +28,10 @@ class QuestionEvaluationController extends Controller
         $area_id = $request->input('area_id');
 
         // Obtener el área
-        $area = Areas::find($area_id);
-
+        $area = Areas::where('id', $area_id);
+        if (!$area) {
+            return response()->json(['error' => 'El área no existe'], 404);
+        }
         if (!$request->has('cantidadFacil') && !$request->has('cantidadMedia') && !$request->has('cantidadDificil')) {
             return response()->json(['error' => 'Al menos uno de los parámetros (cantidadFacil, cantidadMedia, cantidadDificil) debe enviarse'], 422);
         }
@@ -85,6 +89,83 @@ class QuestionEvaluationController extends Controller
         ]);
     }
 
+    public function asignQuestionsRandom(Request $request)
+    {
+        $request->validate([
+            'evaluation_id' => 'required|exists:evaluations,id',
+            'areas' => 'required|array',
+            'areas.*.id' => 'required|exists:areas,id',
+            'areas.*.nota' => 'required|numeric|min:0',
+            'areas.*.cantidadFacil' => 'nullable|integer|min:0',
+            'areas.*.cantidadMedia' => 'nullable|integer|min:0',
+            'areas.*.cantidadDificil' => 'nullable|integer|min:0',
+        ]);
+
+        $evaluation = Evaluation::findOrFail($request->evaluation_id);
+        
+        $areas = $request->areas;
+        $totalNota = collect($areas)->sum('nota');
+
+        if (round($totalNota, 2) != round($evaluation->total_score, 2)) {
+            return response()->json(['error' => 'La suma de notas por área debe coincidir con la nota total de la evaluación.'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Obtener todos los student_tests de esta evaluación
+            $studentTests = StudentTest::where('evaluation_id', $evaluation->id)->get();
+
+            foreach ($studentTests as $studentTest) {
+                $allQuestionsForStudent = [];
+
+                foreach ($areas as $areaData) {
+                    $areaId = $areaData['id'];
+                    $notaArea = $areaData['nota'];
+                    $cantidadFacil = $areaData['cantidadFacil'] ?? 0;
+                    $cantidadMedia = $areaData['cantidadMedia'] ?? 0;
+                    $cantidadDificil = $areaData['cantidadDificil'] ?? 0;
+
+                    $totalPreguntas = $cantidadFacil + $cantidadMedia + $cantidadDificil;
+                    if ($totalPreguntas == 0) continue;
+
+                    $puntajePorPregunta = $notaArea / $totalPreguntas;
+
+                    $preguntasFacil = QuestionBank::where('area_id', $areaId)->where('dificulty', 'facil')->inRandomOrder()->take($cantidadFacil)->get();
+                    $preguntasMedia = QuestionBank::where('area_id', $areaId)->where('dificulty', 'medio')->inRandomOrder()->take($cantidadMedia)->get();
+                    $preguntasDificil = QuestionBank::where('area_id', $areaId)->where('dificulty', 'dificil')->inRandomOrder()->take($cantidadDificil)->get();
+
+                    $preguntas = $preguntasFacil->concat($preguntasMedia)->concat($preguntasDificil)->shuffle();
+
+                    foreach ($preguntas as $index => $pregunta) {
+                        $allQuestionsForStudent[] = [
+                            'student_test_id' => $studentTest->id,
+                            'question_id' => $pregunta->id,
+                            'score_assigned' => round($puntajePorPregunta, 2),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                }
+
+                // Insertar todas las preguntas para el estudiante
+                StudentTestQuestion::insert($allQuestionsForStudent);
+
+                // Guardar el orden para la tabla student_tests.questions_order
+                $studentTest->questions_order = collect($allQuestionsForStudent)->pluck('question_id')->toJson();
+                $studentTest->save();
+            }
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Preguntas asignadas correctamente a todos los estudiantes.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+
     public function assignRandomQuestions(ValidationQuestionEvaluation $request)
     {
         try {
@@ -96,26 +177,26 @@ class QuestionEvaluationController extends Controller
 
             foreach ($questionsPerArea as $areaId => $config) {
                 $availableQuestions = QuestionBank::where('area_id', $areaId)->get();
-            
+
                 if ($availableQuestions->count() < $config['quantity']) {
                     throw new \Exception("No hay suficientes preguntas para el área $areaId");
-                }               
+                }
                 $selectedQuestions = $availableQuestions->random($config['quantity']);
                 $scorePerQuestion = $config['score'] / $config['quantity'];
-            
+
                 foreach ($selectedQuestions as $question) {
                     $assignedQuestion = new QuestionEvaluation();
                     $assignedQuestion->evaluation_id = $request->evaluation_id;
                     $assignedQuestion->question_id = $question->id;
                     $assignedQuestion->score = $scorePerQuestion;
                     $assignedQuestion->save();
-            
+
                     $assignedQuestions[] = $assignedQuestion;
-            
+
                     $currentTotalScore += $scorePerQuestion;
                 }
             }
-            
+
             DB::commit();
 
             return response()->json([

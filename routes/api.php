@@ -134,6 +134,7 @@ Route::controller(AreaController::class)->prefix("areas")->middleware($authPerso
     Route::get("/cantityQuestions/{id}", "cantityQuestionsByArea");
     Route::post("/unsubscribe/{id}", "destroy");    
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-areas-por-id');
+    Route::get("/findActiveByCareer/{career_id}", 'findAreasActiveByCareer');
 });
 
 // Rutas de Importación de Excel
@@ -187,6 +188,7 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->middlewar
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:buscar-evaluaciones-porId');
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
     Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer');
+    Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-evaluaciones');
 });
 
 
@@ -196,10 +198,10 @@ Route::controller(QuestionEvaluationController::class)->prefix('question_evaluat
     Route::get("/list", "disponibles")->middleware('auth:persona', 'permission:ver-preguntas-disponibles');
     Route::get("listAssigned","find")->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
+    Route::post("/assignQuestion", "asignQuestionsRandom");
 }); 
 
 Route::controller(StudenTestsController::class)->prefix('student_tests')->middleware($authPersona)->group(function(){
-    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-pruebas');
     Route::get("/list/{id}", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-pruebas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-pruebas-por-id');

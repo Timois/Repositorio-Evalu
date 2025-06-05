@@ -18,8 +18,6 @@ class EvaluationController extends Controller
         $evaluation = Evaluation::orderBy('id', 'ASC')->get();
         return response()->json($evaluation);
     }
-
-
     public function create(ValidationEvaluation $request)
     {
         $evaluation = new Evaluation();

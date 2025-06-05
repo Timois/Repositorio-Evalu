@@ -87,6 +87,13 @@ class AreaController extends Controller
         $areas = Areas::where('career_id', $career_id)->get();
         return response()->json($areas);
     }
+    public function findAreasActiveByCareer(string $career_id)
+    {
+        $areas = Areas::where('career_id', $career_id)
+            ->where('status', 'activo')
+            ->get();
+        return response()->json($areas);
+    }
 
     public function questionsByArea(string $e)
     {

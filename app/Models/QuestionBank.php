@@ -54,4 +54,8 @@ class QuestionBank extends Model
             'academic_management_period_id'            // clave foránea del modelo relacionado
         )->withTimestamps();
     }
+    public function studentTestQuestions()
+    {
+        return $this->hasMany(StudentTestQuestion::class, 'question_id');
+    }
 }
