@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ValidationGroup;
 use App\Models\Group;
+use App\Models\StudentTest;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class GroupsController extends Controller
@@ -23,22 +26,18 @@ class GroupsController extends Controller
         }
     }
 
-    public function create(Request $request)
+    public function create(ValidationGroup $request)
     {
-        $request->validate([
-            'evaluation_id' => 'required|integer',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:255',
-            'total_students' => 'required|integer|min:1',
-        ]);
-
+        $totalStudents = StudentTest::where('evaluation_id', $request->evaluation_id)->count();
+        dd($totalStudents);
         $group = new Group();
-        $group->evaluation_id = $request->input('evaluation_id');
-        $group->name = $request->input('name');
-        $group->description = $request->input('description');
-        $group->total_students = $request->input('total_students');
-        $group->save();
-
+        $group->evaluation_id = $request->evaluation_id;
+        $group->name = $request->name;
+        $group->description = $request->description;
+        $group->total_students = $totalStudents;
+        $group->start_time  =$request->start_time;
+        $group->end_time = $request->end_time;
+        //$group->save();
         return response()->json($group, 201);
     }
 }

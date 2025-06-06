@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExcelImportController;
+use App\Http\Controllers\GroupsController;
 use App\Http\Controllers\ImportExcelImageController;
 use App\Http\Controllers\ImportStudentController;
 use App\Http\Controllers\ManagementExtensionController;
@@ -218,6 +219,14 @@ Route::controller(ResultsController::class)->prefix('results')->middleware($auth
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-resultados');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-resultados-por-id');
 });
+    Route::controller(GroupsController::class)->middleware($authPersona)->prefix('groups')->group(function(){
+        Route::post("/save", "create");
+        Route::get("/list", "find");
+        Route::get("/find/{id}", 'findById');
+        Route::post("/edit/{id}", "findAndUpdate");
+        Route::get("/listByEvaluation/{id}", "findByEvaluationId");
+    });
+
 Route::group(['middleware' => ['auth:api']], function () {
     Route::controller(StudentEvaluationController::class)->prefix('student_evaluations')->group(function(){
         Route::get("/list/{ci}", "findEvaluations");
