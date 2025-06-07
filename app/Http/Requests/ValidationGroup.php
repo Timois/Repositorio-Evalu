@@ -21,12 +21,26 @@ class ValidationGroup extends FormRequest
      */
     public function rules(): array
     {
+        $validationEvluationId = 'required|exists:evaluations,id';
+        $validationName = 'required|string|max:20';
+        $validationDescription = 'required|string|max:255';
+        $validationStartTime = 'required|date_format:Y-m-d H:i';
+        $validationEndTime = 'required|date_format:Y-m-d H:i|after:start_time';
+        $groupId = $this->route('id');
+
+        if ($groupId) {
+            $validationEvluationId = 'sometimes|exists:evaluations,id';
+            $validationName = 'sometimes|string|max:20';
+            $validationDescription = 'sometimes|string|max:255';
+            $validationStartTime = 'sometimes|date_format:Y-m-d H:i';
+            $validationEndTime = 'sometimes|date_format:Y-m-d H:i|after:start_time';
+        }
         return [
-            'evaluation_id' => 'required|exists:evaluations,id',
-            'name' => 'required|string|max:20',
-            'description' => 'nullable|string|max:255',
-            'start_time' => 'required|date_format:Y-m-d H:i',
-            'end_time' => 'required|date_format:Y-m-d H:i|after:start_time',
+            'evaluation_id' => $validationEvluationId,
+            'name' => $validationName,
+            'description' => $validationDescription,
+            'start_time' => $validationStartTime,
+            'end_time' => $validationEndTime,
         ];
     }
     public function withValidator($validator)
@@ -71,6 +85,7 @@ class ValidationGroup extends FormRequest
             'name.required' => 'El nombre del grupo es obligatorio.',
             'name.string' => 'El nombre del grupo debe ser una cadena de texto.',
             'name.max' => 'El nombre del grupo no puede exceder los 20 caracteres.',
+            'description.required' => 'La descripción es obligatoria.',
             'description.string' => 'La descripción debe ser una cadena de texto.',
             'description.max' => 'La descripción no puede exceder los 255 caracteres.',
             'start_time.required' => 'La hora de inicio es obligatoria.',

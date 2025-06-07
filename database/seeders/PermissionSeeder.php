@@ -97,7 +97,12 @@ class PermissionSeeder extends Seeder
             'ver-resultados',
             'ver-id-del-estudiante-por-ci',
             'registrar-postulantes',
-            'ver-postulantes-por-periodo'
+            'ver-postulantes-por-periodo',
+            'crear-grupos',
+            'editar-grupos',
+            'ver-grupos',
+            'ver-grupos-por-id',
+            'ver-grupos-por-evaluacion',
         ];
 
         // Crear permisos si no existen
