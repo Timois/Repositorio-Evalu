@@ -38,12 +38,20 @@ return new class extends Migration
             $table->integer('question_order')->nullable(); // Para mantener el orden único de las preguntas
             $table->timestamps();
         });
+        Schema::create('laboratories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('location')->nullable(); // Ubicación física (opcional)
+            $table->integer('equipment_count'); // Cantidad de equipos disponibles
+            $table->timestamps();
+        });
 
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con evaluaciones
+            $table->foreignId('laboratory_id')->constrained('laboratories', 'id')->onDelete('cascade'); // Relación con laboratorios
             $table->string('name')->unique();
-            $table->string('description');
+            $table->string('description')->nullable();
             $table->integer('total_students')->nullable();
             $table->dateTime('start_time')->nullable(); // Fecha y hora de inicio del examen para el grupo
             $table->dateTime('end_time')->nullable();   // Fecha y hora de fin del examen para el grupo

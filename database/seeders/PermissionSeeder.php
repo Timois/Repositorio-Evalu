@@ -103,6 +103,10 @@ class PermissionSeeder extends Seeder
             'ver-grupos',
             'ver-grupos-por-id',
             'ver-grupos-por-evaluacion',
+            'crear-laboratorios',
+            'editar-laboratorios',
+            'ver-laboratorios',
+            'ver-laboratorios-por-id',
         ];
 
         // Crear permisos si no existen

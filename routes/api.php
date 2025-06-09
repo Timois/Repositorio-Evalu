@@ -14,6 +14,7 @@ use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\GroupsController;
 use App\Http\Controllers\ImportExcelImageController;
 use App\Http\Controllers\ImportStudentController;
+use App\Http\Controllers\LaboratoriesController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
@@ -219,6 +220,14 @@ Route::controller(ResultsController::class)->prefix('results')->middleware($auth
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-resultados');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-resultados-por-id');
 });
+
+Route::controller(LaboratoriesController::class)->prefix('laboratories')->middleware($authPersona)->group(function () {
+    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-laboratorios');
+    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-laboratorios');
+    Route::put("/edit/{id}", "update")->middleware('auth:persona', 'permission:editar-laboratorios');
+    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-laboratorios-por-id');
+});
+
 Route::controller(GroupsController::class)->middleware($authPersona)->prefix('groups')->group(function () {
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-grupos');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-grupos');

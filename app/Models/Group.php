@@ -24,4 +24,8 @@ class Group extends Model
     {
         return $this->belongsToMany(Student::class)->withTimestamps();
     }
+    public function lab()
+    {
+        return $this->belongsTo(Laboratorie::class);
+    }
 }
