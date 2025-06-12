@@ -31,13 +31,18 @@ class GroupsController extends Controller
     // Lista los grupos de una evaluación específica
     public function findGroupsByEvaluation(string $evaluationId)
     {
-        $groups = Group::with('students')
+        $groups = Group::with(['lab', 'students'])
             ->where('evaluation_id', $evaluationId)
             ->get();
 
-        return response()->json($groups);
-    }
+        $studentsCount = StudentTest::where('evaluation_id', $evaluationId)
+            ->count();
 
+        return response()->json([
+            'groups' => $groups,
+            'total_students' => $studentsCount,
+        ]);
+    }
 
     public function create(ValidationGroup $request)
     {

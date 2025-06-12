@@ -10,15 +10,24 @@ class ValidationGroup extends FormRequest
 {
     public function rules(): array
     {
+        $validationEvaluationId = 'required|exists:evaluations,id';
+        $validationLaboratoryId = 'required|exists:laboratories,id';
+        $validationName = 'required|string|max:20';
+        $validationDescription = 'required|string|max:255';
+        $validationStartTime = 'required|date_format:H:i';
+        $validationEndTime = 'required|date_format:H:i|after:start_time';
+        $validationOrderType = 'required|in:alphabetical,id_asc';
         $groupId = $this->route('id');
-
-        $validationEvaluationId = $groupId ? 'sometimes|exists:evaluations,id' : 'required|exists:evaluations,id';
-        $validationLaboratoryId = $groupId ? 'sometimes|exists:laboratories,id' : 'required|exists:laboratories,id';
-        $validationName = $groupId ? 'sometimes|string|max:20' : 'required|string|max:20';
-        $validationStartTime = $groupId ? 'sometimes|date_format:H:i' : 'required|date_format:H:i';
-        $validationEndTime = $groupId ? 'sometimes|date_format:H:i|after:start_time' : 'required|date_format:H:i|after:start_time';
-        $validationOrderType = $groupId ? 'sometimes|in:alphabetical,id_asc' : 'required|in:alphabetical,id_asc';
-        $validationDescription = $groupId? 'sometimes|string|max:255' : 'required|string|max:255';
+        if ($groupId) {
+            // Si estamos actualizando un grupo, no requerimos el laboratorio
+            $validationLaboratoryId = 'sometimes|exists:laboratories,id';
+            $validationLaboratoryId = 'sometimes|exists:laboratories,id';
+            $validationName = 'sometimes|string|max:20';
+            $validationDescription = 'sometimes|string|max:255';
+            $validationStartTime = 'sometimes|date_format:H:i';
+            $validationEndTime = 'sometimes|date_format:H:i|after:start_time';
+            $validationOrderType = 'sometimes|in:alphabetical,id_asc';
+        }
         return [
             'evaluation_id' => $validationEvaluationId,
             'laboratory_id' => $validationLaboratoryId,
@@ -33,69 +42,110 @@ class ValidationGroup extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Obtener evaluación
-            $evaluation = \App\Models\Evaluation::find($this->evaluation_id);
-
-            if (!$evaluation) {
-                return; // ya se validó exists, pero por si acaso
-            }
-
-            // Obtener la fecha del examen
-            $examDate = \Carbon\Carbon::parse($evaluation->date_of_realization);
-
-            // Construir fecha completa con hora de inicio y fin
-            $startTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->start_time);
-            $endTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->end_time);
-
-            // Validar que ambos sean el mismo día que date_of_realization
-            if (!$startTime->isSameDay($examDate)) {
-                $validator->errors()->add('start_time', 'La hora de inicio debe corresponder a la fecha del examen: ' . $examDate->format('H:i'));
-            }
-
-            if (!$endTime->isSameDay($examDate)) {
-                $validator->errors()->add('end_time', 'La hora de fin debe corresponder a la fecha del examen: ' . $examDate->format('H:i'));
-            }
-
-            // Validar que la duración no supere el tiempo del examen
-            $durationMinutes = $startTime->diffInMinutes($endTime);
-            if ($durationMinutes > $evaluation->time) {
-                $validator->errors()->add('end_time', 'La duración del grupo no puede exceder la duración del examen (' . $evaluation->time . ' minutos).');
-            }
-
-            // Validar que no haya solapamiento de horarios en el mismo laboratorio
+            // Obtener evaluation_id
+            $evaluationId = $this->evaluation_id;
             $groupId = $this->route('id');
-            $laboratoryId = $this->laboratory_id;
 
-            $overlappingGroup = Group::where('laboratory_id', $laboratoryId)
-                ->where('evaluation_id', $this->evaluation_id) // Mismo examen
-                ->where(function ($query) use ($startTime, $endTime) {
-                    $query->where(function ($q) use ($startTime, $endTime) {
-                        // El nuevo grupo comienza dentro de un grupo existente
-                        $q->where('start_time', '<=', $startTime)
-                          ->where('end_time', '>=', $startTime);
-                    })->orWhere(function ($q) use ($startTime, $endTime) {
-                        // El nuevo grupo termina dentro de un grupo existente
-                        $q->where('start_time', '<=', $endTime)
-                          ->where('end_time', '>=', $endTime);
-                    })->orWhere(function ($q) use ($startTime, $endTime) {
-                        // El nuevo grupo abarca completamente un grupo existente
-                        $q->where('start_time', '>=', $startTime)
-                          ->where('end_time', '<=', $endTime);
-                    })->orWhere(function ($q) use ($startTime, $endTime) {
-                        // Un grupo existente abarca completamente el nuevo grupo
-                        $q->where('start_time', '<=', $startTime)
-                          ->where('end_time', '>=', $endTime);
-                    });
-                });
-
-            if ($groupId) {
-                $overlappingGroup->where('id', '!=', $groupId); // Excluir el grupo actual en caso de actualización
+            // Si estamos editando y no se proporcionó evaluation_id, usar el del grupo existente
+            if ($groupId && !$evaluationId) {
+                $group = Group::find($groupId);
+                if ($group) {
+                    $evaluationId = $group->evaluation_id;
+                }
             }
 
-            if ($overlappingGroup->exists()) {
-                $validator->errors()->add('start_time', 'El horario seleccionado se solapa con otro grupo en el mismo laboratorio.');
+            // Obtener evaluación
+            $evaluation = \App\Models\Evaluation::find($evaluationId);
+
+            // Verificar si la evaluación existe
+            if (!$evaluation) {
+                $validator->errors()->add('evaluation_id', 'La evaluación no existe o no es válida.');
+                return; // Salir si no hay evaluación
+            }
+
+            // Solo validar tiempos si start_time y end_time están presentes
+            if ($this->filled('start_time') && $this->filled('end_time')) {
+                // Obtener la fecha del examen
+                $examDate = \Carbon\Carbon::parse($evaluation->date_of_realization);
+
+                // Construir fecha completa con hora de inicio y fin
+                $startTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->start_time);
+                $endTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->end_time);
+
+                // Validar que ambos sean el mismo día que date_of_realization
+                if (!$startTime->isSameDay($examDate)) {
+                    $validator->errors()->add('start_time', 'La hora de inicio debe corresponder a la fecha del examen: ' . $examDate->format('H:i'));
+                }
+
+                if (!$endTime->isSameDay($examDate)) {
+                    $validator->errors()->add('end_time', 'La hora de fin debe corresponder a la fecha del examen: ' . $examDate->format('H:i'));
+                }
+
+                // Validar que la duración no supere el tiempo del examen
+                $durationMinutes = $startTime->diffInMinutes($endTime);
+                if ($durationMinutes > $evaluation->time) {
+                    $validator->errors()->add('end_time', 'La duración del grupo no puede exceder la duración del examen (' . $evaluation->time . ' minutos).');
+                }
+
+                // Validar que no haya solapamiento de horarios en el mismo laboratorio
+                $laboratoryId = $this->laboratory_id;
+
+                $overlappingGroup = Group::where('laboratory_id', $laboratoryId)
+                    ->where('evaluation_id', $evaluationId) // Mismo examen
+                    ->where(function ($query) use ($startTime, $endTime) {
+                        $query->where(function ($q) use ($startTime, $endTime) {
+                            // El nuevo grupo comienza dentro de un grupo existente
+                            $q->where('start_time', '<=', $startTime)
+                                ->where('end_time', '>=', $startTime);
+                        })->orWhere(function ($q) use ($startTime, $endTime) {
+                            // El nuevo grupo termina dentro de un grupo existente
+                            $q->where('start_time', '<=', $endTime)
+                                ->where('end_time', '>=', $endTime);
+                        })->orWhere(function ($q) use ($startTime, $endTime) {
+                            // El nuevo grupo abarca completamente un grupo existente
+                            $q->where('start_time', '>=', $startTime)
+                                ->where('end_time', '<=', $endTime);
+                        })->orWhere(function ($q) use ($startTime, $endTime) {
+                            // Un grupo existente abarca completamente el nuevo grupo
+                            $q->where('start_time', '<=', $startTime)
+                                ->where('end_time', '>=', $endTime);
+                        });
+                    });
+
+                if ($groupId) {
+                    $overlappingGroup->where('id', '!=', $groupId); // Excluir el grupo actual en caso de actualización
+                }
+
+                if ($overlappingGroup->exists()) {
+                    $validator->errors()->add('start_time', 'El horario seleccionado se solapa con otro grupo en el mismo laboratorio.');
+                }
             }
         });
+        if ($this->filled('name')) {
+            $groupId = $this->route('id');
+            $name = strtolower(trim($this->input('name')));
+            $evaluationId = $this->evaluation_id;
+
+            // Si estamos editando y no se proporcionó evaluation_id, obtenerlo del grupo
+            if ($groupId && !$evaluationId) {
+                $group = \App\Models\Group::find($groupId);
+                if ($group) {
+                    $evaluationId = $group->evaluation_id;
+                }
+            }
+
+            // Verificar si ya existe un grupo con ese nombre en la misma evaluación
+            $existingGroup = \App\Models\Group::where('name', $name)
+                ->where('evaluation_id', $evaluationId);
+
+            if ($groupId) {
+                $existingGroup->where('id', '!=', $groupId); // Excluir el grupo actual si estamos actualizando
+            }
+
+            if ($existingGroup->exists()) {
+                $validator->errors()->add('name', 'Ya existe un grupo con ese nombre en esta evaluación.');
+            }
+        }
     }
 
     protected function prepareForValidation()

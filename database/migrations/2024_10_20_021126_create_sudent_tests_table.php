@@ -50,7 +50,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('evaluation_id')->constrained('evaluations', 'id')->onDelete('cascade'); // Relación con evaluaciones
             $table->foreignId('laboratory_id')->constrained('laboratories', 'id')->onDelete('cascade'); // Relación con laboratorios
-            $table->string('name')->unique();
+            $table->string('name');
             $table->string('description')->nullable();
             $table->integer('total_students')->nullable();
             $table->dateTime('start_time')->nullable(); // Fecha y hora de inicio del examen para el grupo

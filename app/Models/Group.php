@@ -26,6 +26,6 @@ class Group extends Model
     }
     public function lab()
     {
-        return $this->belongsTo(Laboratorie::class);
+        return $this->belongsTo(Laboratorie::class, 'laboratory_id', 'id');
     }
 }
