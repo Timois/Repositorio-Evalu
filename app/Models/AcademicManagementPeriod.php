@@ -26,10 +26,10 @@ class AcademicManagementPeriod extends Model
         return $this->hasMany(Evaluation::class);
     }
 
-    public function academicManagementPeriod()
+    public function questions()
     {
         return $this->belongsToMany(
-            AcademicManagementPeriod::class,
+            QuestionBank::class,
             'academic_management_period_bank_question',
             'bank_question_id',
             'academic_management_period_id'

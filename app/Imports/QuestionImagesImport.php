@@ -113,7 +113,7 @@ class QuestionImagesImport implements ToCollection
         // Usar array_map para calcular el hash de cada imagen
         $imagesWithHashes = array_map(function ($image) {
             return [
-                    'path' => $image,
+                'path' => $image,
                 'hash' => hash_file('sha256', $image), // Calcular el hash de la imagen
             ];
         }, $images);
@@ -134,20 +134,20 @@ class QuestionImagesImport implements ToCollection
             if ($this->validateOnly) {
                 return;
             }
-            
+
             // Usar el área ID del constructor (no del Excel)
             $areaId = $this->areaId;
             $imagePath = null;
             // Obtener la carrera asociada al área
             $area = DB::table('areas')->where('id', $areaId)->first();
-            
+
             if (!$area) {
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró el área con ID {$areaId}.";
                 return;
             }
-            
+
             $career = DB::table('careers')->where('id', $area->career_id)->first();
-            
+
             if (!$career) {
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la carrera para el área con ID {$areaId}.";
                 return;
@@ -159,7 +159,7 @@ class QuestionImagesImport implements ToCollection
                 $this->messages[] = "Fila " . ($index + 1) . ": No se encontró la unidad para la carrera con ID {$career->id}.";
                 return;
             }
-            
+
             $areaName = $area->name;
             $unitSigla = $unit->initials;  // Usar la sigla de la unidad
             $careerSigla = $career->initials; // Usar la sigla de la carrera
@@ -214,7 +214,7 @@ class QuestionImagesImport implements ToCollection
             $exists = QuestionBank::where('question', $dataRow['pregunta'])
                 ->where('area_id', $areaId)
                 ->exists();
-
+           
             if ($exists) {
                 // Duplicada → registrar y salir
                 $this->duplicateDetails[] = [
@@ -229,7 +229,7 @@ class QuestionImagesImport implements ToCollection
             // Crear la pregunta
             $question = QuestionBank::create([
                 'area_id'        => $this->areaId,
-                'excel_import_id'=> $this->excelImportId,
+                'excel_import_id' => $this->excelImportId,
                 'question'       => $dataRow['pregunta'],
                 'description'    => $dataRow['descripcion'],
                 'dificulty'     => $dataRow['dificultad'],
@@ -238,11 +238,12 @@ class QuestionImagesImport implements ToCollection
                 'image'          => $imagePath,
                 'status'         => 'activo',
             ]);
-              $question->academicManagementPeriods()->attach($this->periodId);
-            // Procesar las respuestas
+            
+            $question->academicManagementPeriod()->attach($this->periodId);
+            
             $answers = $this->processAnswers($question, $dataRow);
-
-            // Registrar la pregunta exitosa
+            
+            // Registrar  la pregunta exitosa
             $this->registeredQuestions[] = [
                 'row' => $index + 1,
                 'pregunta_id' => $question->id,
@@ -273,39 +274,33 @@ class QuestionImagesImport implements ToCollection
     {
         $answers = [];
 
-        // Filtrar las columnas que contienen respuestas
-        $optionColumns = array_filter(array_keys($dataRow), fn($key) => strpos($key, 'opcion') === 0);
+        try {
+            $optionColumns = array_filter(array_keys($dataRow), fn($key) => strpos($key, 'opcion') === 0);
 
-        // Normalizar respuestas correctas para comparación sin errores
-        $correctAnswers = isset($dataRow['respuesta correcta'])
-            ? array_map('trim', explode(',', strtolower($dataRow['respuesta correcta'])))
-            : [];
+            $correctAnswers = isset($dataRow['respuesta correcta'])
+                ? array_map('trim', explode(',', strtolower($dataRow['respuesta correcta'])))
+                : [];
+            
+            foreach ($optionColumns as $optionKey) {
+                if (!empty($dataRow[$optionKey])) {
+                    $answerText = trim($dataRow[$optionKey]);
+                    $isCorrect = in_array(strtolower($answerText), $correctAnswers);
 
-        foreach ($optionColumns as $optionKey) {
-            if (!empty($dataRow[$optionKey])) {
-                $answerText = trim($dataRow[$optionKey]);
-
-                // Comparar ignorando mayúsculas/minúsculas y espacios
-                $isCorrect = in_array(strtolower($answerText), $correctAnswers);
-
-                AnswerBank::create([
-                    'bank_question_id' => $question->id,
-                    'answer' => $answerText,
-                    'is_correct' => $isCorrect,
-                    'status' => 'activo',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                $answers[] = [
-                    'texto' => $answerText,
-                    'correcta' => $isCorrect ? 'Sí' : 'No'
-                ];
+                    $answers[] = AnswerBank::create([
+                        'bank_question_id' => $question->id,
+                        'answer' => $answerText,
+                        'is_correct' => $isCorrect,
+                        'status' => 'activo',
+                    ]);
+                }
             }
+        } catch (\Exception $e) {
+            Log::error("Error en respuestas (pregunta ID {$question->id}): " . $e->getMessage());
         }
 
         return $answers;
     }
+
 
     public function getImportSummary()
     {
