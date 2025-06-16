@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\Student;
-use Illuminate\Console\Scheduling\ScheduleWorkCommand;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +24,7 @@ return new class extends Migration
             $table->string('not_answered')->nullable();   // respuestas no respondidas que hizo el estudiante
             $table->json('questions_order')->nullable();
             $table->enum('status', ['pendiente', 'completado'])->default('pendiente'); // Estado de la prueba
+            $table->string('session_token')->nullable()->unique(); // Token de sesión para la prueba
             $table->timestamps();
         });
         Schema::create('student_test_questions', function (Blueprint $table) {

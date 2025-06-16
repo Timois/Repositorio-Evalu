@@ -39,13 +39,6 @@ class AuthStudentController extends Controller
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
 
-        // 👉 Verificar si ya está evaluando
-        if ($persona->status === 'evaluando') {
-            return response()->json([
-                'error' => 'Ya ha iniciado su evaluación. No puede iniciar sesión desde otro dispositivo.'
-            ], 403);
-        }
-
         // ✅ Si no ha iniciado aún, ponerlo como "activo" y continuar
         $persona->update(['status' => 'activo']);
         $rol = Role::where('name', 'postulante')->first();
