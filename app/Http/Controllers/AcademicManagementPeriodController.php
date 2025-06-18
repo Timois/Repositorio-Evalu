@@ -94,4 +94,17 @@ class AcademicManagementPeriodController extends Controller
 
         return response()->json($periods);
     }
+
+    public function findById(string $id)
+    {
+        $academicManagementPeriod = AcademicManagementPeriod::find($id);
+        if (!$academicManagementPeriod) {
+            return response()->json(["message" => "El periodo con el id: " . $id . " no existe."], 404);
+        }
+        $period = $academicManagementPeriod->period;
+        return response()->json([
+            'period_name' => $period->period,
+            'academic_management_period' => $academicManagementPeriod
+        ]);
+    }
 }

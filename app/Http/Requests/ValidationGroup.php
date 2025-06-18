@@ -67,11 +67,10 @@ class ValidationGroup extends FormRequest
             if ($this->filled('start_time') && $this->filled('end_time')) {
                 // Obtener la fecha del examen
                 $examDate = \Carbon\Carbon::parse($evaluation->date_of_realization);
-
+                
                 // Construir fecha completa con hora de inicio y fin
                 $startTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->start_time);
                 $endTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->end_time);
-
                 // Validar que ambos sean el mismo día que date_of_realization
                 if (!$startTime->isSameDay($examDate)) {
                     $validator->errors()->add('start_time', 'La hora de inicio debe corresponder a la fecha del examen: ' . $examDate->format('H:i'));

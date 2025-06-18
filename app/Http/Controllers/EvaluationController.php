@@ -139,11 +139,15 @@ class EvaluationController extends Controller
             ], 404);
         }
 
-        // Recopilar evaluaciones de todos los periodos
-        $evaluations = $periods->flatMap(function ($period) {
-            return $period->evaluations;
+        // Agrupar evaluaciones por periodo
+        $result = $periods->map(function ($period) {
+            return [
+                'period_id' => $period->id,
+                'period_name' => $period->period,
+                'evaluations' => $period->evaluations
+            ];
         });
 
-        return response()->json($evaluations);
+        return response()->json($result);
     }
 }

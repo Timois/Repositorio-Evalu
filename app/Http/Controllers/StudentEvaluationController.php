@@ -40,19 +40,19 @@ class StudentEvaluationController extends Controller
         if (!$student) {
             return response()->json(['message' => 'El estudiante no existe'], 404);
         }
-        
+
         // Obtener la prueba del estudiante
         $test = StudentTest::where('student_id', $student->id)->first();
         if (!$test) {
             return response()->json(['message' => 'Prueba no encontrada'], 404);
         }
-        
+
         // Obtener la evaluación asociada
         $evaluation = Evaluation::find($test->evaluation_id);
         if (!$evaluation) {
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
-        
+
         // Obtener el grupo del estudiante
         $group = $student->groups()->where('evaluation_id', $evaluation->id)->first();
         if (!$group) {
@@ -61,12 +61,15 @@ class StudentEvaluationController extends Controller
 
         // Obtener la configuración de horario del grupo para la evaluación
         $groupEvaluation = Group::find($group->id);
-       
+        dd($groupEvaluation);
         // Validar fecha y hora
         $currentDateTime = now(); // Fecha y hora actual
-        $evaluationDate = \Carbon\Carbon::parse($evaluation->date);
-        $startDateTime = \Carbon\Carbon::parse($evaluation->date . ' ' . $groupEvaluation->start_time);
-        $endDateTime = \Carbon\Carbon::parse($evaluation->date . ' ' . $groupEvaluation->end_time);
+        $startDateTime = \Carbon\Carbon::parse($groupEvaluation->start_time);
+        $endDateTime = \Carbon\Carbon::parse($groupEvaluation->end_time);
+        dd([
+            'now' => $currentDateTime->toDateTimeString(),
+            'end_time' => $endDateTime->toDateTimeString(),
+        ]);
 
         // Verificar si la evaluación está dentro del horario permitido
         if ($currentDateTime->lt($startDateTime)) {

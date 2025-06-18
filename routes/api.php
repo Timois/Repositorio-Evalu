@@ -116,6 +116,7 @@ Route::controller(AcademicManagementPeriodController::class)->prefix('academic_m
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-periodos-asignados');
     Route::get("/findByIdCareer/{id}", 'findByIdCareer')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-id');
     Route::get("/findPeriodsByCareerManagement/{career_id}/{academic_management_id}", 'findPeriodsByCareerManagement')->middleware('auth:persona', 'permission:ver-periodos-asignados-por-carrera-y-gestion');
+    Route::get("/findById/{id}", 'findById');
 });
 
 // Rutas de Periodos

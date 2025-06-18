@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationGroup;
+use App\Models\Evaluation;
 use App\Models\Group;
 use App\Models\Laboratorie;
 use App\Models\StudentTest;
@@ -75,7 +76,7 @@ class GroupsController extends Controller
         $laboratoryCapacity = $laboratory->equipment_count;
 
         // 3. Validar que el laboratorio tenga suficiente capacidad
-        if ($laboratoryCapacity <= 5) {
+        if ($laboratoryCapacity <= 3) {
             return response()->json(['message' => 'El laboratorio debe tener más de 3 equipos para permitir al menos 3 equipos libres.'], 400);
         }
 
@@ -100,15 +101,16 @@ class GroupsController extends Controller
 
         // Asegurarse de no exceder la capacidad ajustada
         $studentsToAssignCount = min($studentsToAssignCount, $maxStudentsPerGroup);
-
+        $evaluation = Evaluation::find($request->evaluation_id);
+        $examDate = Carbon::parse($evaluation->date_of_realization);
         // 6. Crear y guardar el grupo
         $group = new Group();
         $group->evaluation_id = $request->evaluation_id;
         $group->laboratory_id = $request->laboratory_id;
         $group->name = $request->name;
         $group->description = $request->description;
-        $group->start_time = Carbon::parse($request->start_time);
-        $group->end_time = Carbon::parse($request->end_time);
+        $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
+        $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
         $group->save();
 
         // 7. Asignar estudiantes al grupo
@@ -227,12 +229,16 @@ class GroupsController extends Controller
         if ($request->has('description')) {
             $group->description = $request->description;
         }
+        $evaluation = Evaluation::find($evaluationId);
+        $examDate = Carbon::parse($evaluation->date_of_realization);
+
         if ($request->has('start_time')) {
-            $group->start_time = Carbon::parse($request->start_time);
+            $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
         }
         if ($request->has('end_time')) {
-            $group->end_time = Carbon::parse($request->end_time);
+            $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
         }
+
         $group->save();
 
         // 9. Reasignar estudiantes si se solicita
