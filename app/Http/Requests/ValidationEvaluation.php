@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ValidationEvaluation extends FormRequest
 {
@@ -21,39 +22,49 @@ class ValidationEvaluation extends FormRequest
      */
     public function rules(): array
     {
-        $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-        $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-        $validationPassingScore = 'required|numeric|min:0';
-        $validationDateRealization = 'required|date_format:Y-m-d|after:today';
-        $validationAcademicPeriod = 'required|exists:academic_management_period,id';
-        $validationStatus = 'required|in:activo,inactivo';
-        $validationType = 'required|in:web,ocr,app';
-        $validationTime = 'required|integer|min:0';
-        $evaluation = $this->route("id");
+        $evaluationId = $this->route('id'); // Obtener el ID de la evaluación desde la ruta
 
-        if ($evaluation) {
-            $validationTitle = 'required|string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-            $validationdescription = 'string|max:255|regex:/^[\pL\s,\-.\d]+$/u';
-            $validationPassingScore = 'required|numeric|min:0';
-            $validationDateRealization = 'required|date_format:Y-m-d';
-            $validationAcademicPeriod = 'required|exists:academic_management_period,id';
-            $validationStatus = 'required|in:activo,inactivo';
-            $validationType = 'required|in:web,ocr,app';
-            $validationTime = 'required|integer|min:0';
+        // Definir reglas base
+        $rules = [
+            'academic_management_period_id' => 'required|exists:academic_management_period,id',
+            'title' => [
+                $this->isMethod('post') ? 'required' : 'sometimes',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-zñ0-9\s]*$/',
+                Rule::unique('evaluations', 'title')
+                    ->where(function ($query) use ($evaluationId) {
+                        // Obtener el academic_management_period_id del request o del modelo si es actualización
+                        $periodId = $this->input('academic_management_period_id');
+
+                        // Si es una actualización y no se envía academic_management_period_id,
+                        // obtenerlo del modelo existente
+                        if ($evaluationId && !$periodId) {
+                            $evaluation = \App\Models\Evaluation::find($evaluationId);
+                            $periodId = $evaluation ? $evaluation->academic_management_period_id : null;
+                        }
+
+                        return $query->where('academic_management_period_id', $periodId);
+                    })
+                    ->ignore($evaluationId, 'id'), // Ignorar el ID de la evaluación actual
+            ],
+            'description' => 'nullable|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/',
+            'passing_score' => 'required|numeric|min:0',
+            'date_of_realization' => 'required|date_format:Y-m-d|after:today',
+            'time' => 'required|integer',
+        ];
+
+        // Modificar reglas para actualización (PUT/PATCH)
+        if ($evaluationId) {
+            $rules['academic_management_period_id'] = 'sometimes|exists:academic_management_period,id';
+            $rules['description'] = 'sometimes|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/';
+            $rules['passing_score'] = 'sometimes|numeric|min:0';
+            $rules['date_of_realization'] = 'sometimes|date_format:Y-m-d|after:today';
+            $rules['time'] = 'sometimes|integer';
         }
 
-        return [
-            'title' => $validationTitle,
-            'description' => $validationdescription,
-            'passing_score' => $validationPassingScore,
-            'date_of_realization' => $validationDateRealization,
-            'academic_management_period_id' => $validationAcademicPeriod,
-            'time' => $validationTime,
-            'status' => $validationStatus,
-            'type' => $validationType
-        ];
+        return $rules;
     }
-
 
     protected function prepareForValidation()
     {
@@ -72,30 +83,24 @@ class ValidationEvaluation extends FormRequest
     public function messages()
     {
         return [
-            'title.required' => 'El campo título es obligatorio.',
-            'title.string' => 'El campo título debe ser una cadena de texto.',
-            'title.max' => 'La longitud máxima del título es de 255 caracteres.',
-            'title.regex' => 'El título debe contener solo letras y espacios.',
-            'description.string' => 'El campo descripción debe ser una cadena de texto.',
-            'description.max' => 'La longitud máxima de la descripción es de 255 caracteres.',
-            'description.regex' => 'La descripción debe contener solo letras y espacios.',
-            'total_score.required' => 'El campo puntaje total es obligatorio.',
-            'total_score.numeric' => 'El campo puntaje total debe ser un número.',
-            'total_score.min' => 'El campo puntaje total debe ser mayor o igual a 0.',
-            'passing_score.required' => 'El campo puntaje de aprobación es obligatorio.',
-            'passing_score.numeric' => 'El campo puntaje de aprobación debe ser un número.',
-            'passing_score.min' => 'El campo puntaje de aprobación debe ser mayor o igual a 0.',
-            'date_of_realization.required' => 'El campo fecha de realización es obligatorio.',
-            'date_of_realization.date_format' => 'El campo fecha de realización debe tener el formato Y-m-d.',
-            'date_of_realization.after' => 'El campo fecha de realización debe ser después de la fecha actual.',
-            'academic_management_period_id.required' => 'El periodo asignado a la gestion academica es obligatorio',
-            'academic_management_period_id.exists' => 'El periodo asignado a la gestion academica no existe',
-            'time.required' => 'El campo tiempo es obligatorio.',
-            'time.integer' => 'El campo tiempo debe ser un número entero.',
-            'status.required' => 'El campo estado es obligatorio.',
-            'status.in' => 'El campo estado debe ser "activo" o "inactivo".',
-            'type.required' => 'El campo tipo es obligatorio.',
-            'type.in' => 'El campo tipo debe ser "web", "ocr" o "app".',
+            'title.unique' => 'El título ya existe para este periodo. Por favor, elige otro.',
+            'title.required' => 'El título de la evaluación es obligatorio.',
+            'title.string' => 'El título debe ser una cadena de texto.',
+            'title.max' => 'El título no puede tener más de 20 caracteres.',
+            'title.regex' => 'El título solo puede contener letras y espacios.',
+            'academic_management_period_id.required' => 'El periodo académico es obligatorio.',
+            'academic_management_period_id.exists' => 'El periodo académico seleccionado no existe.',
+            'description.string' => 'La descripción debe ser una cadena de texto.',
+            'description.max' => 'La descripción no puede tener más de 255 caracteres.',
+            'description.regex' => 'La descripción solo puede contener letras y espacios.',
+            'passing_score.required' => 'La puntuación mínima aprobatoria es obligatoria.',
+            'passing_score.numeric' => 'La puntuación mínima aprobatoria debe ser un número.',
+            'passing_score.min' => 'La puntuación mínima aprobatoria debe ser mayor a 0.',
+            'date_of_realization.required' => 'La fecha de realización es obligatoria.',
+            'date_of_realization.date_format' => 'La fecha de realización debe tener el formato Y-m-d.',
+            'date_of_realization.after' => 'La fecha de realización debe ser posterior a hoy.',
+            'time.required' => 'El tiempo es obligatorio.',
+            'time.integer' => 'El tiempo debe ser un número entero.',
         ];
     }
 }

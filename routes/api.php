@@ -187,7 +187,7 @@ Route::controller(ImportStudentController::class)->prefix('students')->middlewar
 Route::controller(EvaluationController::class)->prefix('evaluations')->middleware($authPersona)->group(function () {
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-evaluaciones');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-evaluaciones');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
+    Route::put("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:buscar-evaluaciones-porId');
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
     Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer');
@@ -246,7 +246,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::controller(StudentAnswersController::class)->prefix('student_answers')->group(function () {
         Route::post("/save", "store");
         Route::get("/list/{student_test_id}", "hasAnswered");
-        Route::post("/startTest", "startTest");
     });
 
     Route::controller(BackupAnswerTestController::class)->prefix('backup_answers')->group(function () {
