@@ -27,22 +27,22 @@ class AcademicManagementPeriodController extends Controller
             return ["message:", "El periodo con id:" . $id . " no existe."];
         return response()->json($academic_career);
     }
-        public function create(ValidationAcademicManagementPeriod $request)
-        {
-            $academicManagementPeriod = new AcademicManagementPeriod();
-            $academicManagementPeriod->initial_date = $request->initial_date;
-            $academicManagementPeriod->end_date = $request->end_date;
-            $academicManagementPeriod->academic_management_career_id = $request->academic_management_career_id;
-            $academicManagementPeriod->period_id = $request->period_id;
-            if (Carbon::parse($request->end_date)->lt(Carbon::now())) {
-                $academicManagementPeriod->status = "finalizado";
-            } else {
-                $academicManagementPeriod->status = "aperturado";
-            }
-
-            $academicManagementPeriod->save();
-            return response()->json($academicManagementPeriod);
+    public function create(ValidationAcademicManagementPeriod $request)
+    {
+        $academicManagementPeriod = new AcademicManagementPeriod();
+        $academicManagementPeriod->initial_date = $request->initial_date;
+        $academicManagementPeriod->end_date = $request->end_date;
+        $academicManagementPeriod->academic_management_career_id = $request->academic_management_career_id;
+        $academicManagementPeriod->period_id = $request->period_id;
+        if (Carbon::parse($request->end_date)->lt(Carbon::now())) {
+            $academicManagementPeriod->status = "finalizado";
+        } else {
+            $academicManagementPeriod->status = "aperturado";
         }
+
+        $academicManagementPeriod->save();
+        return response()->json($academicManagementPeriod);
+    }
 
     public function findAndUpdate(ValidationAcademicManagementPeriod $request, string $id)
     {
@@ -63,7 +63,7 @@ class AcademicManagementPeriodController extends Controller
         // Verificar si la fecha fin ya pasó
         if (Carbon::parse($update->end_date)->lt(Carbon::now())) {
             $update->status = "finalizado";
-        } else {    
+        } else {
             $update->status = "aperturado";
         }
 
@@ -88,12 +88,24 @@ class AcademicManagementPeriodController extends Controller
 
         // Buscar los periodos que pertenecen a esa relación
         $periods = AcademicManagementPeriod::where('academic_management_career_id', $relation->id)
-            ->with(['period'])
+            ->with('period') // relación que devuelve los datos de la tabla 'periods'
             ->orderBy('initial_date', 'ASC')
             ->get();
 
-        return response()->json($periods);
+        // Transformar los datos para incluir el academic_management_id
+        $result = $periods->map(function ($item) use ($academic_management_id, $career_id) {
+            return [
+                'id' => $item->period->id,
+                'period' => $item->period->period,
+                'level' => $item->period->level,
+                'academic_management_id' => $academic_management_id,
+                'career_id' => $career_id,
+            ];
+        });
+        
+        return response()->json($result);
     }
+
 
     public function findById(string $id)
     {

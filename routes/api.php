@@ -192,6 +192,7 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->middlewar
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
     Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-evaluaciones');
+    Route::get("/listExmansByPeriod/{id}", "findEvaluationsByPeriod");
 });
 
 
@@ -212,7 +213,7 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->middle
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-pruebas-por-id');
     Route::post("/assignRandomEvaluation", "assignRandomEvaluation")->middleware('auth:persona', 'permission:asignar-preguntas-evaluaciones');
     Route::get("/findStudentsByEvaluation/{id}", 'getStudentsByEvaluation')->middleware('auth:persona', 'permission:ver-postulantes-por-evaluacion');
-    Route::get("/listQuestionsByStudent/{id}", 'getQuestionsWithAnswers')->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
+    Route::get("/listResultsByEvaluation/{id}", "getStudentsScoresByEvaluation");
 });
 
 Route::controller(ResultsController::class)->prefix('results')->middleware($authPersona)->group(function () {

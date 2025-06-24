@@ -127,4 +127,16 @@ class EvaluationController extends Controller
 
         return response()->json($result);
     }
+
+    // Función para obtener las evaluaciones por periodo
+    public function findEvaluationsByPeriod(string $periodId)
+    {
+        $evaluations = Evaluation::where('academic_management_period_id', $periodId)->get();
+
+        if ($evaluations->isEmpty()) {
+            return response()->json(["message" => "No se encontraron evaluaciones para el periodo con ID: $periodId"], 404);
+        }
+
+        return response()->json($evaluations);
+    }
 }

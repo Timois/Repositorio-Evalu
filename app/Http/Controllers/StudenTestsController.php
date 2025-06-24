@@ -72,4 +72,76 @@ class StudenTestsController extends Controller
 
         return response()->json($students);
     }
+
+    // Reportes de calificaciones por examen
+    public function getStudentsScoresByEvaluation($evaluationId)
+    {
+        // Obtener pruebas completadas por los estudiantes
+        $studentTests = StudentTest::with('student')
+            ->where('evaluation_id', $evaluationId)
+            ->whereNotNull('score_obtained')
+            ->orderByDesc('score_obtained')
+            ->get();
+
+        // Formatear la lista
+        $report = $studentTests->map(function ($test) {
+            return [
+                'ci' => $test->student->ci,
+                'name' => $test->student->name,
+                'score' => $test->score_obtained,
+            ];
+        });
+
+        return response()->json([
+            'total_students' => $report->count(),
+            'students' => $report,
+        ]);
+    }
+
+    public function getGaussianCurve($evaluationId)
+    {
+        // Obtener los tests completados con nota
+        $scores = StudentTest::where('evaluation_id', $evaluationId)
+            ->where('status', 'completado')
+            ->whereNotNull('score_obtained')
+            ->pluck('score_obtained'); // solo las notas
+        
+        $count = $scores->count();
+        if ($count === 0) {
+            return response()->json(['message' => 'No hay datos disponibles.']);
+        }
+
+        // Media (μ)
+        $mean = $scores->avg();
+
+        // Desviación estándar (σ)
+        $variance = $scores->reduce(function ($carry, $score) use ($mean) {
+            return $carry + pow($score - $mean, 2);
+        }, 0) / $count;
+
+        $stdDeviation = sqrt($variance);
+
+        // Clasificación de notas
+        $classified = $scores->map(function ($score) use ($mean, $stdDeviation) {
+            if ($score >= $mean + $stdDeviation) {
+                $category = 'sobresaliente';
+            } elseif ($score <= $mean - $stdDeviation) {
+                $category = 'bajo';
+            } else {
+                $category = 'promedio';
+            }
+            return [
+                'score' => $score,
+                'category' => $category,
+            ];
+        });
+
+        return response()->json([
+            'count' => $count,
+            'mean' => round($mean, 2),
+            'standard_deviation' => round($stdDeviation, 2),
+            'distribution' => $classified->groupBy('category')->map->count(),
+            'detailed_scores' => $classified->sortByDesc('score')->values(),
+        ]);
+    }
 }
