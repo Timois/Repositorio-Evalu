@@ -88,6 +88,9 @@ class StudenTestsController extends Controller
             return [
                 'ci' => $test->student->ci,
                 'name' => $test->student->name,
+                'paternal_surname' => $test->student->paternal_surname,
+                'maternal_surname' => $test->student->maternal_surname,
+                'code' => $test->code,
                 'score' => $test->score_obtained,
             ];
         });
