@@ -50,6 +50,7 @@ class ValidationEvaluation extends FormRequest
             ],
             'description' => 'nullable|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/',
             'passing_score' => 'required|numeric|min:0',
+            'places' => 'required|integer|min:0',
             'date_of_realization' => 'required|date_format:Y-m-d|after:today',
             'time' => 'required|integer',
         ];
@@ -59,6 +60,7 @@ class ValidationEvaluation extends FormRequest
             $rules['academic_management_period_id'] = 'sometimes|exists:academic_management_period,id';
             $rules['description'] = 'sometimes|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/';
             $rules['passing_score'] = 'sometimes|numeric|min:0';
+            $rules['places'] = 'sometimes|integer|min:0';
             $rules['date_of_realization'] = 'sometimes|date_format:Y-m-d|after:today';
             $rules['time'] = 'sometimes|integer';
         }
@@ -93,6 +95,9 @@ class ValidationEvaluation extends FormRequest
             'description.string' => 'La descripción debe ser una cadena de texto.',
             'description.max' => 'La descripción no puede tener más de 255 caracteres.',
             'description.regex' => 'La descripción solo puede contener letras y espacios.',
+            'places.required' => 'El número de lugares es obligatorio.',
+            'places.integer' => 'El número de lugares debe ser un número entero.',
+            'places.min' => 'El número de lugares debe ser mayor o igual a 0.',
             'passing_score.required' => 'La puntuación mínima aprobatoria es obligatoria.',
             'passing_score.numeric' => 'La puntuación mínima aprobatoria debe ser un número.',
             'passing_score.min' => 'La puntuación mínima aprobatoria debe ser mayor a 0.',

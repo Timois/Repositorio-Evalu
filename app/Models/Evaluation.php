@@ -17,6 +17,7 @@ class Evaluation extends Model
         'passing_score',
         'date_of_realization',
         'code',
+        'places',
         'qualified_students',
         'status',
         'type',

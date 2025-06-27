@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('passing_score');
             $table->date('date_of_realization')->nullable();  
             $table->integer('time');
+            $table->integer('places')->nullable();
             $table->integer('qualified_students')->nullable();
             $table->enum('status', ['activo', 'inactivo'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');

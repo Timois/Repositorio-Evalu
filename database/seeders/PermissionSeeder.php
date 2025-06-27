@@ -84,6 +84,7 @@ class PermissionSeeder extends Seeder
             'editar-asignaciones',
             'ver-periodos-asignados-por-id',
             'ver-periodos-por-id',
+           ' ver-periodos-por-carrera',
             'ver-areas-por-id',
             'ver-preguntas-por-id',
             'ver-respuestas-por-id',
@@ -107,6 +108,15 @@ class PermissionSeeder extends Seeder
             'editar-laboratorios',
             'ver-laboratorios',
             'ver-laboratorios-por-id',
+            'ver-evaluaciones-por-periodo',
+            'ver-evaluaciones-por-carrera',
+            'ver-periodos-asignados-por-carrera',
+            'dar-baja-areas',
+            'ver-cantidad-de-preguntas-por-area',
+            'ver-areas-activas-por-carrera',
+            'eliminar-importacion',
+            'ver-areas-por-excel',
+            'ver-resultados-por-evaluacion',
         ];
 
         // Crear permisos si no existen

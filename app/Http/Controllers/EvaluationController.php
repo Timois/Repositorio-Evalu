@@ -25,6 +25,7 @@ class EvaluationController extends Controller
         $evaluation->passing_score = $request->passing_score;
         $evaluation->date_of_realization = $request->date_of_realization;
         $evaluation->status = $request->status;
+        $evaluation->places = $request->places;
         $evaluation->type = $request->type;
         $evaluation->time = $request->time;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
@@ -50,6 +51,9 @@ class EvaluationController extends Controller
         }
         if ($request->has('date_of_realization')) {
             $evaluation->date_of_realization = $request->date_of_realization;
+        }
+        if ($request->has('places')) {
+            $evaluation->places = $request->places;
         }
         if ($request->has('time')) {
             $evaluation->time = $request->time;
