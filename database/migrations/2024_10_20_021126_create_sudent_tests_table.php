@@ -73,6 +73,14 @@ return new class extends Migration
             $table->enum('status', ['admitido', 'no_admitido'])->default('evaluado');
             $table->timestamps();
         });
+
+        Schema::table('logs_answers', function (Blueprint $table) {
+            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
+            $table->integer('student_question_id')->default(0);
+            $table->time('time')->default('00:00:00'); // Tiempo que el estudiante se demoró en responder
+            $table->integer('answer_id')->nullable(); // Respuesta del estudiante
+            $table->boolean('is_ultimate')->default(true); // Si es la ultima respuesta del estudiante
+        });
     }
 
     /**

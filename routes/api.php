@@ -242,6 +242,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get("/list/{ci}", "findEvaluations");
         Route::get("/find/{id}", "findById");
         Route::get("/questions/{id}", "getQuestionsWithAnswers");
+        Route::get("/findAnswersCorrect/{id}", "getQuestionsWithAnswers");
     });
     Route::controller(StudentAnswersController::class)->prefix('student_answers')->group(function () {
         Route::post("/save", "store");
