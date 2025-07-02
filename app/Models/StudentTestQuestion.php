@@ -28,4 +28,9 @@ class StudentTestQuestion extends Model
     {
         return $this->belongsTo(QuestionBank::class);
     }
+
+    public function logs()
+    {
+        return $this->hasMany(LogsAnswer::class);
+    }
 }

@@ -84,7 +84,7 @@ class PermissionSeeder extends Seeder
             'editar-asignaciones',
             'ver-periodos-asignados-por-id',
             'ver-periodos-por-id',
-           ' ver-periodos-por-carrera',
+            'ver-periodos-por-carrera',
             'ver-areas-por-id',
             'ver-preguntas-por-id',
             'ver-respuestas-por-id',
@@ -136,4 +136,3 @@ class PermissionSeeder extends Seeder
         $this->command->info('✅ Permisos creados correctamente.');
     }
 }
-

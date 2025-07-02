@@ -74,12 +74,14 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('logs_answers', function (Blueprint $table) {
-            $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
-            $table->integer('student_question_id')->default(0);
-            $table->time('time')->default('00:00:00'); // Tiempo que el estudiante se demoró en responder
-            $table->integer('answer_id')->nullable(); // Respuesta del estudiante
-            $table->boolean('is_ultimate')->default(true); // Si es la ultima respuesta del estudiante
+        Schema::create('logs_answers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('student_test_id')->constrained('student_tests')->onDelete('cascade');
+            $table->foreignId('student_test_question_id')->constrained('student_test_questions')->onDelete('cascade');
+            $table->foreignId('answer_id')->nullable(); // ID de la opción seleccionada, si aplica
+            $table->time('time')->nullable(); // Tiempo que tardó en responder esa vez
+            $table->boolean('is_ultimate')->default(false); // Si es la última versión de la respuesta
+            $table->timestamps();
         });
     }
 
@@ -88,6 +90,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('logs_answers');
+        Schema::dropIfExists('group_student');
+        Schema::dropIfExists('laboratories');
         Schema::dropIfExists('results');
         Schema::dropIfExists('groups');
         Schema::dropIfExists('student_questions');
