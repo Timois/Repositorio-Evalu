@@ -15,6 +15,7 @@ use App\Http\Controllers\GroupsController;
 use App\Http\Controllers\ImportExcelImageController;
 use App\Http\Controllers\ImportStudentController;
 use App\Http\Controllers\LaboratoriesController;
+use App\Http\Controllers\LogsAnswerController;
 use App\Http\Controllers\ManagementExtensionController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PeriodExtensionController;
@@ -253,5 +254,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post("/save", "create");
         Route::get("/list", "find");
         Route::get("/find/{id}", 'findById');
+    });
+
+    Route::controller(LogsAnswerController::class)->prefix('logs_answers')->group(function () {
+        Route::post("/save", "store");
     });
 });

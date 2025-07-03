@@ -45,8 +45,7 @@ class LogsAnswerController extends Controller
                 'student_test_id' => $request->student_test_id,
                 'student_test_question_id' => $studentQuestion->id,
                 'answer_id' => $request->answer_id,
-                'student_answer' => $request->student_answer,
-                'time_taken' => $request->time_taken ?? now()->format('H:i:s'),
+                'time' => $request->time ?? now()->format('H:i:s'),
                 'is_ultimate' => true
             ]);
 

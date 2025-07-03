@@ -57,10 +57,9 @@ class AuthStudentController extends Controller
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),
+            
         ]);
     }
-
-
 
     public function me()
     {
