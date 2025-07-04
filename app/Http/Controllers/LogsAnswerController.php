@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogsAnswer;
+use App\Models\Student;
+use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\StudentT;
 
 class LogsAnswerController extends Controller
 {
@@ -56,5 +59,22 @@ class LogsAnswerController extends Controller
             DB::rollBack();
             return response()->json(['error' => 'Error al guardar la respuesta.', 'details' => $e->getMessage()], 500);
         }
+    }
+
+    // Recuperar las respuestas ya respondidas por el estudiante
+    public function getAnswers($id)
+    {
+        // Buscar el StudentTest por ID
+        $studentTest = StudentTest::find($id);
+
+        // Verificar si el registro existe
+        if (!$studentTest) {
+            return response()->json(['message' => 'StudentTest no encontrado'], 404);
+        }
+
+        // Recuperar las respuestas asociadas al student_test_id
+        $answers = LogsAnswer::where('student_test_id', $id)->get();
+
+        return response()->json($answers);
     }
 }

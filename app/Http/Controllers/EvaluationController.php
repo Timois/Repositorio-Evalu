@@ -7,6 +7,8 @@ use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
 use App\Models\QuestionEvaluation;
+use App\Models\StudentTest;
+use App\Models\StudentTestQuestion;
 use Illuminate\Http\Request;
 
 class EvaluationController extends Controller
@@ -77,13 +79,6 @@ class EvaluationController extends Controller
         if (!$evaluation)
             return ["message:", "La evaluación con el id:" . $id . " no existe."];
         return response()->json($evaluation);
-    }
-
-    // Función para calcular la nota total por área
-    public function ListAssignedQuestions(Request $request)
-    {
-        $questions = QuestionEvaluation::get();
-        return response()->json($questions);
     }
 
     public function findPeriodById(string $id)

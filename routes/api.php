@@ -218,9 +218,7 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->middle
 });
 
 Route::controller(ResultsController::class)->prefix('results')->middleware($authPersona)->group(function () {
-    Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-resultados');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-resultados');
-    Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-resultados-por-id');
+    Route::get("/list/{id}", "showResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
 });
 
 Route::controller(LaboratoriesController::class)->prefix('laboratories')->middleware($authPersona)->group(function () {
@@ -258,5 +256,6 @@ Route::group(['middleware' => ['auth:api']], function () {
 
     Route::controller(LogsAnswerController::class)->prefix('logs_answers')->group(function () {
         Route::post("/save", "store");
+        Route::get("/list/{id}", "getAnswers");
     });
 });

@@ -50,12 +50,10 @@ class ResultsController extends Controller
 
             return [
                 'student_id' => $test->student_id,
-                'student_name' => $test->student->full_name ?? null, // Asume que tienes esto
+                'student_ci' => $test->student->ci,
                 'score_obtained' => $test->score_obtained,
-                'correct_answers' => $test->correct_answers,
-                'incorrect_answers' => $test->incorrect_answers,
                 'not_answered' => $test->not_answered,
-                'duration_minutes' => $duration,
+                'exam_duration' => $duration,
                 'status' => $test->status ?? 'pendiente',
             ];
         });
@@ -71,4 +69,6 @@ class ResultsController extends Controller
             'students_results' => $results,
         ]);
     }
+
+    // funcion para actualizar el estado de los resultados
 }

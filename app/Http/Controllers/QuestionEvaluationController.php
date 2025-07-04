@@ -12,7 +12,6 @@ use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\StudentT;
 
 class QuestionEvaluationController extends Controller
 {
@@ -268,7 +267,7 @@ class QuestionEvaluationController extends Controller
             }
 
             // Marcar el student_test como completado
-            $studentTest->update(['status' => 'completo']);
+            $studentTest->update(['status' => 'completado']);
 
             // Obtener todas las preguntas asignadas al student_test
             $assignedQuestions = StudentTestQuestion::where('student_test_id', $studentTest->id)
