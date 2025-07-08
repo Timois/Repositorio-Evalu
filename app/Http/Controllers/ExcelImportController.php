@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\ValidationExcelImport;
-use App\Imports\QuestionBanKImport;
+use App\Imports\QuestionBankImport;
 use App\Models\ExcelImports;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +67,7 @@ class ExcelImportController extends Controller
             $path = $excel->move(public_path('private' . DIRECTORY_SEPARATOR . 'exams'), $excelName);
 
             // Perform actual import
-            $import = new QuestionBanKImport($importExcel->id, $area_id, $periodId);
+            $import = new QuestionBankImport($importExcel->id, $area_id, $periodId);
             Excel::import($import, $path);
 
             // Get import messages
