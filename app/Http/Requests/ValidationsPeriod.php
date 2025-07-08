@@ -4,9 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\Period;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 class ValidationsPeriod extends FormRequest
 {
     /**
@@ -22,15 +21,34 @@ class ValidationsPeriod extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
-    {
-        $id = $this->route("id");
 
-        return [
-            'period' => ['required_if:id,null','regex:/^[A-Za-zñÑáéíóúÁÉÍÓÚ0-9\s]*$/' , 'max:20', 'unique:periods,period,' . ($id ?? 'NULL')],
-            'level' => ['required_if:id,null', 'in:1,2,3,4,5'],
-        ];
-    }
+public function rules(): array
+{
+    $id = $this->route("id");
+
+    return [
+        'period' => [
+            'required_if:id,null',
+            'regex:/^[A-Za-zñÑáéíóúÁÉÍÓÚ0-9\s]*$/',
+            'max:20',
+            function ($attribute, $value, $fail) use ($id) {
+                $normalized = Str::lower(preg_replace('/\s+/', '', $value)); // convierte a minúsculas y quita espacios
+
+                $exists = \App\Models\Period::all()
+                    ->filter(function ($period) use ($normalized, $id) {
+                        $existingNormalized = Str::lower(preg_replace('/\s+/', '', $period->period));
+                        return $existingNormalized === $normalized && $period->id != $id;
+                    })->isNotEmpty();
+
+                if ($exists) {
+                    $fail('El periodo ya existe (sin importar mayúsculas o espacios).');
+                }
+            }
+        ],
+        'level' => ['required_if:id,null', 'in:1,2,3,4,5'],
+    ];
+}
+
     public function messages()
     {
         return [

@@ -28,7 +28,6 @@ class PeriodController extends Controller
      */
     public function create(ValidationsPeriod $request)
     {
-        //dd("hola");
         $period = new Period();
         $period->period = $request->period;
         $period->level = $request->level;

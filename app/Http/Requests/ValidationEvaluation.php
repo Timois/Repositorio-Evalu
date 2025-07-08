@@ -51,7 +51,7 @@ class ValidationEvaluation extends FormRequest
             'description' => 'nullable|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/',
             'passing_score' => 'required|numeric|min:0',
             'places' => 'required|integer|min:0',
-            'date_of_realization' => 'required|date_format:Y-m-d|after:today',
+            'date_of_realization' => 'required|date_format:Y-m-d|after_or_equal:today',
             'time' => 'required|integer',
         ];
 
@@ -103,7 +103,7 @@ class ValidationEvaluation extends FormRequest
             'passing_score.min' => 'La puntuación mínima aprobatoria debe ser mayor a 0.',
             'date_of_realization.required' => 'La fecha de realización es obligatoria.',
             'date_of_realization.date_format' => 'La fecha de realización debe tener el formato Y-m-d.',
-            'date_of_realization.after' => 'La fecha de realización debe ser posterior a hoy.',
+            'date_of_realization.after_or_equal' => 'La fecha de realización no puede ser anterior a hoy.',
             'time.required' => 'El tiempo es obligatorio.',
             'time.integer' => 'El tiempo debe ser un número entero.',
         ];

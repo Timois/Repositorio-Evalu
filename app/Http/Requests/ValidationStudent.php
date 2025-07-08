@@ -13,7 +13,7 @@ class ValidationStudent extends FormRequest
     public function rules(): array
     {
         return [
-            'ci' => ['required', 'regex:/^[0-9]{7,8}$/'],
+            'ci' => ['required', 'regex:/^[0-9]|[\pL\s,\-.]$/'],
             'name' => ['required', 'string', 'max:255'],
             'paternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable

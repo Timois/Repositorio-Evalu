@@ -94,8 +94,10 @@ class EvaluationController extends Controller
 
     public function findEvaluationsByCareer(string $careerId)
     {
-        // Buscar la gestión académica de la carrera
-        $managementCareer = AcademicManagementCareer::where('career_id', $careerId)->first();
+        // Buscar la gestión académica de la carrera y cargar la relación con AcademicManagement
+        $managementCareer = AcademicManagementCareer::with('academicManagement')
+            ->where('career_id', $careerId)
+            ->first();
 
         if (!$managementCareer) {
             return response()->json([
@@ -108,7 +110,6 @@ class EvaluationController extends Controller
             ->where('academic_management_career_id', $managementCareer->id)
             ->get();
 
-        // Si no hay periodos, retornar mensaje
         if ($periods->isEmpty()) {
             return response()->json([
                 "message" => "No se encontraron periodos para la carrera con ID: $careerId"
@@ -116,10 +117,11 @@ class EvaluationController extends Controller
         }
 
         // Agrupar evaluaciones por periodo
-        $result = $periods->map(function ($period) {
+        $result = $periods->map(function ($period) use ($managementCareer) {
             return [
-                'period_id' => $period->id,
-                'period_name' => $period->period,
+                'year' => $managementCareer->academicManagement->year, // Aquí accedemos al año
+                'academic_management_period_id' => $period->id,
+                'periodo' => $period->period,
                 'evaluations' => $period->evaluations
             ];
         });

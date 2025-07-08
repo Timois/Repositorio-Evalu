@@ -50,7 +50,6 @@ class ValidationsAcademicManagement extends FormRequest
                 'required',
                 'date',
                 'date_format:Y-m-d',
-                'after_or_equal:today'  // Solo aplicar en creación nueva
             ];
             $rules['year'][] = 'required';
         }
