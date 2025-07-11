@@ -46,7 +46,7 @@ class ValidationStudent extends FormRequest
     {
         return [
             'ci.required' => 'El CI es obligatorio.',
-            'ci.regex' => 'El CI debe tener 7 o 8 dígitos.',
+            'ci.regex' => 'El CI debe tener un formato válido (números, letras y caracteres especiales permitidos).',
             'name.required' => 'El nombre es obligatorio.',
             'phone_number.required' => 'El número de teléfono es obligatorio.',
             'phone_number.integer' => 'El número de teléfono debe ser un número entero.',

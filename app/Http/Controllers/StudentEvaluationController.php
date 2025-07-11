@@ -62,10 +62,10 @@ class StudentEvaluationController extends Controller
         // Obtener la configuración de horario del grupo para la evaluación
         $groupEvaluation = Group::find($group->id);
 
-        // Validar fecha y hora
-        $currentDateTime = now(); // Fecha y hora actual
-        $startDateTime = \Carbon\Carbon::parse($groupEvaluation->start_time);
-        $endDateTime = \Carbon\Carbon::parse($groupEvaluation->end_time);
+        // // Validar fecha y hora
+        // $currentDateTime = now(); // Fecha y hora actual
+        // $startDateTime = \Carbon\Carbon::parse($groupEvaluation->start_time);
+        // $endDateTime = \Carbon\Carbon::parse($groupEvaluation->end_time);
 
         // // Verificar si la evaluación está dentro del horario permitido
         // if ($currentDateTime->lt($startDateTime)) {
@@ -107,6 +107,11 @@ class StudentEvaluationController extends Controller
             'evaluation_id' => $test->evaluation_id,
             'test_code' => $testCode,
             'questions' => $formattedQuestions,
+
+            // ⏱️ Agrega estas 3 claves nuevas
+            // 'start_time' => $startDateTime->toIso8601String(), // e.g. 2025-07-11T15:00:00Z
+            // 'end_time' => $endDateTime->toIso8601String(),
+            'time' => $evaluation->time, // duración en minutos
         ]);
     }
 

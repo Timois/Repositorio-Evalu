@@ -106,11 +106,10 @@ class ImportStudentController extends Controller
                     'phone_number' => $request->phone_number,   
                     'birthdate' => Carbon::parse($request->birthdate),
                     'password' => Hash::make(($request->ci) . // Contraseña por defecto: CI + fecha de nacimiento
-                            Carbon::parse($request->birthdate)->format('dmY')
-                        ), // Contraseña por defecto: CI + fecha de nacimiento (formato ddmmyyyy)
+                    Carbon::parse($request->birthdate)->format('dmY')
+                ), // Contraseña por defecto: CI + fecha de nacimiento (formato ddmmyyyy)
                 ]);
             }
-
             // Asignar evaluación
             $student->evaluations()->attach($evaluation->id, [
                 'status' => 'pendiente',
