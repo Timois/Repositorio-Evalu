@@ -209,6 +209,13 @@ class StudentsImport implements ToCollection, WithHeadingRow
             }
 
             $this->results[] = $rowResult;
+            // Al final de la importación, actualizar el total de estudiantes calificados
+            $uniqueCount = StudentTest::where('evaluation_id', $this->evaluationId)
+                ->distinct('student_id')
+                ->count('student_id');
+
+            Evaluation::where('id', $this->evaluationId)
+                ->update(['qualified_students' => $uniqueCount]);
         }
     }
 

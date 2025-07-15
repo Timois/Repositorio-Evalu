@@ -122,6 +122,7 @@ class ImportStudentController extends Controller
                 'score_obtained' => 0,
                 'questions_order' => json_encode([]),
             ]);
+            Evaluation::where('id', $evaluation->id)->increment('qualified_students');
 
             // Obtener student_test recién creado
             $studentTest = StudentTest::where('student_id', $student->id)

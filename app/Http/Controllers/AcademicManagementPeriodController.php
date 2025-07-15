@@ -22,7 +22,6 @@ class AcademicManagementPeriodController extends Controller
     public function findByIdCareer(string $id)
     {
         $academic_career = AcademicManagementPeriod::with('period_id')->find($id);
-        dd($academic_career);
         if (!$academic_career)
             return ["message:", "El periodo con id:" . $id . " no existe."];
         return response()->json($academic_career);
@@ -105,7 +104,6 @@ class AcademicManagementPeriodController extends Controller
         
         return response()->json($result);
     }
-
 
     public function findById(string $id)
     {

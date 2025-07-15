@@ -285,7 +285,7 @@ class CareerController extends Controller
 
         $result = $periods->map(function ($periods) {
             return [
-                'id' => $periods->id,
+                'academic_management_period_id' => $periods->id,
                 'period_id' => $periods->period->id,
                 'period' => $periods->period->period,
                 'initial_date' => $periods->initial_date,

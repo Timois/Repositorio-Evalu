@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationsAcademicManagement;
 use App\Models\AcademicManagement;
+use App\Models\AcademicManagementCareer;
 
 class AcademicManagementController extends Controller
 {
@@ -37,5 +38,14 @@ class AcademicManagementController extends Controller
         
         $academicManagement->save();
         return $academicManagement;
+    }
+
+    // Funcion para encontrar las gestiones asociadas a una carrera
+    public function findByCareerId(string $careerId)
+    {
+        $academicManagements = AcademicManagementCareer::whereHas('academicManagement', function ($query) use ($careerId) {
+            $query->where('career_id', $careerId);
+        })->get();        
+        return response()->json($academicManagements);
     }
 }

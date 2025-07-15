@@ -109,6 +109,7 @@ Route::controller(AcademicManagementController::class)->prefix('management')->mi
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-gestiones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-gestiones');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-gestiones-por-id');
+    Route::get("/findAcademicManagemnetByCareer/{careerId}", 'findByCareerId');
 });
 
 Route::controller(AcademicManagementPeriodController::class)->prefix('academic_management_period')->middleware($authPersona)->group(function () {
