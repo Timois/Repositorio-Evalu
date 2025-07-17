@@ -13,8 +13,8 @@ class ValidationGroup extends FormRequest
         $validationEvaluationId = 'required|exists:evaluations,id';
         $validationLaboratoryId = 'required|exists:laboratories,id';
         $validationName = 'required|string|max:20';
-        $validationDescription = 'required|string|max:255';
-        $validationStartTime = 'required|date_format:H:i';
+        $validationDescription = 'nullable|string|max:255';
+        $validationStartTime = 'nullable|date_format:H:i';
         $validationEndTime = 'required|date_format:H:i|after:start_time';
         $validationOrderType = 'required|in:alphabetical,id_asc';
         $groupId = $this->route('id');
@@ -84,39 +84,6 @@ class ValidationGroup extends FormRequest
                 $durationMinutes = $startTime->diffInMinutes($endTime);
                 if ($durationMinutes > $evaluation->time) {
                     $validator->errors()->add('end_time', 'La duración del grupo no puede exceder la duración del examen (' . $evaluation->time . ' minutos).');
-                }
-
-                // Validar que no haya solapamiento de horarios en el mismo laboratorio
-                $laboratoryId = $this->laboratory_id;
-
-                $overlappingGroup = Group::where('laboratory_id', $laboratoryId)
-                    ->where('evaluation_id', $evaluationId) // Mismo examen
-                    ->where(function ($query) use ($startTime, $endTime) {
-                        $query->where(function ($q) use ($startTime, $endTime) {
-                            // El nuevo grupo comienza dentro de un grupo existente
-                            $q->where('start_time', '<=', $startTime)
-                                ->where('end_time', '>=', $startTime);
-                        })->orWhere(function ($q) use ($startTime, $endTime) {
-                            // El nuevo grupo termina dentro de un grupo existente
-                            $q->where('start_time', '<=', $endTime)
-                                ->where('end_time', '>=', $endTime);
-                        })->orWhere(function ($q) use ($startTime, $endTime) {
-                            // El nuevo grupo abarca completamente un grupo existente
-                            $q->where('start_time', '>=', $startTime)
-                                ->where('end_time', '<=', $endTime);
-                        })->orWhere(function ($q) use ($startTime, $endTime) {
-                            // Un grupo existente abarca completamente el nuevo grupo
-                            $q->where('start_time', '<=', $startTime)
-                                ->where('end_time', '>=', $endTime);
-                        });
-                    });
-
-                if ($groupId) {
-                    $overlappingGroup->where('id', '!=', $groupId); // Excluir el grupo actual en caso de actualización
-                }
-
-                if ($overlappingGroup->exists()) {
-                    $validator->errors()->add('start_time', 'El horario seleccionado se solapa con otro grupo en el mismo laboratorio.');
                 }
             }
         });

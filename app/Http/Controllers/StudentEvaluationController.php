@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Evaluation;
 use App\Models\Group;
-use App\Models\QuestionBank;
 use App\Models\Student;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class StudentEvaluationController extends Controller
@@ -33,6 +33,26 @@ class StudentEvaluationController extends Controller
         }
         return response()->json($evaluation);
     }
+
+    public function startEvaluation($evaluationId)
+    {
+        $evaluation = Evaluation::find($evaluationId);
+        if (!$evaluation) {
+            return response()->json(['message' => 'Evaluación no encontrada'], 404);
+        }
+
+        // Solo asignar start_time si aún no ha sido iniciado
+        $updated = StudentTest::where('evaluation_id', $evaluationId)
+            ->whereNull('start_time')
+            ->update(['start_time' => now()]);
+
+        return response()->json([
+            'message' => $updated ? 'Evaluación iniciada' : 'Ya se había iniciado la evaluación',
+            'updated_records' => $updated,
+            'start_time' => now()
+        ]);
+    }
+
     public function getQuestionsWithAnswers($id)
     {
         // Buscar al estudiante
@@ -47,35 +67,28 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'Prueba no encontrada'], 404);
         }
 
-        // Obtener la evaluación asociada
+        // Obtener evaluación
         $evaluation = Evaluation::find($test->evaluation_id);
         if (!$evaluation) {
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
 
-        // Obtener el grupo del estudiante
-        $group = $student->groups()->where('evaluation_id', $evaluation->id)->first();
-        if (!$group) {
-            return response()->json(['message' => 'El estudiante no está asignado a un grupo para esta evaluación'], 403);
+        // Validar si la evaluación ya fue iniciada
+        if (!$test->start_time) {
+            return response()->json(['message' => 'La evaluación aún no ha sido iniciada'], 403);
         }
 
-        // Obtener la configuración de horario del grupo para la evaluación
-        $groupEvaluation = Group::find($group->id);
+        // Calcular el tiempo restante
+        $startTime = Carbon::parse($test->start_time);
+        $now = Carbon::now();
+        $duration = $evaluation->time; // en minutos
+        $endTime = $startTime->copy()->addMinutes($duration);
 
-        // // Validar fecha y hora
-        // $currentDateTime = now(); // Fecha y hora actual
-        // $startDateTime = \Carbon\Carbon::parse($groupEvaluation->start_time);
-        // $endDateTime = \Carbon\Carbon::parse($groupEvaluation->end_time);
+        $remainingSeconds = $now->greaterThanOrEqualTo($endTime)
+            ? 0
+            : $endTime->diffInSeconds($now);
 
-        // // Verificar si la evaluación está dentro del horario permitido
-        // if ($currentDateTime->lt($startDateTime)) {
-        //     return response()->json(['message' => 'La evaluación aún no está disponible'], 403);
-        // }
-        // if ($currentDateTime->gt($endDateTime)) {
-        //     return response()->json(['message' => 'El tiempo para la evaluación ha expirado'], 403);
-        // }
-
-        // Obtener preguntas asignadas al estudiante con sus respuestas posibles
+        // Obtener preguntas
         $studentQuestions = StudentTestQuestion::with('question.bank_answers')
             ->where('student_test_id', $test->id)
             ->orderBy('question_order')
@@ -85,9 +98,6 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'No hay preguntas asignadas a este estudiante'], 404);
         }
 
-        // Obtener el codigo de la prueba de StudentTest
-        $testCode = $test->code;
-        // Formatear salida
         $formattedQuestions = $studentQuestions->map(function ($sq) {
             return [
                 'question_id' => $sq->question->id,
@@ -103,17 +113,14 @@ class StudentEvaluationController extends Controller
 
         return response()->json([
             'student_test_id' => $test->id,
-            'student_id' => $test->student_id,
+            'test_code' => $test->code,
             'evaluation_id' => $test->evaluation_id,
-            'test_code' => $testCode,
+            'start_time' => $test->start_time,
+            'remaining_time_seconds' => $remainingSeconds,
             'questions' => $formattedQuestions,
-
-            // ⏱️ Agrega estas 3 claves nuevas
-            // 'start_time' => $startDateTime->toIso8601String(), // e.g. 2025-07-11T15:00:00Z
-            // 'end_time' => $endDateTime->toIso8601String(),
-            'time' => $evaluation->time, // duración en minutos
         ]);
     }
+
 
     // funcion para obtener las preguntas con sus respuestas correctas
     public function getQuestionsWithCorrectAnswers($id)

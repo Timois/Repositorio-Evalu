@@ -119,6 +119,12 @@ class ExcelImportController extends Controller
 
     public function findAreaByExcel($excelId)
     {
+        $excelImport = ExcelImports::find($excelId);
+        if (!$excelImport) {
+            return response()->json([
+                'message' => 'No se encontró un archivo Excel con el ID especificado.',
+            ], 404);
+        }
         $area = DB::table('bank_questions')
             ->join('areas', 'bank_questions.area_id', '=', 'areas.id')
             ->where('bank_questions.excel_import_id', $excelId)

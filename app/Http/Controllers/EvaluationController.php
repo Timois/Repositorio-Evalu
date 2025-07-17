@@ -6,11 +6,6 @@ use App\Http\Requests\ValidationEvaluation;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
-use App\Models\QuestionEvaluation;
-use App\Models\StudentTest;
-use App\Models\StudentTestQuestion;
-use Illuminate\Http\Request;
-
 class EvaluationController extends Controller
 {
     public function find()

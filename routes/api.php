@@ -236,6 +236,7 @@ Route::controller(GroupsController::class)->middleware($authPersona)->prefix('gr
     Route::get("/listByEvaluation/{id}", "findGroupsByEvaluation")->middleware('auth:persona', 'permission:ver-grupos-por-evaluacion');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-grupos-por-id');
     Route::put("/edit/{id}", "update")->middleware('auth:persona', 'permission:editar-grupos');
+    Route::put("/startGroup/{id}", "startGroupEvaluation")->middleware('auth:persona', 'permission:iniciar-evaluacion-grupo');
 });
 
 Route::group(['middleware' => ['auth:api']], function () {

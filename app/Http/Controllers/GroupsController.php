@@ -109,8 +109,8 @@ class GroupsController extends Controller
         $group->laboratory_id = $request->laboratory_id;
         $group->name = $request->name;
         $group->description = $request->description;
-        $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
-        $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
+        $group->start_time = null; // Se iniciará manualmente más adelante
+        $group->end_time = null;   // Puedes mantenerlo si deseas, o también manejarlo dinámicamente
         $group->save();
 
         // 7. Asignar estudiantes al grupo
@@ -290,5 +290,24 @@ class GroupsController extends Controller
             'available_equipment' => $laboratoryCapacity - $newAssignedCount,
             'message' => 'Grupo actualizado' . ($request->reassign_students ? ' y estudiantes reasignados equitativamente.' : '.')
         ], 200);
+    }
+    public function startGroupEvaluation($groupId)
+    {
+        $group = Group::find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        if ($group->start_time) {
+            return response()->json(['message' => 'Este grupo ya tiene una hora de inicio registrada'], 400);
+        }
+
+        $group->start_time = now();
+        $group->save();
+
+        return response()->json([
+            'message' => 'La evaluación del grupo ha sido iniciada',
+            'start_time' => $group->start_time
+        ]);
     }
 }
