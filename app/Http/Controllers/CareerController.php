@@ -27,48 +27,41 @@ class CareerController extends Controller
     public function create(ValidationsCareer $request)
     {
         try {
-            // Guardar la imagen en el servidor
-            $image = $request->file('logo');
+            $imageUrl = null;
+            $initials = strtoupper($request->initials);
             $basePath = public_path('images' . DIRECTORY_SEPARATOR . 'units');
 
-            // Convertir la sigla a mayúsculas
-            $initials = strtoupper($request->initials);
-
-            // Si es un tipo dependiente (carrera o dependiente), usar el nombre del padre en la ruta
             if (in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])) {
                 $parentUnit = Career::findOrFail($request->unit_id);
                 $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
                     $parentUnit->initials . DIRECTORY_SEPARATOR .
                     $initials . DIRECTORY_SEPARATOR . 'Logo';
             } else {
-                // Para tipos independientes (mayor o facultad)
                 $imageDirectory = $basePath . DIRECTORY_SEPARATOR .
                     $initials . DIRECTORY_SEPARATOR . 'Logo';
             }
 
-            // Asegurar que el directorio existe
-            if (!file_exists($imageDirectory)) {
-                mkdir($imageDirectory, 0777, true);
+            // Si se envió imagen, guardarla
+            if ($request->hasFile('logo')) {
+                $image = $request->file('logo');
+
+                if (!file_exists($imageDirectory)) {
+                    mkdir($imageDirectory, 0777, true);
+                }
+
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $image->move($imageDirectory, $imageName);
+
+                $imageUrl = in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])
+                    ? asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$imageName}")
+                    : asset("images/units/{$initials}/Logo/{$imageName}");
             }
 
-            // Generar el nombre de la imagen
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-
-            // Mover la imagen con el nuevo nombre
-            $image->move($imageDirectory, $imageName);
-
-            // Construir URL de la imagen
-            $imageUrl = in_array($request->type, [Career::TYPE_CARRERA, Career::TYPE_DEPENDIENTE])
-                ? asset("images/units/{$parentUnit->initials}/{$initials}/Logo/{$imageName}")
-                : asset("images/units/{$initials}/Logo/{$imageName}");
-
-            // Crear la carrera
             $career = new Career();
             $career->name = strtolower($request->name);
             $career->initials = $initials;
-            $career->logo = $imageUrl;
+            $career->logo = $imageUrl; // puede ser null
             $career->type = $request->type;
-            // El unit_id será 0 para tipos independientes y el ID del padre para tipos dependientes
             $career->unit_id = in_array($request->type, Career::INDEPENDENT_TYPES) ? 0 : $request->unit_id;
             $career->save();
 
@@ -84,7 +77,6 @@ class CareerController extends Controller
             ], 500);
         }
     }
-
 
     /**
      * Display the specified resource.

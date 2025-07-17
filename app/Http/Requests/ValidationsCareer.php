@@ -24,7 +24,7 @@ class ValidationsCareer extends FormRequest
     {
         $validationName = 'required|unique:careers,name|regex:/[a-zA-Zñ]+/';
         $validationInitials = 'required|unique:careers,initials|max:10|regex:/^[\pL\s\-]+$/u';
-        $validationLogo = 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
+        $validationLogo = 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
         $validationType = 'required|in:dependiente,mayor,carrera,facultad';
         
         // Validación condicional para unit_id basada en el tipo
@@ -57,7 +57,7 @@ class ValidationsCareer extends FormRequest
         if ($career) {
             $validationName = 'string|max:50|regex:/[a-zA-Zñ]+/|unique:careers,name,' . $career;
             $validationInitials = 'string|max:10|unique:careers,initials,' . $career;
-            $validationLogo = 'image|mimes:jpeg,png,jpg,webp,svg|max:2048';
+            $validationLogo = 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
             $validationType = 'required|in:dependiente,mayor,carrera,facultad';
             $validationUnitId = $validationUnitId;
         }
@@ -102,7 +102,6 @@ class ValidationsCareer extends FormRequest
             'initials.unique' => "La sigla de la carrera ya existe. ID de la carrera existente: " . (($career_initials) ? $career_initials->id:0),
             'initial.max' => 'Las siglas no deben pasar de 10 letras. ',
             'initials.regex' => 'Solo debe contener letras.',
-            'logo.required' => 'Debe subir una imagen para el campo path.',
             'logo.image' => 'El archivo subido debe ser una imagen válida.',
             'logo.mimes' => 'La imagen debe estar en uno de los siguientes formatos: jpeg, png, jpg, webp, svg.',
             'logo.max' => 'La imagen no debe superar los 2 MB.',
