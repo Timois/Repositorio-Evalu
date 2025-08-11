@@ -109,8 +109,8 @@ class GroupsController extends Controller
         $group->laboratory_id = $request->laboratory_id;
         $group->name = $request->name;
         $group->description = $request->description;
-        $group->start_time = null; // Se iniciará manualmente más adelante
-        $group->end_time = null;   // Puedes mantenerlo si deseas, o también manejarlo dinámicamente
+        $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
+        $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
         $group->save();
 
         // 7. Asignar estudiantes al grupo
@@ -170,8 +170,8 @@ class GroupsController extends Controller
         $laboratoryCapacity = $laboratory->equipment_count;
 
         // 3. Validar que el laboratorio tenga suficiente capacidad
-        if ($laboratoryCapacity <= 5) {
-            return response()->json(['message' => 'El laboratorio debe tener más de 5 equipos para permitir al menos 3 equipos libres.'], 400);
+        if ($laboratoryCapacity <= 3) {
+            return response()->json(['message' => 'El laboratorio debe tener más de 3 equipos para permitir al menos 3 equipos libres.'], 400);
         }
 
         // 4. Obtener los estudiantes de la evaluación
@@ -211,7 +211,7 @@ class GroupsController extends Controller
         }
 
         // 7. Calcular cuántos estudiantes asignar al grupo de manera equitativa
-        $maxStudentsPerGroup = $laboratoryCapacity - 5; // Capacidad ajustada
+        $maxStudentsPerGroup = $laboratoryCapacity - 3; // Capacidad ajustada
         $estimatedGroupsNeeded = ceil($unassignedStudentsCount / $maxStudentsPerGroup);
         $studentsToAssignCount = ceil($unassignedStudentsCount / max(1, $estimatedGroupsNeeded));
         $studentsToAssignCount = min($studentsToAssignCount, $maxStudentsPerGroup);
@@ -293,21 +293,54 @@ class GroupsController extends Controller
     }
     public function startGroupEvaluation($groupId)
     {
-        $group = Group::find($groupId);
+        $group = Group::with('evaluation')->find($groupId);
+
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        if ($group->start_time) {
-            return response()->json(['message' => 'Este grupo ya tiene una hora de inicio registrada'], 400);
+        // Hora real de inicio
+        $startTime = now();
+
+        // Duración del examen (en minutos)
+        $duration = $group->evaluation->time ?? 0;
+
+        // Calcular nueva hora fin para el grupo
+        $endTime = $startTime->copy()->addMinutes($duration);
+
+        DB::beginTransaction();
+
+        try {
+            // 1. Actualizar horas del grupo
+            $group->start_time = $startTime;
+            $group->end_time = $endTime;
+            $group->save();
+
+            // 2. Actualizar solo hora de inicio en student_tests
+            StudentTest::whereIn('student_id', function ($query) use ($groupId) {
+                $query->select('student_id')
+                    ->from('group_student')
+                    ->where('group_id', $groupId);
+            })
+                ->where('evaluation_id', $group->evaluation_id)
+                ->update([
+                    'start_time' => $startTime->format('H:i:s'),
+                    'updated_at' => now()
+                ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
+                'start_time' => $group->start_time,
+                'end_time' => $group->end_time
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al actualizar la hora de inicio',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $group->start_time = now();
-        $group->save();
-
-        return response()->json([
-            'message' => 'La evaluación del grupo ha sido iniciada',
-            'start_time' => $group->start_time
-        ]);
     }
 }

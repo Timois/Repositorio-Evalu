@@ -63,7 +63,7 @@ Route::controller(AuthStudentController::class)->prefix('students')->group(funct
 Route::controller(UsersController::class)->prefix('users')->middleware($authPersona)->group(function () {
     Route::get("/list", "index")->middleware('auth:persona', 'permission:ver-usuarios');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-usuarios');
-    Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-usuarios');
+    Route::put("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-usuarios');
     Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-usuarios');
     Route::post("/assignCareer", "assignCareer")->middleware('auth:persona', 'permission:asignar-carreras-a-usuarios');
     Route::post("/deactivate", "deactivate")->middleware('auth:persona', 'permission:eliminar-usuarios');
