@@ -75,7 +75,7 @@ class StudentEvaluationController extends Controller
 
         // Validar si la evaluación ya fue iniciada
         if (!$test->start_time) {
-            return response()->json(['message' => 'La evaluación aún no ha sido iniciada'], 403);
+            return response()->json(['message' => 'La evaluación aún no ha sido iniciada'], 409);
         }
 
         // Calcular el tiempo restante
