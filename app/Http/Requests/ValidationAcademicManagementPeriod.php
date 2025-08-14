@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\AcademicManagement;
 use App\Models\AcademicManagementCareer;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 
@@ -40,14 +41,26 @@ class ValidationAcademicManagementPeriod extends FormRequest
         if ($id)
             return [
                 'initial_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d H:i:s', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
-                'end_date' => ['required_if:id,null', 'date', 'date_format:Y-m-d H:i:s', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
+                'end_date' => [
+                    'required',
+                    'date',
+                    'date_format:Y-m-d H:i:s',
+                    'after:' . $initial_date,
+                    'before_or_equal:' . Carbon::parse($management->end_date)->addDay()->format('Y-m-d H:i:s')
+                ],
                 'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
                 'period_id' => ['required', 'exists:periods,id'],
             ];
 
         return [
             'initial_date' => ['required', 'date', 'date_format:Y-m-d H:i:s', 'before_or_equal:' . $management->end_date, 'after_or_equal:' . $management->initial_date],
-            'end_date' => ['required', 'date', 'date_format:Y-m-d H:i:s', 'after:' . $initial_date, 'before_or_equal:' . $management->end_date],
+            'end_date' => [
+                'required',
+                'date',
+                'date_format:Y-m-d H:i:s',
+                'after:' . $initial_date,
+                'before_or_equal:' . Carbon::parse($management->end_date)->addDay()->format('Y-m-d H:i:s')
+            ],
             'academic_management_career_id' => ['required', 'exists:academic_management_career,id'],
         ];
     }

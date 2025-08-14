@@ -34,6 +34,7 @@ class GroupsController extends Controller
     {
         $groups = Group::with(['lab', 'students'])
             ->where('evaluation_id', $evaluationId)
+            ->orderBy('id', 'asc')
             ->get();
 
         $studentsCount = StudentTest::where('evaluation_id', $evaluationId)
