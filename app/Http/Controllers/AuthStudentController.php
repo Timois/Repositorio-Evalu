@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\Role;
 use App\Models\UserStudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthStudentController extends Controller
 {
@@ -29,6 +31,10 @@ class AuthStudentController extends Controller
 
         // Buscar al usuario por CI
         $persona = UserStudent::where('ci', $request->ci)->first();
+
+        $grupo_student = DB::table('group_student')->where('student_id', $persona->id)->first();
+
+        $grupo = Group::find($grupo_student->group_id);
 
         if (!$persona) {
             return response()->json(['error' => 'CI no encontrado'], 401);
@@ -54,6 +60,7 @@ class AuthStudentController extends Controller
                         ($persona->maternal_surname ?? '')
                 ),
                 'ci' => $persona->ci,
+                'group' => $grupo->id,
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),

@@ -8,6 +8,7 @@ use App\Models\Group;
 use App\Models\Laboratorie;
 use App\Models\StudentTest;
 use Carbon\Carbon;
+use ElephantIO\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -242,19 +243,15 @@ class GroupsController extends Controller
 
         $group->save();
 
-        // 9. Reasignar estudiantes si se solicita
         $newAssignedCount = 0;
         if ($request->has('reassign_students') && $request->reassign_students) {
-            // Eliminar asignaciones previas del grupo
             DB::table('group_student')->where('group_id', $group->id)->delete();
 
-            // Obtener los IDs de estudiantes ya asignados a otros grupos
             $assignedStudentIds = DB::table('group_student')
                 ->select('student_id')
                 ->pluck('student_id')
                 ->toArray();
 
-            // Filtrar estudiantes no asignados y tomar la cantidad calculada
             $studentsToAssign = $students->whereNotIn('student_id', $assignedStudentIds)
                 ->take($studentsToAssignCount);
 
@@ -268,22 +265,18 @@ class GroupsController extends Controller
                 ];
             }
 
-            // Insertar las nuevas asignaciones
             if (!empty($assignments)) {
                 DB::table('group_student')->insert($assignments);
                 $newAssignedCount = count($assignments);
             }
         } else {
-            // Contar estudiantes actualmente asignados al grupo
             $newAssignedCount = DB::table('group_student')
                 ->where('group_id', $group->id)
                 ->count();
         }
 
-        // 10. Calcular estudiantes sin asignar después de la asignación
         $newUnassignedStudentsCount = $unassignedStudentsCount - $newAssignedCount;
 
-        // 11. Respuesta con información actualizada
         return response()->json([
             'group' => $group,
             'assigned_students' => $newAssignedCount,
@@ -294,30 +287,28 @@ class GroupsController extends Controller
     }
     public function startGroupEvaluation($groupId)
     {
+        $url = 'http://localhost:3000';
+        $client = Client::create($url);
+        $client->connect();
+
         $group = Group::with('evaluation')->find($groupId);
 
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // Hora real de inicio
         $startTime = now();
-
-        // Duración del examen (en minutos)
         $duration = $group->evaluation->time ?? 0;
 
-        // Calcular nueva hora fin para el grupo
         $endTime = $startTime->copy()->addMinutes($duration);
 
         DB::beginTransaction();
 
         try {
-            // 1. Actualizar horas del grupo
             $group->start_time = $startTime;
             $group->end_time = $endTime;
             $group->save();
-
-            // 2. Actualizar solo hora de inicio en student_tests
+            $segundos = $duration * 60;
             StudentTest::whereIn('student_id', function ($query) use ($groupId) {
                 $query->select('student_id')
                     ->from('group_student')
@@ -331,6 +322,10 @@ class GroupsController extends Controller
 
             DB::commit();
 
+            $client->emit('joinRoom',$group->id );
+            $client->emit('startEvaluation', true);
+            $client->emit('duration', $segundos);
+            $client->disconnect();
             return response()->json([
                 'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
                 'start_time' => $group->start_time,

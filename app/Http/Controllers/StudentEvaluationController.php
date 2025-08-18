@@ -34,28 +34,6 @@ class StudentEvaluationController extends Controller
         return response()->json($evaluation);
     }
 
-    public function startEvaluation($groupId)
-    {
-        $evaluation = Evaluation::find($groupId);
-        if (!$evaluation) {
-            return response()->json(['message' => 'Evaluación no encontrada'], 404);
-        }
-
-        // Guardar solo la hora actual (manteniendo tu estructura actual)
-        $currentTime = Carbon::now('America/La_Paz')->format('H:i:s');
-
-        // Solo asignar start_time si aún no ha sido iniciado
-        $updated = StudentTest::where('evaluation_id', $groupId)
-            ->whereNull('start_time')
-            ->update(['start_time' => $currentTime]);
-
-        return response()->json([
-            'message' => $updated ? 'Evaluación iniciada' : 'Ya se había iniciado la evaluación',
-            'updated_records' => $updated,
-            'start_time' => $currentTime,
-        ]);
-    }
-
     public function getQuestionsWithAnswers($id)
     {
         // Buscar al estudiante
@@ -81,26 +59,25 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'La evaluación aún no ha sido iniciada'], 409);
         }
 
-        // Calcular el tiempo restante - solución más directa
         $timezone = 'America/La_Paz';
 
-        // Si start_time solo contiene hora, usar la fecha de evaluación
-        if (strlen($test->start_time) <= 8) { // Solo hora (H:i:s)
-            $evaluationDate = Carbon::parse($evaluation->date)->format('Y-m-d');
+        // Convertir start_time a DateTime en zona correcta
+        if (strlen($test->start_time) <= 8) { // Solo hora
+            $evaluationDate = Carbon::parse($evaluation->date_of_realization, $timezone)->format('Y-m-d');
             $startTime = Carbon::createFromFormat('Y-m-d H:i:s', $evaluationDate . ' ' . $test->start_time, $timezone);
         } else {
-            // Si ya contiene fecha y hora completa
-            $startTime = Carbon::parse($test->start_time, $timezone);
+            $startTime = Carbon::parse($test->start_time)->timezone($timezone);
         }
+
         $now = Carbon::now($timezone);
-        $durationMinutes = $evaluation->time; // Asegúrate de que esto esté en minutos
+        $durationMinutes = (int) $evaluation->time;
+
         $endTime = $startTime->copy()->addMinutes($durationMinutes);
 
-        // Calcular tiempo restante en segundos
         if ($now->greaterThanOrEqualTo($endTime)) {
-            $remainingSeconds = 0; // Tiempo agotado
+            $remainingSeconds = 0;
         } else {
-            $remainingSeconds = $endTime->diffInSeconds($now);
+            $remainingSeconds = $now->diffInSeconds($endTime, false);
         }
 
         // Obtener preguntas
@@ -130,10 +107,9 @@ class StudentEvaluationController extends Controller
             'student_test_id' => $test->id,
             'test_code' => $test->code,
             'evaluation_id' => $test->evaluation_id,
-            'start_time' => $startTime->toDateTimeString(), // Fecha y hora completa concatenada
-            'evaluation_date' => $evaluation->date_of_realization, // Fecha original de la evaluación
-            'remaining_time_seconds' => $remainingSeconds,
-            'remaining_time_minutes' => round($remainingSeconds / 60, 2), // Agregado para verificación
+            'start_time' => $startTime->toIso8601String(), // Fecha y hora completas
+            'end_time' => $endTime->toIso8601String(),     // Fin exacto
+            'current_time' => now($timezone)->toIso8601String(), // Hora actual del servidor
             'questions' => $formattedQuestions,
         ]);
     }
