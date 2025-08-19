@@ -322,9 +322,9 @@ class GroupsController extends Controller
 
             DB::commit();
 
-            $client->emit('joinRoom',$group->id );
-            $client->emit('startEvaluation', true);
-            $client->emit('duration', $segundos);
+            $client->emit('join', ["roomId" =>  $group->id]);
+            $client->emit('duration', ["roomId" =>  $group->id, "time" => $segundos]);
+            $client->emit('start', ["roomId" =>  $group->id]);
             $client->disconnect();
             return response()->json([
                 'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
