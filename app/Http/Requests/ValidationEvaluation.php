@@ -61,7 +61,7 @@ class ValidationEvaluation extends FormRequest
             $rules['description'] = 'sometimes|string|max:255|regex:/^[A-Za-zñ0-9\s]*$/';
             $rules['passing_score'] = 'sometimes|numeric|min:0';
             $rules['places'] = 'sometimes|integer|min:0';
-            $rules['date_of_realization'] = 'sometimes|date_format:Y-m-d|after:today';
+            $rules['date_of_realization'] = 'sometimes|date_format:Y-m-d|after_or_equal:today';
             $rules['time'] = 'sometimes|integer';
         }
 
@@ -104,6 +104,7 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization.required' => 'La fecha de realización es obligatoria.',
             'date_of_realization.date_format' => 'La fecha de realización debe tener el formato Y-m-d.',
             'date_of_realization.after_or_equal' => 'La fecha de realización no puede ser anterior a hoy.',
+            'date_of_realization.date' => 'La fecha de realización debe ser una fecha.',
             'time.required' => 'El tiempo es obligatorio.',
             'time.integer' => 'El tiempo debe ser un número entero.',
         ];
