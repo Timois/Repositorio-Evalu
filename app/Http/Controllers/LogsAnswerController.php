@@ -63,7 +63,7 @@ class LogsAnswerController extends Controller
 
     // Recuperar las respuestas ya respondidas por el estudiante
     public function getAnswers($id)
-    {
+    {   
         // Buscar el StudentTest por ID
         $studentTest = StudentTest::find($id);
 
