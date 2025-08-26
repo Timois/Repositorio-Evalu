@@ -49,6 +49,7 @@ Route::controller(AuthUserController::class)->prefix('users')->group(function ()
     Route::get("/refreshPermissions", "refreshPermissions");
     Route::get("/profile", "me");
     Route::post("/refresh", "refresh");
+    Route::get('/verifyToken', 'verifyToken')->middleware('multi-auth:persona,api');
 });
 
 // Autenticación de estudiantes
@@ -237,6 +238,9 @@ Route::controller(GroupsController::class)->middleware($authPersona)->prefix('gr
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-grupos-por-id');
     Route::put("/edit/{id}", "update")->middleware('auth:persona', 'permission:editar-grupos');
     Route::put("/startGroup/{id}", "startGroupEvaluation")->middleware('auth:persona', 'permission:iniciar-evaluacion-grupo');
+    Route::post("/pauseGroup/{id}", "pauseGroupEvaluation")->middleware('auth:persona', 'permission:pausar-evaluacion-grupo');
+    Route::post("/resumeGroup/{id}", "continueGroupEvaluation")->middleware('auth:persona', 'permission:reanudar-evaluacion-grupo');
+    Route::post("/finishGroup/{id}", "stopGroupEvaluation")->middleware('auth:persona', 'permission:finalizar-evaluacion-grupo');
 });
 
 Route::group(['middleware' => ['auth:api']], function () {

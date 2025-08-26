@@ -110,6 +110,7 @@ class GroupsController extends Controller
         $group->evaluation_id = $request->evaluation_id;
         $group->laboratory_id = $request->laboratory_id;
         $group->name = $request->name;
+        $group->total_students = $studentsToAssignCount;
         $group->description = $request->description;
         $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
         $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
@@ -339,4 +340,132 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+
+    public function pauseGroupEvaluation($groupId)
+    {
+        $url = 'http://localhost:3000';
+        $client = Client::create($url);
+        $client->connect();
+
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            $client->disconnect();
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        if (!$group->start_time || $group->end_time) {
+            $client->disconnect();
+            return response()->json(['message' => 'El examen no está en curso'], 400);
+        }
+
+        try {
+            $client->emit('pause', ['roomId' => $group->id]);
+            $client->disconnect();
+
+            return response()->json([
+                'message' => 'Examen pausado correctamente para el grupo',
+                'group_id' => $group->id
+            ]);
+        } catch (\Exception $e) {
+            $client->disconnect();
+            return response()->json([
+                'message' => 'Error al pausar el examen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function continueGroupEvaluation($groupId)
+    {
+        $url = 'http://localhost:3000';
+        $client = Client::create($url);
+        $client->connect();
+
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            $client->disconnect();
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        if (!$group->start_time || $group->end_time) {
+            $client->disconnect();
+            return response()->json(['message' => 'El examen no está en curso o ya finalizó'], 400);
+        }
+
+        try {
+            $client->emit('continue', ['roomId' => $group->id]);
+            $client->disconnect();
+
+            return response()->json([
+                'message' => 'Examen reanudado correctamente para el grupo',
+                'group_id' => $group->id
+            ]);
+        } catch (\Exception $e) {
+            $client->disconnect();
+            return response()->json([
+                'message' => 'Error al reanudar el examen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Metodo para parar el tiempo de la evaluacion de un grupo
+    public function stopGroupEvaluation($groupId)
+    {
+        $url = 'http://localhost:3000';
+        $client = Client::create($url);
+        $client->connect();
+
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            $client->disconnect();
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        if (!$group->start_time) {
+            $client->disconnect();
+            return response()->json(['message' => 'El examen no ha sido iniciado'], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $group->end_time = now();
+            $group->save();
+
+            StudentTest::whereIn('student_id', function ($query) use ($groupId) {
+                $query->select('student_id')
+                    ->from('group_student')
+                    ->where('group_id', $groupId);
+            })
+                ->where('evaluation_id', $group->evaluation_id)
+                ->update([
+                    'status' => 'completado',
+                    'end_time' => now()->format('H:i:s'),
+                    'updated_at' => now()
+                ]);
+
+            DB::commit();
+
+            $client->emit('stop', ['roomId' => $group->id]);
+            $client->disconnect();
+
+            return response()->json([
+                'message' => 'Examen detenido correctamente para el grupo',
+                'group_id' => $group->id,
+                'end_time' => $group->end_time
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $client->disconnect();
+            return response()->json([
+                'message' => 'Error al detener el examen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+        
 }

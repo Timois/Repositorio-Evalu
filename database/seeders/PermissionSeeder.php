@@ -118,7 +118,10 @@ class PermissionSeeder extends Seeder
             'eliminar-importacion',
             'ver-areas-por-excel',
             'ver-resultados-por-evaluacion',
-            'iniciar-evaluacion-grupo'
+            'iniciar-evaluacion-grupo',
+            'pausar-evaluacion-grupo',
+            'reanudar-evaluacion-grupo',
+            'finalizar-evaluacion-grupo',
         ];
 
         // Crear permisos si no existen

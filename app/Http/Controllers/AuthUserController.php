@@ -25,10 +25,10 @@ class AuthUserController extends Controller
         }
 
         $credentials = $request->only('email', 'password');
-       
+
         try {
             if (!$token = Auth::guard('persona')->attempt($credentials)) {
-                
+
                 return response()->json(['error' => 'Credenciales incorrectas'], 401);
             }
 
@@ -111,5 +111,45 @@ class AuthUserController extends Controller
             'token_type' => 'bearer',
             'expires_in' => Auth::guard('persona')->factory()->getTTL() * 60,
         ]);
+    }
+
+    public function verifyToken(Request $request)
+    {
+        try {
+
+            // Verificar si se proporciona un token
+            $token = $request->bearerToken();
+            
+            if (!$token) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => 'Token no proporcionado',
+                ], 400);
+            }
+            // Intentar autenticar con ambos guards
+            $guards = ['persona', 'api'];
+
+            foreach ($guards as $guard) {
+                if ($user = Auth::guard($guard)->user()) {
+                    return response()->json([
+                        'valid' => true,
+                        'message' => 'Token válido',
+                        'guard' => $guard,
+                        'user' => $user,
+                    ], 200);
+                }
+            }
+
+            return response()->json([
+                'valid' => false,
+                'message' => 'Token inválido o sesión cerrada',
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Error al verificar el token',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
