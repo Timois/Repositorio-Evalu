@@ -9,7 +9,7 @@ use App\Models\Laboratorie;
 use App\Models\StudentTest;
 use Carbon\Carbon;
 use ElephantIO\Client;
-use ElephantIO\Engine\SocketIO\Version1X;
+use ElephantIO\Engine\SocketIO\Version2X;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -295,13 +295,12 @@ class GroupsController extends Controller
         }
 
         $url = 'http://localhost:3000';
-        $client = new Client(new Version1X($url));
+        $client = new Client(new Version2X($url, [
+            'query' => ['token' => $token] // ✅ Token se pasa por query
+        ]));
 
         try {
-            $client->connect(); // ⬅️ usar connect() en lugar de initialize()
-
-            // Emitimos el token para autenticación
-            $client->emit('authenticate', ['token' => $token]);
+            $client->connect(); // conecta al servidor v2
 
             $group = Group::with('evaluation')->find($groupId);
             if (!$group) {
@@ -313,7 +312,6 @@ class GroupsController extends Controller
             $endTime = $startTime->copy()->addMinutes($duration);
 
             DB::beginTransaction();
-
             $group->start_time = $startTime;
             $group->end_time = $endTime;
             $group->save();
@@ -333,12 +331,12 @@ class GroupsController extends Controller
 
             DB::commit();
 
-            // Emitir eventos al WebSocket
+            // Emitir eventos directamente
             $client->emit('join', ["roomId" => $group->id]);
             $client->emit('duration', ["roomId" => $group->id, "time" => $segundos]);
             $client->emit('start', ["roomId" => $group->id]);
 
-            $client->disconnect(); // cerrar la conexión
+            $client->disconnect();
 
             return response()->json([
                 'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
@@ -353,6 +351,7 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+
 
     public function pauseGroupEvaluation($groupId)
     {
