@@ -64,7 +64,7 @@ class AuthStudentController extends Controller
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),
-            
+
         ]);
     }
 
@@ -99,6 +99,17 @@ class AuthStudentController extends Controller
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
+        ]);
+    }
+
+    public function verifyStudentToken(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        return response()->json([
+            'valid' => !!$user,
+            'role'  => 'student',
+            'user'  => $user,
         ]);
     }
 }

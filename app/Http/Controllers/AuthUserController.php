@@ -113,43 +113,14 @@ class AuthUserController extends Controller
         ]);
     }
 
-    public function verifyToken(Request $request)
+    public function verifyTeacherToken(Request $request)
     {
-        try {
+        $user = Auth::guard('persona')->user();
 
-            // Verificar si se proporciona un token
-            $token = $request->bearerToken();
-            
-            if (!$token) {
-                return response()->json([
-                    'valid' => false,
-                    'message' => 'Token no proporcionado',
-                ], 400);
-            }
-            // Intentar autenticar con ambos guards
-            $guards = ['persona', 'api'];
-
-            foreach ($guards as $guard) {
-                if ($user = Auth::guard($guard)->user()) {
-                    return response()->json([
-                        'valid' => true,
-                        'message' => 'Token válido',
-                        'guard' => $guard,
-                        'user' => $user,
-                    ], 200);
-                }
-            }
-
-            return response()->json([
-                'valid' => false,
-                'message' => 'Token inválido o sesión cerrada',
-            ], 401);
-        } catch (\Exception $e) {
-            return response()->json([
-                'valid' => false,
-                'message' => 'Error al verificar el token',
-                'details' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'valid' => !!$user,
+            'role'  => 'docente',
+            'user'  => $user,
+        ]);
     }
 }

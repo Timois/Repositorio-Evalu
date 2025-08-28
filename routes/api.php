@@ -49,7 +49,7 @@ Route::controller(AuthUserController::class)->prefix('users')->group(function ()
     Route::get("/refreshPermissions", "refreshPermissions");
     Route::get("/profile", "me");
     Route::post("/refresh", "refresh");
-    Route::get('/verifyToken', 'verifyToken')->middleware('multi-auth:persona,api');
+    Route::get("/verifyTeacherToken", "verifyTeacherToken")->middleware('auth:persona');
 });
 
 // Autenticación de estudiantes
@@ -58,6 +58,7 @@ Route::controller(AuthStudentController::class)->prefix('students')->group(funct
     Route::post("/logout", "logoutStudent");
     Route::post("/refresh", "refresh");
     Route::get("/profile", "me");
+    Route::get("/verifyStudentToken", "verifyStudentToken")->middleware('auth:api');
 });
 
 // Rutas de Usuarios (requieren permisos de administración)

@@ -9,6 +9,7 @@ use App\Models\Laboratorie;
 use App\Models\StudentTest;
 use Carbon\Carbon;
 use ElephantIO\Client;
+use ElephantIO\Engine\SocketIO\Version1X;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -286,30 +287,39 @@ class GroupsController extends Controller
             'message' => 'Grupo actualizado' . ($request->reassign_students ? ' y estudiantes reasignados equitativamente.' : '.')
         ], 200);
     }
-    public function startGroupEvaluation($groupId)
+    public function startGroupEvaluation(Request $request, $groupId)
     {
-        $url = 'http://localhost:3000';
-        $client = Client::create($url);
-        $client->connect();
-
-        $group = Group::with('evaluation')->find($groupId);
-
-        if (!$group) {
-            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        $token = $request->bearerToken();
+        if (!$token) {
+            return response()->json(['message' => 'Token no encontrado'], 401);
         }
 
-        $startTime = now();
-        $duration = $group->evaluation->time ?? 0;
-
-        $endTime = $startTime->copy()->addMinutes($duration);
-
-        DB::beginTransaction();
+        $url = 'http://localhost:3000';
+        $client = new Client(new Version1X($url));
 
         try {
+            $client->connect(); // ⬅️ usar connect() en lugar de initialize()
+
+            // Emitimos el token para autenticación
+            $client->emit('authenticate', ['token' => $token]);
+
+            $group = Group::with('evaluation')->find($groupId);
+            if (!$group) {
+                return response()->json(['message' => 'Grupo no encontrado'], 404);
+            }
+
+            $startTime = now();
+            $duration = $group->evaluation->time ?? 0;
+            $endTime = $startTime->copy()->addMinutes($duration);
+
+            DB::beginTransaction();
+
             $group->start_time = $startTime;
             $group->end_time = $endTime;
             $group->save();
+
             $segundos = $duration * 60;
+
             StudentTest::whereIn('student_id', function ($query) use ($groupId) {
                 $query->select('student_id')
                     ->from('group_student')
@@ -323,10 +333,13 @@ class GroupsController extends Controller
 
             DB::commit();
 
-            $client->emit('join', ["roomId" =>  $group->id]);
-            $client->emit('duration', ["roomId" =>  $group->id, "time" => $segundos]);
-            $client->emit('start', ["roomId" =>  $group->id]);
-            $client->disconnect();
+            // Emitir eventos al WebSocket
+            $client->emit('join', ["roomId" => $group->id]);
+            $client->emit('duration', ["roomId" => $group->id, "time" => $segundos]);
+            $client->emit('start', ["roomId" => $group->id]);
+
+            $client->disconnect(); // cerrar la conexión
+
             return response()->json([
                 'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
                 'start_time' => $group->start_time,
@@ -467,5 +480,4 @@ class GroupsController extends Controller
             ], 500);
         }
     }
-        
 }
