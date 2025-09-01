@@ -12,6 +12,7 @@ use ElephantIO\Client;
 use ElephantIO\Engine\SocketIO\Version2X;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class GroupsController extends Controller
 {
@@ -294,93 +295,72 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Token no encontrado'], 401);
         }
 
-        $url = 'http://localhost:3000';
-        $client = new Client(new Version2X($url, [
-            'query' => ['token' => $token] // ✅ Token se pasa por query
-        ]));
-
-        try {
-            $client->connect(); // conecta al servidor v2
-
-            $group = Group::with('evaluation')->find($groupId);
-            if (!$group) {
-                return response()->json(['message' => 'Grupo no encontrado'], 404);
-            }
-
-            $startTime = now();
-            $duration = $group->evaluation->time ?? 0;
-            $endTime = $startTime->copy()->addMinutes($duration);
-
-            DB::beginTransaction();
-            $group->start_time = $startTime;
-            $group->end_time = $endTime;
-            $group->save();
-
-            $segundos = $duration * 60;
-
-            StudentTest::whereIn('student_id', function ($query) use ($groupId) {
-                $query->select('student_id')
-                    ->from('group_student')
-                    ->where('group_id', $groupId);
-            })
-                ->where('evaluation_id', $group->evaluation_id)
-                ->update([
-                    'start_time' => $startTime->format('H:i:s'),
-                    'updated_at' => now()
-                ]);
-
-            DB::commit();
-
-            // Emitir eventos directamente
-            $client->emit('join', ["roomId" => $group->id]);
-            $client->emit('duration', ["roomId" => $group->id, "time" => $segundos]);
-            $client->emit('start', ["roomId" => $group->id]);
-
-            $client->disconnect();
-
-            return response()->json([
-                'message' => 'Hora de inicio del grupo y de los estudiantes actualizada correctamente',
-                'start_time' => $group->start_time,
-                'end_time' => $group->end_time
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Error al actualizar la hora de inicio',
-                'error' => $e->getMessage()
-            ], 500);
+        $group = Group::with('evaluation')->find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
+
+        $startTime = now();
+        $duration = $group->evaluation->time ?? 0;
+        $endTime = $startTime->copy()->addMinutes($duration);
+
+        DB::beginTransaction();
+        $group->start_time = $startTime;
+        $group->end_time = $endTime;
+        $group->save();
+
+        $segundos = $duration * 60;
+
+        StudentTest::whereIn('student_id', function ($query) use ($groupId) {
+            $query->select('student_id')
+                ->from('group_student')
+                ->where('group_id', $groupId);
+        })
+            ->where('evaluation_id', $group->evaluation_id)
+            ->update([
+                'start_time' => $startTime->format('H:i:s'),
+                'updated_at' => now()
+            ]);
+
+        DB::commit();
+
+        // ✅ Llamar al servidor de Socket.IO
+        Http::post('http://127.0.0.1:3000/emit/start-evaluation', [
+            'roomId' => $group->id,
+            'duration' => $segundos,
+        ]);
+
+        return response()->json([
+            'message' => 'Hora de inicio del grupo y estudiantes actualizada correctamente',
+            'start_time' => $group->start_time,
+            'end_time' => $group->end_time
+        ]);
     }
 
-
-    public function pauseGroupEvaluation($groupId)
+    public function pauseGroupEvaluation($groupId, Request $request)
     {
-        $url = 'http://localhost:3000';
-        $client = Client::create($url);
-        $client->connect();
-
         $group = Group::with('evaluation')->find($groupId);
 
         if (!$group) {
-            $client->disconnect();
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
         if (!$group->start_time || $group->end_time) {
-            $client->disconnect();
             return response()->json(['message' => 'El examen no está en curso'], 400);
         }
 
         try {
-            $client->emit('pause', ['roomId' => $group->id]);
-            $client->disconnect();
+            // 👉 Hacemos petición HTTP al servidor de sockets
+            Http::post('http://127.0.0.1:3000/emit/pause', [
+                'roomId' => $group->id,
+                'token'  => $request->bearerToken() // mandamos token si lo necesitas validar
+            ]);
 
             return response()->json([
                 'message' => 'Examen pausado correctamente para el grupo',
                 'group_id' => $group->id
             ]);
         } catch (\Exception $e) {
-            $client->disconnect();
             return response()->json([
                 'message' => 'Error al pausar el examen',
                 'error' => $e->getMessage()
@@ -388,34 +368,29 @@ class GroupsController extends Controller
         }
     }
 
-    public function continueGroupEvaluation($groupId)
+    public function continueGroupEvaluation($groupId, Request $request)
     {
-        $url = 'http://localhost:3000';
-        $client = Client::create($url);
-        $client->connect();
-
         $group = Group::with('evaluation')->find($groupId);
 
         if (!$group) {
-            $client->disconnect();
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
         if (!$group->start_time || $group->end_time) {
-            $client->disconnect();
             return response()->json(['message' => 'El examen no está en curso o ya finalizó'], 400);
         }
 
         try {
-            $client->emit('continue', ['roomId' => $group->id]);
-            $client->disconnect();
+            Http::post('http://127.0.0.1:3000/emit/continue', [
+                'roomId' => $group->id,
+                'token'  => $request->bearerToken()
+            ]);
 
             return response()->json([
                 'message' => 'Examen reanudado correctamente para el grupo',
                 'group_id' => $group->id
             ]);
         } catch (\Exception $e) {
-            $client->disconnect();
             return response()->json([
                 'message' => 'Error al reanudar el examen',
                 'error' => $e->getMessage()
@@ -423,22 +398,15 @@ class GroupsController extends Controller
         }
     }
 
-    // Metodo para parar el tiempo de la evaluacion de un grupo
-    public function stopGroupEvaluation($groupId)
+    public function stopGroupEvaluation($groupId, Request $request)
     {
-        $url = 'http://localhost:3000';
-        $client = Client::create($url);
-        $client->connect();
-
         $group = Group::with('evaluation')->find($groupId);
 
         if (!$group) {
-            $client->disconnect();
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
         if (!$group->start_time) {
-            $client->disconnect();
             return response()->json(['message' => 'El examen no ha sido iniciado'], 400);
         }
 
@@ -462,8 +430,10 @@ class GroupsController extends Controller
 
             DB::commit();
 
-            $client->emit('stop', ['roomId' => $group->id]);
-            $client->disconnect();
+            Http::post('http://127.0.0.1:3000/emit/stop', [
+                'roomId' => $group->id,
+                'token'  => $request->bearerToken()
+            ]);
 
             return response()->json([
                 'message' => 'Examen detenido correctamente para el grupo',
@@ -472,7 +442,6 @@ class GroupsController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            $client->disconnect();
             return response()->json([
                 'message' => 'Error al detener el examen',
                 'error' => $e->getMessage()

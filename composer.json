@@ -6,7 +6,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "elephantio/elephant.io": "^4.13",
         "guzzlehttp/guzzle": "^7.2",
         "jeremykenedy/laravel-roles": "^10.0",
         "laravel/framework": "^10.10",
