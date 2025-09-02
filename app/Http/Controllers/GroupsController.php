@@ -324,11 +324,12 @@ class GroupsController extends Controller
 
         DB::commit();
 
-        // ✅ Llamar al servidor de Socket.IO
-        Http::post('http://127.0.0.1:3000/emit/start-evaluation', [
-            'roomId' => $group->id,
-            'duration' => $segundos,
-        ]);
+        Http::withHeaders(['Content-Type' => 'application/json'])
+            ->post('http://127.0.0.1:3000/emit/start-evaluation', [
+                'roomId' => $group->id,
+                'duration' => $segundos
+            ]);
+
 
         return response()->json([
             'message' => 'Hora de inicio del grupo y estudiantes actualizada correctamente',
