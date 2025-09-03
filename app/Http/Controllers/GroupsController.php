@@ -301,8 +301,14 @@ class GroupsController extends Controller
         }
 
         $startTime = now();
-        $duration = $group->evaluation->time ?? 0;
+        $duration = $group->evaluation->time ?? 0; // en minutos
         $endTime = $startTime->copy()->addMinutes($duration);
+        $date = $group->evaluation->date_of_realization;
+
+        // Si la fecha no es hoy, no se puede iniciar
+        if (Carbon::parse($date)->format('Y-m-d') !== $startTime->format('Y-m-d')) {
+            return response()->json(['message' => 'La evaluación no está programada para hoy'], 400);
+        }
 
         DB::beginTransaction();
         $group->start_time = $startTime;
@@ -324,17 +330,12 @@ class GroupsController extends Controller
 
         DB::commit();
 
-        Http::withHeaders(['Content-Type' => 'application/json'])
-            ->post('http://127.0.0.1:3000/emit/start-evaluation', [
-                'roomId' => $group->id,
-                'duration' => $segundos
-            ]);
-
-
         return response()->json([
             'message' => 'Hora de inicio del grupo y estudiantes actualizada correctamente',
             'start_time' => $group->start_time,
-            'end_time' => $group->end_time
+            'end_time' => $group->end_time,
+            'duration' => $segundos, // en segundos
+            'date' => $date
         ]);
     }
 
