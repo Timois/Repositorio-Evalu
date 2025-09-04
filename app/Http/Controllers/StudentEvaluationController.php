@@ -54,11 +54,6 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
 
-        // Validar si la evaluación ya fue iniciada
-        if (!$test->start_time) {
-            return response()->json(['message' => 'La evaluación aún no ha sido iniciada'], 409);
-        }
-
         $timezone = 'America/La_Paz';
 
         // Convertir start_time a DateTime en zona correcta

@@ -339,14 +339,19 @@ class GroupsController extends Controller
         ]);
     }
 
-    public function pauseGroupEvaluation($groupId, Request $request)
+    public function pauseGroupEvaluation(Request $request, $groupId)
     {
-        $group = Group::with('evaluation')->find($groupId);
+        $token = $request->bearerToken();
+        if (!$token) {
+            return response()->json(['message' => 'Token no encontrado'], 401);
+        }
 
+        $group = Group::with('evaluation')->find($groupId);
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
+        // Validar si ya inició y no terminó
         if (!$group->start_time || $group->end_time) {
             return response()->json(['message' => 'El examen no está en curso'], 400);
         }
@@ -355,7 +360,7 @@ class GroupsController extends Controller
             // 👉 Hacemos petición HTTP al servidor de sockets
             Http::post('http://127.0.0.1:3000/emit/pause', [
                 'roomId' => $group->id,
-                'token'  => $request->bearerToken() // mandamos token si lo necesitas validar
+                'token'  => $token
             ]);
 
             return response()->json([
@@ -370,14 +375,19 @@ class GroupsController extends Controller
         }
     }
 
-    public function continueGroupEvaluation($groupId, Request $request)
+    public function continueGroupEvaluation(Request $request, $groupId)
     {
-        $group = Group::with('evaluation')->find($groupId);
+        $token = $request->bearerToken();
+        if (!$token) {
+            return response()->json(['message' => 'Token no encontrado'], 401);
+        }
 
+        $group = Group::with('evaluation')->find($groupId);
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
+        // Validar si ya inició y no terminó
         if (!$group->start_time || $group->end_time) {
             return response()->json(['message' => 'El examen no está en curso o ya finalizó'], 400);
         }
@@ -385,7 +395,7 @@ class GroupsController extends Controller
         try {
             Http::post('http://127.0.0.1:3000/emit/continue', [
                 'roomId' => $group->id,
-                'token'  => $request->bearerToken()
+                'token'  => $token
             ]);
 
             return response()->json([
@@ -399,6 +409,7 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+
 
     public function stopGroupEvaluation($groupId, Request $request)
     {

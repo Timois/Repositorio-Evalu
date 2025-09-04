@@ -72,16 +72,16 @@ public function rules(): array
                 }
                 // Validar que si el periodo se llama "semestre", el nivel solo puede ser 1 o 2
                 if ($period === 'semestre' && !in_array($level, [1, 2])) {
-                    $validator->errors()->add('level', 'El semestre solo puede registrase en los niveles 1 o 2.');
+                    $validator->errors()->add('level', 'Si el periodo es semestre, solo puede registrase en los niveles 1 o 2.');
                 }
                 if ($period === 'anual' && !in_array($level, [1])) {
-                    $validator->errors()->add('level', 'El año solo puede registrase en los niveles 1.');
+                    $validator->errors()->add('level', 'Si es periodo anual, solo puede registrase en el nivel 1.');
                 }
                 if ($period === 'mesa' && !in_array($level, [4, 5])) {
-                    $validator->errors()->add('level', 'La mesa solo puede registrase en los niveles 4 o 5.');
+                    $validator->errors()->add('level', 'Si el periodo es mesa, solo puede registrase en los niveles 4 o 5.');
                 }
                 if ($period === 'verano' && !in_array($level, [3])) {
-                    $validator->errors()->add('level', 'El verano solo puede registrase en el nivel 3.');
+                    $validator->errors()->add('level', 'El periodo verano solo puede registrarse en el nivel 3.');
                 }
             }
         );
