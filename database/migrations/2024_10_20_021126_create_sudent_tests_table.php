@@ -55,6 +55,7 @@ return new class extends Migration
             $table->dateTime('start_time')->nullable(); // Fecha y hora de inicio del examen para el grupo
             $table->dateTime('end_time')->nullable();   // Fecha y hora de fin del examen para el grupo
             $table->boolean('is_restricted')->default(true); // Si solo los estudiantes del grupo pueden rendir
+            $table->enum('status', ['pendiente', 'pausado', 'en_progreso', 'completado', 'continue'])->default('pendiente'); // Estado del grupo
             $table->timestamps();
         });
         Schema::create('group_student', function (Blueprint $table) {

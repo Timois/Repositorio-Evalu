@@ -56,26 +56,32 @@ class StudentEvaluationController extends Controller
 
         $timezone = 'America/La_Paz';
 
-        // Convertir start_time a DateTime en zona correcta
-        if (strlen($test->start_time) <= 8) { // Solo hora
-            $evaluationDate = Carbon::parse($evaluation->date_of_realization, $timezone)->format('Y-m-d');
-            $startTime = Carbon::createFromFormat('Y-m-d H:i:s', $evaluationDate . ' ' . $test->start_time, $timezone);
+        if (empty($test->start_time)) {
+            // Si no hay hora, usar la fecha de la evaluación
+            $startTime = Carbon::parse($evaluation->date_of_realization, $timezone);
         } else {
-            $startTime = Carbon::parse($test->start_time)->timezone($timezone);
+            // Detectar si start_time contiene fecha
+            if (preg_match('/^\d{2,4}-\d{2}-\d{2}/', $test->start_time)) {
+                // Ya incluye fecha completa
+                $startTime = Carbon::parse($test->start_time, $timezone);
+            } else {
+                // Solo hora, combinar con la fecha de la evaluación
+                $evaluationDate = Carbon::parse($evaluation->date_of_realization, $timezone)->format('Y-m-d');
+                $startTime = Carbon::parse($evaluationDate . ' ' . $test->start_time, $timezone);
+            }
         }
+
 
         $now = Carbon::now($timezone);
         $durationMinutes = (int) $evaluation->time;
-
         $endTime = $startTime->copy()->addMinutes($durationMinutes);
 
-        if ($now->greaterThanOrEqualTo($endTime)) {
-            $remainingSeconds = 0;
-        } else {
-            $remainingSeconds = $now->diffInSeconds($endTime, false);
-        }
+        // Calcular segundos restantes
+        $remainingSeconds = $now->greaterThanOrEqualTo($endTime)
+            ? 0
+            : $now->diffInSeconds($endTime, false);
 
-        // Obtener preguntas
+        // Obtener preguntas del estudiante con sus respuestas
         $studentQuestions = StudentTestQuestion::with('question.bank_answers')
             ->where('student_test_id', $test->id)
             ->orderBy('question_order')
@@ -104,10 +110,12 @@ class StudentEvaluationController extends Controller
             'evaluation_id' => $test->evaluation_id,
             'start_time' => $startTime->toIso8601String(), // Fecha y hora completas
             'end_time' => $endTime->toIso8601String(),     // Fin exacto
-            'current_time' => now($timezone)->toIso8601String(), // Hora actual del servidor
+            'current_time' => $now->toIso8601String(),    // Hora actual del servidor
+            'remaining_seconds' => $remainingSeconds,     // Segundos restantes
             'questions' => $formattedQuestions,
         ]);
     }
+
     // funcion para obtener las preguntas con sus respuestas correctas
     public function getQuestionsWithCorrectAnswers($id)
     {

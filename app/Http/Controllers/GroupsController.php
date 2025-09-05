@@ -300,22 +300,28 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
+        // ✅ Solo se puede iniciar si está pendiente
+        if ($group->status !== 'pendiente') {
+            return response()->json(['message' => 'El examen ya fue iniciado o no está pendiente'], 400);
+        }
+
         $startTime = now();
         $duration = $group->evaluation->time ?? 0; // en minutos
+        
         $endTime = $startTime->copy()->addMinutes($duration);
         $date = $group->evaluation->date_of_realization;
 
-        // Si la fecha no es hoy, no se puede iniciar
+        // Validar fecha
         if (Carbon::parse($date)->format('Y-m-d') !== $startTime->format('Y-m-d')) {
             return response()->json(['message' => 'La evaluación no está programada para hoy'], 400);
         }
 
         DB::beginTransaction();
+
         $group->start_time = $startTime;
         $group->end_time = $endTime;
+        $group->status = 'en_progreso'; // ✅ Cambiar estado
         $group->save();
-
-        $segundos = $duration * 60;
 
         StudentTest::whereIn('student_id', function ($query) use ($groupId) {
             $query->select('student_id')
@@ -331,11 +337,10 @@ class GroupsController extends Controller
         DB::commit();
 
         return response()->json([
-            'message' => 'Hora de inicio del grupo y estudiantes actualizada correctamente',
+            'message' => 'Examen iniciado correctamente',
             'start_time' => $group->start_time,
             'end_time' => $group->end_time,
-            'duration' => $segundos, // en segundos
-            'date' => $date
+            'status' => $group->status
         ]);
     }
 
@@ -346,26 +351,28 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Token no encontrado'], 401);
         }
 
-        $group = Group::with('evaluation')->find($groupId);
+        $group = Group::find($groupId);
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // Validar si ya inició y no terminó
-        if (!$group->start_time || $group->end_time) {
+        // ✅ Solo se puede pausar si está en progreso
+        if ($group->status !== 'en_progreso') {
             return response()->json(['message' => 'El examen no está en curso'], 400);
         }
 
         try {
-            // 👉 Hacemos petición HTTP al servidor de sockets
+            $group->status = 'pausado';
+            $group->save();
+
             Http::post('http://127.0.0.1:3000/emit/pause', [
                 'roomId' => $group->id,
                 'token'  => $token
             ]);
 
             return response()->json([
-                'message' => 'Examen pausado correctamente para el grupo',
-                'group_id' => $group->id
+                'message' => 'Examen pausado correctamente',
+                'status' => $group->status
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -382,25 +389,28 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Token no encontrado'], 401);
         }
 
-        $group = Group::with('evaluation')->find($groupId);
+        $group = Group::find($groupId);
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // Validar si ya inició y no terminó
-        if (!$group->start_time || $group->end_time) {
-            return response()->json(['message' => 'El examen no está en curso o ya finalizó'], 400);
+        // ✅ Solo se puede reanudar si está pausado
+        if ($group->status !== 'pausado') {
+            return response()->json(['message' => 'El examen no está pausado'], 400);
         }
 
         try {
+            $group->status = 'en_progreso';
+            $group->save();
+
             Http::post('http://127.0.0.1:3000/emit/continue', [
                 'roomId' => $group->id,
                 'token'  => $token
             ]);
 
             return response()->json([
-                'message' => 'Examen reanudado correctamente para el grupo',
-                'group_id' => $group->id
+                'message' => 'Examen reanudado correctamente',
+                'status' => $group->status
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -409,7 +419,6 @@ class GroupsController extends Controller
             ], 500);
         }
     }
-
 
     public function stopGroupEvaluation($groupId, Request $request)
     {
@@ -423,10 +432,15 @@ class GroupsController extends Controller
             return response()->json(['message' => 'El examen no ha sido iniciado'], 400);
         }
 
+        if ($group->status === 'completado') {
+            return response()->json(['message' => 'El examen ya fue finalizado'], 400);
+        }
+
         DB::beginTransaction();
 
         try {
             $group->end_time = now();
+            $group->status = 'completado'; // 👈 Actualizamos estado del grupo
             $group->save();
 
             StudentTest::whereIn('student_id', function ($query) use ($groupId) {
@@ -436,13 +450,14 @@ class GroupsController extends Controller
             })
                 ->where('evaluation_id', $group->evaluation_id)
                 ->update([
-                    'status' => 'completado',
+                    'status' => 'completado', // 👈 Actualizamos estado de los exámenes de estudiantes
                     'end_time' => now()->format('H:i:s'),
                     'updated_at' => now()
                 ]);
 
             DB::commit();
 
+            // Emitimos al servidor socket para que todos los estudiantes reciban el "stop"
             Http::post('http://127.0.0.1:3000/emit/stop', [
                 'roomId' => $group->id,
                 'token'  => $request->bearerToken()
