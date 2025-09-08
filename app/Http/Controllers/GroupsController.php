@@ -300,21 +300,22 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
+        $startTime = now();
+        $duration = $group->evaluation->time ?? 0; // en minutos
+        $segundos = $duration * 60;
+        $endTime = $startTime->copy()->addMinutes($duration);
+        $date = $group->evaluation->date_of_realization;
+        // Validar fecha
+        if (Carbon::parse($date)->format('Y-m-d') !== $startTime->format('Y-m-d')) {
+            return response()->json(['message' => 'La evaluación no está programada para hoy'], 400);
+        }
+
         // ✅ Solo se puede iniciar si está pendiente
         if ($group->status !== 'pendiente') {
             return response()->json(['message' => 'El examen ya fue iniciado o no está pendiente'], 400);
         }
 
-        $startTime = now();
-        $duration = $group->evaluation->time ?? 0; // en minutos
-        
-        $endTime = $startTime->copy()->addMinutes($duration);
-        $date = $group->evaluation->date_of_realization;
 
-        // Validar fecha
-        if (Carbon::parse($date)->format('Y-m-d') !== $startTime->format('Y-m-d')) {
-            return response()->json(['message' => 'La evaluación no está programada para hoy'], 400);
-        }
 
         DB::beginTransaction();
 
@@ -340,6 +341,7 @@ class GroupsController extends Controller
             'message' => 'Examen iniciado correctamente',
             'start_time' => $group->start_time,
             'end_time' => $group->end_time,
+            'duration' => $segundos,
             'status' => $group->status
         ]);
     }
