@@ -367,22 +367,19 @@ class GroupsController extends Controller
             $group->status = 'pausado';
             $group->save();
 
-            Http::post('http://127.0.0.1:3000/emit/pause', [
-                'roomId' => $group->id,
-                'token'  => $token
-            ]);
-
             return response()->json([
                 'message' => 'Examen pausado correctamente',
-                'status' => $group->status
+                'status'  => $group->status,
+                'roomId'  => $group->id, // 🔑 opcional, útil para el frontend
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al pausar el examen',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function continueGroupEvaluation(Request $request, $groupId)
     {
@@ -405,11 +402,6 @@ class GroupsController extends Controller
             $group->status = 'en_progreso';
             $group->save();
 
-            Http::post('http://127.0.0.1:3000/emit/continue', [
-                'roomId' => $group->id,
-                'token'  => $token
-            ]);
-
             return response()->json([
                 'message' => 'Examen reanudado correctamente',
                 'status' => $group->status
@@ -421,6 +413,7 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+
 
     public function stopGroupEvaluation($groupId, Request $request)
     {
@@ -441,10 +434,12 @@ class GroupsController extends Controller
         DB::beginTransaction();
 
         try {
+            // Actualizar grupo
             $group->end_time = now();
-            $group->status = 'completado'; // 👈 Actualizamos estado del grupo
+            $group->status = 'completado';
             $group->save();
 
+            // Actualizar exámenes de estudiantes
             StudentTest::whereIn('student_id', function ($query) use ($groupId) {
                 $query->select('student_id')
                     ->from('group_student')
@@ -452,18 +447,12 @@ class GroupsController extends Controller
             })
                 ->where('evaluation_id', $group->evaluation_id)
                 ->update([
-                    'status' => 'completado', // 👈 Actualizamos estado de los exámenes de estudiantes
+                    'status' => 'completado',
                     'end_time' => now()->format('H:i:s'),
                     'updated_at' => now()
                 ]);
 
             DB::commit();
-
-            // Emitimos al servidor socket para que todos los estudiantes reciban el "stop"
-            Http::post('http://127.0.0.1:3000/emit/stop', [
-                'roomId' => $group->id,
-                'token'  => $request->bearerToken()
-            ]);
 
             return response()->json([
                 'message' => 'Examen detenido correctamente para el grupo',
