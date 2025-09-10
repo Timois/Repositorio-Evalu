@@ -24,7 +24,7 @@ return new class extends Migration
             $table->enum('status', ['activo', 'inactivo'])->default('inactivo');
             $table->enum('type', ['ocr', 'web', 'app'])->default('web');
             $table->foreignId('academic_management_period_id')->constrained('academic_management_period', 'id')->onDelete('cascade');
-            // $table->foreignId('rules_test_id')->constrained('rules_tests', 'id')->onDelete('cascade');
+            $table->boolean('results_generated')->default(false);
             $table->timestamps();
         });
 
