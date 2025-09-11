@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationGroup;
+use App\Jobs\GenerateGroupResultsJob;
 use App\Models\Evaluation;
 use App\Models\Group;
 use App\Models\Laboratorie;
 use App\Models\StudentTest;
 use Carbon\Carbon;
-use ElephantIO\Client;
-use ElephantIO\Engine\SocketIO\Version2X;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
+
 
 class GroupsController extends Controller
 {
@@ -380,7 +379,6 @@ class GroupsController extends Controller
         }
     }
 
-
     public function continueGroupEvaluation(Request $request, $groupId)
     {
         $token = $request->bearerToken();
@@ -413,7 +411,6 @@ class GroupsController extends Controller
             ], 500);
         }
     }
-
 
     public function stopGroupEvaluation($groupId, Request $request)
     {
@@ -466,5 +463,86 @@ class GroupsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // guardar resultados por grupo cuando su estado es completado
+
+    public function saveResults($groupId)
+    {
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            return response()->json([
+                'message' => 'Grupo no encontrado'
+            ], 404);
+        }
+
+        // Solo guardar resultados si ya terminó el examen
+        if ($group->status !== 'en_progreso') {
+            return response()->json([
+                'message' => 'El grupo no está en progreso o ya fue finalizado'
+            ], 400);
+        }
+
+        // Verificar si ya se cumplió el tiempo
+        if (now()->lessThan($group->end_time)) {
+            return response()->json([
+                'message' => 'El grupo aún no ha finalizado su tiempo'
+            ], 400);
+        }
+
+        // Actualizar estado a finalizado
+        $group->status = 'completado';
+        $group->save();
+
+        // Despachar el Job para generar resultados automáticamente
+        GenerateGroupResultsJob::dispatch($group->id);
+
+        return response()->json([
+            'message' => 'Resultados del grupo en proceso de guardado',
+            'group'   => $group->id,
+            'evaluation' => $group->evaluation_id
+        ]);
+    }
+
+    public function listFinalResultsByGroup($groupId)
+    {
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        $evaluation = $group->evaluation;
+
+        $studentTests = StudentTest::with('student', 'result')
+            ->where('evaluation_id', $evaluation->id)
+            ->whereIn('student_id', function ($query) use ($groupId) {
+                $query->select('student_id')
+                    ->from('group_student')
+                    ->where('group_id', $groupId);
+            })
+            ->get();
+
+        if ($studentTests->isEmpty()) {
+            return response()->json(['message' => 'No hay estudiantes en este grupo'], 404);
+        }
+
+        $results = $studentTests->map(function ($test) {
+            return [
+                'student_name'   => $test->student->name,
+                'student_ci'     => $test->student->ci,
+                'score_obtained' => $test->result->qualification ?? 0,
+                'exam_duration'  => $test->result->exam_duration ?? 0,
+                'status'         => $test->result->status ?? 'pendiente',
+            ];
+        });
+
+        return response()->json([
+            'evaluation' => $evaluation->title,
+            'group'      => $group->name,
+            'passing_score' => $evaluation->passing_score,
+            'students_results' => $results,
+        ]);
     }
 }

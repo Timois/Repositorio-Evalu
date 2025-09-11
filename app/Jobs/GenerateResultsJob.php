@@ -1,15 +1,19 @@
 <?php
-// Crear Job: php artisan make:job GenerateGroupResultsJob
 
 namespace App\Jobs;
 
 use App\Models\Group;
 use App\Models\Result;
 use Carbon\Carbon;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;   // 👈 este falta
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
-class GenerateGroupResultsJob implements \Illuminate\Contracts\Queue\ShouldQueue
+class GenerateGroupResultsJob implements ShouldQueue
 {
-    use \Illuminate\Bus\Queueable, \Illuminate\Queue\SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels; // 👈 aquí agregamos Dispatchable
 
     public $groupId;
 
@@ -78,7 +82,12 @@ class GenerateGroupResultsJob implements \Illuminate\Contracts\Queue\ShouldQueue
             $maximumScore = max($allScores);
             $minimumScore = min($allScores);
 
-            Result::whereIn('student_test_id', $group->students->pluck('student_test_ids')->flatten())
+            // 👇 corregí la parte del pluck
+            $studentTestIds = $group->students
+                ->map(fn($s) => $s->studentTests()->where('evaluation_id', $evaluation->id)->pluck('id'))
+                ->flatten();
+
+            Result::whereIn('student_test_id', $studentTestIds)
                 ->update([
                     'maximum_score' => $maximumScore,
                     'minimum_score' => $minimumScore,
