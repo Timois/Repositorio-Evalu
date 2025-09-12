@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -7,19 +8,19 @@ class StudentTest extends Pivot
 {
     protected $table = 'student_tests';
 
-        protected $fillable = [
-            'student_id',
-            'evaluation_id',
-            'code',
-            'start_time',
-            'end_time',
-            'correct_answers',
-            'incorrect_answers',
-            'not_answered',
-            'score_obtained',
-            'status',
-            'questions_order',
-        ];
+    protected $fillable = [
+        'student_id',
+        'evaluation_id',
+        'code',
+        'start_time',
+        'end_time',
+        'correct_answers',
+        'incorrect_answers',
+        'not_answered',
+        'score_obtained',
+        'status',
+        'questions_order',
+    ];
 
     protected $casts = [
         'questions_order' => 'array',
@@ -42,7 +43,7 @@ class StudentTest extends Pivot
     }
     public function result()
     {
-        return $this->hasOne(Result::class);
+        return $this->hasOne(Result::class, 'student_test_id', 'id');
     }
 
     public function logs()
