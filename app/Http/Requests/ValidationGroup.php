@@ -67,7 +67,7 @@ class ValidationGroup extends FormRequest
             if ($this->filled('start_time') && $this->filled('end_time')) {
                 // Obtener la fecha del examen
                 $examDate = \Carbon\Carbon::parse($evaluation->date_of_realization);
-                
+
                 // Construir fecha completa con hora de inicio y fin
                 $startTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->start_time);
                 $endTime = \Carbon\Carbon::parse($evaluation->date_of_realization . ' ' . $this->end_time);
@@ -89,7 +89,6 @@ class ValidationGroup extends FormRequest
         });
         if ($this->filled('name')) {
             $groupId = $this->route('id');
-            $name = strtolower(trim($this->input('name')));
             $evaluationId = $this->evaluation_id;
 
             // Si estamos editando y no se proporcionó evaluation_id, obtenerlo del grupo
@@ -101,7 +100,7 @@ class ValidationGroup extends FormRequest
             }
 
             // Verificar si ya existe un grupo con ese nombre en la misma evaluación
-            $existingGroup = \App\Models\Group::where('name', $name)
+            $existingGroup = \App\Models\Group::where('name', $this->name)
                 ->where('evaluation_id', $evaluationId);
 
             if ($groupId) {

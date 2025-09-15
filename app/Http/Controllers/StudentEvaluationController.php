@@ -53,6 +53,18 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
 
+        // Verificar si el grupo ya finalizó la evaluación
+        $group = DB::table('groups')->where('id', $evaluation->group_id)->first();
+        if ($group && $group->status === 'completado') {
+            return response()->json([
+                'message' => 'La evaluación de este grupo ya fue finalizada',
+                'examCompleted' => true,
+                'student_test_id' => $test->id,
+                'test_code' => $test->code,
+                'evaluation_id' => $test->evaluation_id
+            ], 200);
+        }
+
         $timezone = 'America/La_Paz';
 
         if (empty($test->start_time)) {

@@ -494,10 +494,7 @@ class GroupsController extends Controller
         // Actualizar estado a finalizado
         $group->status = 'completado';
         $group->save();
-
-        // Despachar el Job para generar resultados automáticamente
-        GenerateGroupResultsJob::dispatch($group->id);
-
+        
         return response()->json([
             'message' => 'Resultados del grupo en proceso de guardado',
             'group'   => $group->id,
