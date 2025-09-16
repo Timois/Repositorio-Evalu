@@ -59,7 +59,7 @@ class Evaluation extends Model
         return $this->hasMany(BackupGenerateQuestion::class);
     }
 
-    public function groups(): HasMany
+    public function group(): HasMany
     {
         return $this->hasMany(Group::class);
     }

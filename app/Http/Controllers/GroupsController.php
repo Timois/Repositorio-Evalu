@@ -445,6 +445,7 @@ class GroupsController extends Controller
                 ->where('evaluation_id', $group->evaluation_id)
                 ->update([
                     'status' => 'completado',
+                    'not_answered' => DB::raw('total_questions - (correct_answers + incorrect_answers)'),
                     'end_time' => now()->format('H:i:s'),
                     'updated_at' => now()
                 ]);
@@ -465,43 +466,6 @@ class GroupsController extends Controller
         }
     }
 
-    // guardar resultados por grupo cuando su estado es completado
-
-    public function saveResults($groupId)
-    {
-        $group = Group::with('evaluation')->find($groupId);
-
-        if (!$group) {
-            return response()->json([
-                'message' => 'Grupo no encontrado'
-            ], 404);
-        }
-
-        // Solo guardar resultados si ya terminó el examen
-        if ($group->status !== 'en_progreso') {
-            return response()->json([
-                'message' => 'El grupo no está en progreso o ya fue finalizado'
-            ], 400);
-        }
-
-        // Verificar si ya se cumplió el tiempo
-        if (now()->lessThan($group->end_time)) {
-            return response()->json([
-                'message' => 'El grupo aún no ha finalizado su tiempo'
-            ], 400);
-        }
-
-        // Actualizar estado a finalizado
-        $group->status = 'completado';
-        $group->save();
-        
-        return response()->json([
-            'message' => 'Resultados del grupo en proceso de guardado',
-            'group'   => $group->id,
-            'evaluation' => $group->evaluation_id
-        ]);
-    }
-
     public function listFinalResultsByGroup($groupId)
     {
         $group = Group::with('evaluation')->find($groupId);
@@ -512,7 +476,7 @@ class GroupsController extends Controller
 
         $evaluation = $group->evaluation;
 
-        $studentTests = StudentTest::with('student', 'result')
+        $studentTests = StudentTest::with('student')
             ->where('evaluation_id', $evaluation->id)
             ->whereIn('student_id', function ($query) use ($groupId) {
                 $query->select('student_id')
@@ -522,23 +486,52 @@ class GroupsController extends Controller
             ->get();
 
         if ($studentTests->isEmpty()) {
-            return response()->json(['message' => 'No hay estudiantes en este grupo'], 404);
+            return response()->json([
+                'message' => 'Aún no hay estudiantes asignados o el examen no ha iniciado'
+            ], 404);
         }
 
-        $results = $studentTests->map(function ($test) {
+        // Separar según estado
+        $completedTests = $studentTests->where('status', 'completado');
+        $inProgressTests = $studentTests->where('status', 'en_progreso');
+        $notStartedTests = $studentTests->where('status', 'pendiente');
+
+        if ($completedTests->isEmpty()) {
+            if ($inProgressTests->isNotEmpty()) {
+                return response()->json([
+                    'message' => 'El examen está en progreso. Los resultados aún no están disponibles.'
+                ], 200);
+            }
+            return response()->json([
+                'message' => 'El examen aún no ha iniciado.'
+            ], 200);
+        }
+
+        // Mapear resultados solo de los completados
+        $results = $completedTests->map(function ($test) {
+            $student = $test->student;
+            $fullName = $student->name
+                . ' ' . ($student->paternal_surname ?? '')
+                . ' ' . ($student->maternal_surname ?? '');
+
+            $examDuration = 0;
+            if ($test->start_time && $test->end_time) {
+                $examDuration = $test->end_time->diffInSeconds($test->start_time);
+            }
+
             return [
-                'student_name'   => $test->student->name,
-                'student_ci'     => $test->student->ci,
-                'score_obtained' => $test->result->qualification ?? 0,
-                'exam_duration'  => $test->result->exam_duration ?? 0,
-                'status'         => $test->result->status ?? 'pendiente',
+                'student_name'   => trim($fullName),
+                'student_ci'     => $student->ci,
+                'score_obtained' => $test->score_obtained ?? 0,
+                'exam_duration'  => $examDuration,
+                'status'         => $test->status,
             ];
         });
 
         return response()->json([
-            'evaluation' => $evaluation->title,
-            'group'      => $group->name,
-            'passing_score' => $evaluation->passing_score,
+            'evaluation'       => $evaluation->title,
+            'group'            => $group->name,
+            'passing_score'    => $evaluation->passing_score,
             'students_results' => $results,
         ]);
     }

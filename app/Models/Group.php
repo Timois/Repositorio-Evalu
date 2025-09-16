@@ -24,6 +24,7 @@ class Group extends Model
     {
         return $this->belongsToMany(Student::class)->withTimestamps();
     }
+    /*******  72512fe0-a4bc-4a4d-a30f-8cebeb7a7d06  *******/ /*************  ✨ Windsurf Command ⭐  *************/
     public function lab()
     {
         return $this->belongsTo(Laboratorie::class, 'laboratory_id', 'id');
