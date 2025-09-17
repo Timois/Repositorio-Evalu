@@ -266,5 +266,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::controller(LogsAnswerController::class)->prefix('logs_answers')->group(function () {
         Route::post("/save", "store");
         Route::get("/list/{id}", "getAnswers");
+        Route::post("/bulkSave", "bulkSave");
     });
 });

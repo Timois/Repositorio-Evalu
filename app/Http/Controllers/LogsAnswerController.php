@@ -60,10 +60,61 @@ class LogsAnswerController extends Controller
             return response()->json(['error' => 'Error al guardar la respuesta.', 'details' => $e->getMessage()], 500);
         }
     }
+    public function bulkSave(Request $request)
+    {
+        $request->validate([
+            'student_test_id' => 'required|exists:student_tests,id',
+            'answers' => 'required|array',
+            'answers.*.question_id' => 'required|exists:bank_questions,id',
+            'answers.*.answer_id' => 'nullable|integer',
+            'answers.*.time' => 'nullable|string' // formato HH:MM:SS
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($request->answers as $answer) {
+                // Buscar la pregunta del examen
+                $studentQuestion = StudentTestQuestion::where('student_test_id', $request->student_test_id)
+                    ->where('question_id', $answer['question_id'])
+                    ->first();
+
+                if (!$studentQuestion) {
+                    continue; // Saltar si no existe
+                }
+
+                // Actualizar la respuesta actual del estudiante
+                $studentQuestion->update([
+                    'student_answer' => $answer['answer_id'],
+                    'is_correct' => null // Se puede calcular después
+                ]);
+
+                // Marcar logs anteriores como no últimos
+                LogsAnswer::where('student_test_question_id', $studentQuestion->id)
+                    ->update(['is_ultimate' => false]);
+
+                // Guardar nuevo log
+                LogsAnswer::create([
+                    'student_test_id' => $request->student_test_id,
+                    'student_test_question_id' => $studentQuestion->id,
+                    'answer_id' => $answer['answer_id'],
+                    'time' => $answer['time'] ?? now()->format('H:i:s'),
+                    'is_ultimate' => true
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Respuestas guardadas correctamente.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error al guardar respuestas.', 'details' => $e->getMessage()], 500);
+        }
+    }
 
     // Recuperar las respuestas ya respondidas por el estudiante
     public function getAnswers($id)
-    {   
+    {
         // Buscar el StudentTest por ID
         $studentTest = StudentTest::find($id);
 

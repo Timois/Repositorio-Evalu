@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnswerBank;
+use App\Models\Result;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
 use App\Models\UserStudent;
@@ -44,7 +45,6 @@ class StudentAnswersController extends Controller
             $bankAnswer = AnswerBank::find($answerId);
             $isCorrect = $bankAnswer && $bankAnswer->is_correct;
 
-            // Obtener puntaje asignado a esa pregunta
             $studentTestQuestion = StudentTestQuestion::where('student_test_id', $studentTestId)
                 ->where('question_id', $questionId)
                 ->first();
@@ -53,7 +53,6 @@ class StudentAnswersController extends Controller
             if ($studentTestQuestion) {
                 $score = $isCorrect ? $studentTestQuestion->score_assigned : 0;
 
-                // Actualizar la respuesta del estudiante en la tabla
                 $studentTestQuestion->update([
                     'student_answer' => $answerId,
                     'is_correct' => $isCorrect,
@@ -69,24 +68,65 @@ class StudentAnswersController extends Controller
             }
         }
 
-        // Calcular preguntas no respondidas
         $totalQuestions = StudentTestQuestion::where('student_test_id', $studentTestId)->count();
         $notAnsweredCount = $totalQuestions - count($answers);
 
-        // Actualizar resumen en student_tests
-        $studentTest = StudentTest::find($studentTestId);
+        $studentTest = StudentTest::with('evaluation')->findOrFail($studentTestId);
+
+        // Actualizamos student_tests
         $studentTest->update([
             'end_time' => now()->format('H:i:s'),
             'score_obtained' => $totalScore,
             'correct_answers' => $correctCount,
             'incorrect_answers' => $incorrectCount,
             'not_answered' => $notAnsweredCount,
-            'status' => 'completado', // actualizado a "completado"
+            'status' => 'completado',
+        ]);
+
+        // Duración
+        $start = \Carbon\Carbon::parse($studentTest->start_time);
+        $end = \Carbon\Carbon::now();
+        $duration = $end->diff($start)->format('%H:%I:%S');
+
+        // Evaluación
+        $evaluation = $studentTest->evaluation;
+        $passingScore = $evaluation->passing_score;
+
+        // Estado del estudiante
+        $status = $totalScore >= $passingScore ? 'admitido' : 'no_admitido';
+
+        // Guardamos resultado inicial
+        $result = Result::create([
+            'student_test_id' => $studentTestId,
+            'qualification'   => $totalScore,
+            'maximum_score'   => 0, // temporal
+            'minimum_score'   => 0, // temporal
+            'exam_duration'   => $duration,
+            'status'          => $status,
+        ]);
+
+        // Calcular min y max de toda la evaluación
+        $evaluationId = $evaluation->id;
+        $scores = Result::whereHas('studentTest', function ($q) use ($evaluationId) {
+            $q->where('evaluation_id', $evaluationId);
+        })->pluck('qualification');
+
+        $minScore = $scores->min() ?? 0;
+        $maxScore = $scores->max() ?? 0;
+
+        // Actualizamos el registro del resultado
+        $result->update([
+            'minimum_score' => $minScore,
+            'maximum_score' => $maxScore,
         ]);
 
         return response()->json([
             'message' => 'Respuestas guardadas correctamente',
-            'total_score' => $totalScore,
+            'qualification' => $totalScore,
+            'status' => $status,
+            'min_score' => $minScore,
+            'max_score' => $maxScore,
+            'passing_score' => $passingScore,
         ], 201);
     }
 

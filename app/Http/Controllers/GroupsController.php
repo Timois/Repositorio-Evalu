@@ -494,7 +494,6 @@ class GroupsController extends Controller
         // Separar según estado
         $completedTests = $studentTests->where('status', 'completado');
         $inProgressTests = $studentTests->where('status', 'en_progreso');
-        $notStartedTests = $studentTests->where('status', 'pendiente');
 
         if ($completedTests->isEmpty()) {
             if ($inProgressTests->isNotEmpty()) {
