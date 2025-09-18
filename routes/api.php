@@ -202,11 +202,11 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->middlewar
 
 Route::controller(QuestionEvaluationController::class)->prefix('question_evaluations')->middleware($authPersona)->group(function () {
     Route::post("/cantity", "cantidadPreguntas")->middleware('auth:persona', 'permission:asignar-cantidad-preguntas');
-    Route::post("/assign", "AssignRandomQuestions")->middleware('auth:persona', 'permission:generar-pruebas-aleatorias');
     Route::get("/list", "disponibles")->middleware('auth:persona', 'permission:ver-preguntas-disponibles');
     Route::get("listAssigned", "find")->middleware('auth:persona', 'permission:ver-preguntas-asignadas');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-preguntas-por-id');
     Route::post("/assignQuestion", "asignQuestionsRandom")->middleware('auth:persona', 'permission:asignar-preguntas-evaluaciones');
+    Route::post("activeQuestions/{id}", "activeQuestions")->middleware('auth:persona', 'permission:activar-preguntas');
     Route::post("/reactiveStatus/{id}", "completeStudentTest");
     Route::get("/verifiAssignedQuestions/{id}", "findByEvaluationId");
 });

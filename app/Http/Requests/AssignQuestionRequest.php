@@ -22,12 +22,22 @@ class AssignQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'evaluation_id' => 'required|exists:evaluations,id',
+            'ponderar' => 'required|boolean',
+            'areas' => 'required|array|min:1',
+            'areas.*.id' => 'required|exists:areas,id',
+            'areas.*.nota' => 'required|numeric|min:0.01',
+
+            // Si ponderar = true
             'areas.*.cantidadFacil' => 'nullable|integer|min:0',
             'areas.*.cantidadMedia' => 'nullable|integer|min:0',
             'areas.*.cantidadDificil' => 'nullable|integer|min:0',
+
+            // Si ponderar = false
             'areas.*.cantidadTotal' => 'nullable|integer|min:1',
         ];
     }
+
     protected function prepareForValidation()
     {
         $this->merge([
@@ -38,20 +48,16 @@ class AssignQuestionRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $ponderar = $this->boolean('ponderar');
+
             foreach ($this->areas as $index => $area) {
                 if ($ponderar) {
-                    if (!isset($area['cantidadFacil'])) {
-                        $validator->errors()->add("areas.$index.cantidadFacil", 'Este campo es obligatorio cuando ponderar es true.');
-                    }
-                    if (!isset($area['cantidadMedia'])) {
-                        $validator->errors()->add("areas.$index.cantidadMedia", 'Este campo es obligatorio cuando ponderar es true.');
-                    }
-                    if (!isset($area['cantidadDificil'])) {
-                        $validator->errors()->add("areas.$index.cantidadDificil", 'Este campo es obligatorio cuando ponderar es true.');
+                    $sum = ($area['cantidadFacil'] ?? 0) + ($area['cantidadMedia'] ?? 0) + ($area['cantidadDificil'] ?? 0);
+                    if ($sum === 0) {
+                        $validator->errors()->add("areas.$index", 'Debe asignar al menos una pregunta (fácil, media o difícil).');
                     }
                 } else {
-                    if (!isset($area['cantidadTotal'])) {
-                        $validator->errors()->add("areas.$index.cantidadTotal", 'Este campo es obligatorio cuando ponderar es false.');
+                    if (($area['cantidadTotal'] ?? 0) < 1) {
+                        $validator->errors()->add("areas.$index.cantidadTotal", 'Debe asignar al menos una pregunta en cantidadTotal.');
                     }
                 }
             }

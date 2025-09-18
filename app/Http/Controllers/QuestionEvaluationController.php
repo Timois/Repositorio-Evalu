@@ -102,7 +102,43 @@ class QuestionEvaluationController extends Controller
 
         try {
             DB::beginTransaction();
-
+            // verificar disponibilidad de preguntas
+            foreach ($areas as $areaData) {
+                $areaId = $areaData['id'];
+                if ($ponderar) {
+                    $cantidadFacil = $areaData['cantidadFacil'] ?? 0;
+                    $cantidadMedia = $areaData['cantidadMedia'] ?? 0;
+                    $cantidadDificil = $areaData['cantidadDificil'] ?? 0;
+                    $totalPreguntas = $cantidadFacil + $cantidadMedia + $cantidadDificil;
+                    if ($totalPreguntas == 0) continue;
+                    $preguntasDisponiblesFacil = QuestionBank::where('area_id', $areaId)
+                        ->where('dificulty', 'facil')
+                        ->count();
+                    $preguntasDisponiblesMedia = QuestionBank::where('area_id', $areaId)
+                        ->where('dificulty', 'medio')
+                        ->count();
+                    $preguntasDisponiblesDificil = QuestionBank::where('area_id', $areaId)
+                        ->where('dificulty', 'dificil')
+                        ->count();
+                    if ($preguntasDisponiblesFacil < $cantidadFacil || $preguntasDisponiblesMedia < $cantidadMedia || $preguntasDisponiblesDificil < $cantidadDificil) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "No hay suficientes preguntas disponibles para esta área."
+                        ], 409);
+                    }
+                } else {
+                    $cantidadTotal = $areaData['cantidadTotal'] ?? 0;
+                    if ($cantidadTotal == 0) continue;
+                    $preguntasDisponibles = QuestionBank::where('area_id', $areaId)
+                        ->count();
+                    if ($preguntasDisponibles < $cantidadTotal) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "No hay suficientes preguntas disponibles para esta área."
+                        ], 409);
+                    }   
+                }
+            }
             // Obtener todos los student_tests de esta evaluación
             $studentTests = StudentTest::where('evaluation_id', $evaluation->id)->get();
             $studentTestsConPreguntas = StudentTestQuestion::whereIn('student_test_id', $studentTests->pluck('id'))->pluck('student_test_id')->unique();
@@ -262,7 +298,7 @@ class QuestionEvaluationController extends Controller
             $studentTest = StudentTest::findOrFail($studentTestId);
 
             // Verificar si el student_test ya está finalizado para evitar duplicados
-            if ($studentTest->status === 'completo') {
+            if ($studentTest->status === 'completado') {
                 throw new \Exception('El examen ya está finalizado.');
             }
 
@@ -283,53 +319,6 @@ class QuestionEvaluationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
-        }
-    }
-
-    public function assignRandomQuestions(ValidationQuestionEvaluation $request)
-    {
-        try {
-            DB::beginTransaction();
-            $evaluation = Evaluation::findOrFail($request->evaluation_id);
-            $questionsPerArea = $request->questions_per_area;
-            $assignedQuestions = [];
-            $currentTotalScore = 0;
-
-            foreach ($questionsPerArea as $areaId => $config) {
-                $availableQuestions = QuestionBank::where('area_id', $areaId)->get();
-
-                if ($availableQuestions->count() < $config['quantity']) {
-                    throw new \Exception("No hay suficientes preguntas para el área $areaId");
-                }
-                $selectedQuestions = $availableQuestions->random($config['quantity']);
-                $scorePerQuestion = $config['score'] / $config['quantity'];
-
-                foreach ($selectedQuestions as $question) {
-                    $assignedQuestion = new QuestionEvaluation();
-                    $assignedQuestion->evaluation_id = $request->evaluation_id;
-                    $assignedQuestion->question_id = $question->id;
-                    $assignedQuestion->score = $scorePerQuestion;
-                    $assignedQuestion->save();
-
-                    $assignedQuestions[] = $assignedQuestion;
-
-                    $currentTotalScore += $scorePerQuestion;
-                }
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'assigned_questions' => $assignedQuestions,
-                'total_score' => $currentTotalScore
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al asignar preguntas: ' . $e->getMessage()
-            ], 500);
         }
     }
 
@@ -398,5 +387,30 @@ class QuestionEvaluationController extends Controller
                 ? 'Preguntas ya asignadas a la evaluación'
                 : 'No hay preguntas asignadas a la evaluación',
         ]);
+    }
+
+    public function activeQuestions(string $id)
+    {
+        $area = Areas::find($id);
+
+        if (!$area) {
+            return response()->json(['error' => 'El área no existe'], 404);
+        }
+
+        // Activar todas las preguntas inactivas del área
+        $updated = QuestionBank::where('area_id', $id)
+            ->where('status', 'inactivo')
+            ->update(['status' => 'activo']);
+
+        if ($updated === 0) {
+            return response()->json([
+                'message' => 'No hay preguntas inactivas en esta área'
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Preguntas activadas correctamente',
+            'preguntas_activadas' => $updated
+        ], 200);
     }
 }
