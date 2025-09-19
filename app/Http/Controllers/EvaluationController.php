@@ -6,6 +6,7 @@ use App\Http\Requests\ValidationEvaluation;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
+
 class EvaluationController extends Controller
 {
     public function find()
@@ -100,8 +101,10 @@ class EvaluationController extends Controller
             ], 404);
         }
 
-        // Obtener los periodos de esa gestión académica con sus evaluaciones
-        $periods = AcademicManagementPeriod::with('evaluations')
+        // Obtener los periodos de esa gestión académica con sus evaluaciones ordenadas por id asc
+        $periods = AcademicManagementPeriod::with(['evaluations' => function ($query) {
+            $query->orderBy('id', 'asc'); // 👈 aquí se ordenan las evaluaciones
+        }])
             ->where('academic_management_career_id', $managementCareer->id)
             ->get();
 
@@ -114,7 +117,7 @@ class EvaluationController extends Controller
         // Agrupar evaluaciones por periodo
         $result = $periods->map(function ($period) use ($managementCareer) {
             return [
-                'year' => $managementCareer->academicManagement->year, // Aquí accedemos al año
+                'year' => $managementCareer->academicManagement->year,
                 'academic_management_period_id' => $period->id,
                 'periodo' => $period->period,
                 'evaluations' => $period->evaluations
@@ -124,13 +127,18 @@ class EvaluationController extends Controller
         return response()->json($result);
     }
 
+
     // Función para obtener las evaluaciones por periodo
     public function findEvaluationsByPeriod(string $periodId)
     {
-        $evaluations = Evaluation::where('academic_management_period_id', $periodId)->get();
+        $evaluations = Evaluation::where('academic_management_period_id', $periodId)
+            ->orderBy('id', 'asc') // Ordenar por id de manera ascendente
+            ->get();
 
         if ($evaluations->isEmpty()) {
-            return response()->json(["message" => "No se encontraron evaluaciones para el periodo con ID: $periodId"], 404);
+            return response()->json([
+                "message" => "No se encontraron evaluaciones para el periodo con ID: $periodId"
+            ], 404);
         }
 
         return response()->json($evaluations);
