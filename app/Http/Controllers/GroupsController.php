@@ -165,128 +165,37 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Grupo no encontrado.'], 404);
         }
 
-        // 2. Validar el laboratorio si se proporciona un nuevo laboratory_id
-        $laboratoryId = $request->has('laboratory_id') ? $request->laboratory_id : $group->laboratory_id;
-        $laboratory = Laboratorie::find($laboratoryId);
-        if (!$laboratory) {
-            return response()->json(['message' => 'Laboratorio no encontrado.'], 404);
-        }
-        $laboratoryCapacity = $laboratory->equipment_count;
-
-        // 3. Validar que el laboratorio tenga suficiente capacidad
-        if ($laboratoryCapacity <= 3) {
-            return response()->json(['message' => 'El laboratorio debe tener más de 3 equipos para permitir al menos 3 equipos libres.'], 400);
-        }
-
-        // 4. Obtener los estudiantes de la evaluación
-        $evaluationId = $request->has('evaluation_id') ? $request->evaluation_id : $group->evaluation_id;
-        $studentsQuery = StudentTest::with('student')
-            ->where('evaluation_id', $evaluationId);
-
-        // 5. Ordenar estudiantes según el tipo de orden
-        $orderType = $request->has('order_type') ? $request->order_type : 'alphabetical'; // Valor por defecto
-        if ($orderType === 'alphabetical') {
-            $studentsQuery->join('students', 'student_tests.student_id', '=', 'students.id')
-                ->orderBy('students.paternal_surname', 'asc');
-        } elseif ($orderType === 'id_asc') {
-            $studentsQuery->join('students', 'student_tests.student_id', '=', 'students.id')
-                ->orderBy('students.id', 'asc');
-        } else {
-            return response()->json(['message' => 'Tipo de orden no válido. Use "alphabetical" o "id_asc".'], 400);
-        }
-
-        $students = $studentsQuery->get();
-        $totalStudents = $students->count();
-
-        if ($totalStudents === 0) {
-            return response()->json(['message' => 'No hay estudiantes en esta evaluación.'], 400);
-        }
-
-        // 6. Verificar estudiantes sin asignar
-        $assignedStudentsCount = DB::table('group_student')
-            ->whereIn('student_id', $students->pluck('student_id'))
-            ->distinct('student_id')
-            ->count();
-
-        $unassignedStudentsCount = $totalStudents - $assignedStudentsCount;
-
-        if ($unassignedStudentsCount === 0 && $request->has('reassign_students')) {
-            return response()->json(['message' => 'No hay estudiantes sin asignar para este grupo.'], 400);
-        }
-
-        // 7. Calcular cuántos estudiantes asignar al grupo de manera equitativa
-        $maxStudentsPerGroup = $laboratoryCapacity - 3; // Capacidad ajustada
-        $estimatedGroupsNeeded = ceil($unassignedStudentsCount / $maxStudentsPerGroup);
-        $studentsToAssignCount = ceil($unassignedStudentsCount / max(1, $estimatedGroupsNeeded));
-        $studentsToAssignCount = min($studentsToAssignCount, $maxStudentsPerGroup);
-
-        // 8. Actualizar los campos del grupo
-        if ($request->has('evaluation_id')) {
-            $group->evaluation_id = $evaluationId;
-        }
-        if ($request->has('laboratory_id')) {
-            $group->laboratory_id = $laboratoryId;
-        }
+        // 2. Actualizar los campos básicos
         if ($request->has('name')) {
             $group->name = $request->name;
         }
+
         if ($request->has('description')) {
             $group->description = $request->description;
         }
-        $evaluation = Evaluation::find($evaluationId);
-        $examDate = Carbon::parse($evaluation->date_of_realization);
 
-        if ($request->has('start_time')) {
-            $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
-        }
-        if ($request->has('end_time')) {
-            $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
+        // Para mantener coherencia con la fecha de realización de la evaluación
+        $evaluation = Evaluation::find($group->evaluation_id);
+        if ($evaluation) {
+            $examDate = Carbon::parse($evaluation->date_of_realization);
+
+            if ($request->has('start_time')) {
+                $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
+            }
+
+            if ($request->has('end_time')) {
+                $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
+            }
         }
 
         $group->save();
 
-        $newAssignedCount = 0;
-        if ($request->has('reassign_students') && $request->reassign_students) {
-            DB::table('group_student')->where('group_id', $group->id)->delete();
-
-            $assignedStudentIds = DB::table('group_student')
-                ->select('student_id')
-                ->pluck('student_id')
-                ->toArray();
-
-            $studentsToAssign = $students->whereNotIn('student_id', $assignedStudentIds)
-                ->take($studentsToAssignCount);
-
-            $assignments = [];
-            foreach ($studentsToAssign as $student) {
-                $assignments[] = [
-                    'group_id' => $group->id,
-                    'student_id' => $student->student_id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-
-            if (!empty($assignments)) {
-                DB::table('group_student')->insert($assignments);
-                $newAssignedCount = count($assignments);
-            }
-        } else {
-            $newAssignedCount = DB::table('group_student')
-                ->where('group_id', $group->id)
-                ->count();
-        }
-
-        $newUnassignedStudentsCount = $unassignedStudentsCount - $newAssignedCount;
-
         return response()->json([
             'group' => $group,
-            'assigned_students' => $newAssignedCount,
-            'unassigned_students' => $newUnassignedStudentsCount,
-            'available_equipment' => $laboratoryCapacity - $newAssignedCount,
-            'message' => 'Grupo actualizado' . ($request->reassign_students ? ' y estudiantes reasignados equitativamente.' : '.')
+            'message' => 'Grupo actualizado correctamente.'
         ], 200);
     }
+
     public function startGroupEvaluation(Request $request, $groupId)
     {
         $token = $request->bearerToken();
