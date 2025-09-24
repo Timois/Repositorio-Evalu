@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnswerBank;
+use App\Models\LogsAnswer;
 use App\Models\Result;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
-use App\Models\UserStudent;
 use Illuminate\Http\Request;
 
 class StudentAnswersController extends Controller
@@ -15,22 +15,15 @@ class StudentAnswersController extends Controller
     {
         $request->validate([
             'student_test_id' => 'required|integer|exists:student_tests,id',
-            'answers' => 'required|array|min:1',
-            'answers.*.question_id' => 'required|integer|exists:bank_questions,id',
-            'answers.*.answer_id' => 'required|integer|exists:bank_answers,id',
         ]);
 
         $studentTestId = $request->input('student_test_id');
-        $answers = $request->input('answers');
+        $studentTest = StudentTest::with('evaluation')->findOrFail($studentTestId);
 
-        // Verificar si ya respondió
-        $alreadyAnswered = StudentTestQuestion::where('student_test_id', $studentTestId)
-            ->whereNotNull('student_answer')
-            ->exists();
-
-        if ($alreadyAnswered) {
+        // ✅ Evitar doble envío
+        if ($studentTest->status === 'completado') {
             return response()->json([
-                'message' => 'Ya has respondido esta evaluación. No puedes enviar respuestas nuevamente.',
+                'message' => 'Ya has finalizado esta evaluación.'
             ], 409);
         }
 
@@ -38,42 +31,37 @@ class StudentAnswersController extends Controller
         $correctCount = 0;
         $incorrectCount = 0;
 
-        foreach ($answers as $answerData) {
-            $questionId = $answerData['question_id'];
-            $answerId = $answerData['answer_id'];
+        // 🔎 Tomamos la última respuesta de logs (is_ultimate = true)
+        $ultimateLogs = LogsAnswer::where('student_test_id', $studentTestId)
+            ->where('is_ultimate', true)
+            ->get();
 
-            $bankAnswer = AnswerBank::find($answerId);
+        foreach ($ultimateLogs as $log) {
+            $studentQuestion = StudentTestQuestion::find($log->student_test_question_id);
+            if (!$studentQuestion) {
+                continue;
+            }
+
+            $bankAnswer = AnswerBank::find($log->answer_id);
             $isCorrect = $bankAnswer && $bankAnswer->is_correct;
 
-            $studentTestQuestion = StudentTestQuestion::where('student_test_id', $studentTestId)
-                ->where('question_id', $questionId)
-                ->first();
+            $score = $isCorrect ? $studentQuestion->score_assigned : 0;
 
-            $score = 0;
-            if ($studentTestQuestion) {
-                $score = $isCorrect ? $studentTestQuestion->score_assigned : 0;
-
-                $studentTestQuestion->update([
-                    'student_answer' => $answerId,
-                    'is_correct' => $isCorrect,
-                    'score_assigned' => $score,
-                ]);
-            }
+            // ✅ Ahora sí actualizamos student_test_questions
+            $studentQuestion->update([
+                'student_answer' => $log->answer_id,
+                'is_correct' => $isCorrect,
+                'score_assigned' => $score,
+            ]);
 
             $totalScore += $score;
-            if ($isCorrect) {
-                $correctCount++;
-            } else {
-                $incorrectCount++;
-            }
+            $isCorrect ? $correctCount++ : $incorrectCount++;
         }
 
         $totalQuestions = StudentTestQuestion::where('student_test_id', $studentTestId)->count();
-        $notAnsweredCount = $totalQuestions - count($answers);
+        $notAnsweredCount = $totalQuestions - $ultimateLogs->count();
 
-        $studentTest = StudentTest::with('evaluation')->findOrFail($studentTestId);
-
-        // Actualizamos student_tests
+        // Actualizar examen como completado
         $studentTest->update([
             'end_time' => now()->format('H:i:s'),
             'score_obtained' => $totalScore,
@@ -84,18 +72,12 @@ class StudentAnswersController extends Controller
         ]);
 
         // Duración
-        $start = \Carbon\Carbon::parse($studentTest->start_time);
-        $end = \Carbon\Carbon::now();
-        $duration = $end->diff($start)->format('%H:%I:%S');
+        $duration = \Carbon\Carbon::parse($studentTest->start_time)->diff(now())->format('%H:%I:%S');
 
-        // Evaluación
+        // Evaluación y resultado
         $evaluation = $studentTest->evaluation;
-        $passingScore = $evaluation->passing_score;
+        $status = $totalScore >= $evaluation->passing_score ? 'admitido' : 'no_admitido';
 
-        // Estado del estudiante
-        $status = $totalScore >= $passingScore ? 'admitido' : 'no_admitido';
-
-        // Guardamos resultado inicial
         $result = Result::create([
             'student_test_id' => $studentTestId,
             'qualification'   => $totalScore,
@@ -105,31 +87,23 @@ class StudentAnswersController extends Controller
             'status'          => $status,
         ]);
 
-        // Calcular min y max de toda la evaluación
-        $evaluationId = $evaluation->id;
-        $scores = Result::whereHas('studentTest', function ($q) use ($evaluationId) {
-            $q->where('evaluation_id', $evaluationId);
-        })->pluck('qualification');
-
-        $minScore = $scores->min() ?? 0;
-        $maxScore = $scores->max() ?? 0;
-
-        // Actualizamos el registro del resultado
+        // Calcular min y max
+        $scores = Result::whereHas('studentTest', fn($q) => $q->where('evaluation_id', $evaluation->id))
+            ->pluck('qualification');
         $result->update([
-            'minimum_score' => $minScore,
-            'maximum_score' => $maxScore,
+            'minimum_score' => $scores->min() ?? 0,
+            'maximum_score' => $scores->max() ?? 0,
         ]);
 
         return response()->json([
-            'message' => 'Respuestas guardadas correctamente',
+            'message' => 'Examen finalizado y respuestas guardadas.',
             'qualification' => $totalScore,
             'status' => $status,
-            'min_score' => $minScore,
-            'max_score' => $maxScore,
-            'passing_score' => $passingScore,
+            'min_score' => $scores->min(),
+            'max_score' => $scores->max(),
+            'passing_score' => $evaluation->passing_score,
         ], 201);
     }
-
 
     public function hasAnswered($studentTestId)
     {
