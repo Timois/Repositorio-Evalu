@@ -345,19 +345,27 @@ class GroupsController extends Controller
             $group->status = 'completado';
             $group->save();
 
-            // Actualizar exámenes de estudiantes
-            StudentTest::whereIn('student_id', function ($query) use ($groupId) {
+            // Obtener student_tests de los estudiantes del grupo
+            $studentTests = StudentTest::whereIn('student_id', function ($query) use ($groupId) {
                 $query->select('student_id')
                     ->from('group_student')
                     ->where('group_id', $groupId);
             })
                 ->where('evaluation_id', $group->evaluation_id)
-                ->update([
-                    'status' => 'completado',
-                    'not_answered' => DB::raw('total_questions - (correct_answers + incorrect_answers)'),
-                    'end_time' => now()->format('H:i:s'),
-                    'updated_at' => now()
-                ]);
+                ->get();
+
+            foreach ($studentTests as $studentTest) {
+                // Calcular total de preguntas desde el array questions_order
+                $totalQuestions = is_array($studentTest->questions_order)
+                    ? count($studentTest->questions_order)
+                    : count(json_decode($studentTest->questions_order, true));
+
+                $studentTest->status = 'completado';
+                $studentTest->not_answered = $totalQuestions - ($studentTest->correct_answers + $studentTest->incorrect_answers);
+                $studentTest->end_time = now()->format('H:i:s');
+                $studentTest->updated_at = now();
+                $studentTest->save();
+            }
 
             DB::commit();
 
@@ -374,6 +382,7 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+
 
     public function listFinalResultsByGroup($groupId)
     {

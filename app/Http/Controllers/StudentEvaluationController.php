@@ -152,15 +152,14 @@ class StudentEvaluationController extends Controller
         // Obtener todas las respuestas posibles, no solo las correctas
         $studentQuestions = StudentTestQuestion::with(['question.bank_answers'])
             ->where('student_test_id', $test->id)
-            ->orderBy('question_order')
             ->get();
 
         if ($studentQuestions->isEmpty()) {
             return response()->json(['message' => 'No hay preguntas asignadas a este estudiante'], 404);
         }
 
-        $formattedQuestions = $studentQuestions->map(function ($sq) {
-            return [
+        $formattedQuestions = $studentQuestions->map(function ($sq) {       
+            return [                                        
                 'question_id' => $sq->question->id,
                 'question' => $sq->question->question,
                 'description' => $sq->question->description,

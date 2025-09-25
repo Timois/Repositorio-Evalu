@@ -70,7 +70,7 @@ class LogsAnswerController extends Controller
             'answers.*.question_id' => 'required|exists:bank_questions,id',
             'answers.*.answer_id' => 'nullable|integer',
             'answers.*.time' => 'nullable|string', // formato HH:MM:SS
-            'finalize' => 'nullable|boolean',     // 🔹 true si es cierre de examen
+            'finalize' => 'nullable|in:true,false',    // 🔹 true si es cierre de examen
         ]);
 
         try {
@@ -80,7 +80,7 @@ class LogsAnswerController extends Controller
             $studentTest = StudentTest::with('evaluation')->findOrFail($studentTestId);
 
             // 🚫 Evitar doble envío si ya está finalizado
-            if ($request->boolean('finalize') && $studentTest->status === 'completado') {
+            if ($studentTest->status === 'completado') {
                 return response()->json([
                     'message' => 'Ya has finalizado esta evaluación.'
                 ], 409);
@@ -190,7 +190,7 @@ class LogsAnswerController extends Controller
 
             return response()->json([
                 'message' => 'Examen finalizado y respuestas guardadas.',
-                '   ' => $totalScore,
+                'score' => $totalScore,
                 'status' => $status,
                 'min_score' => $scores->min(),
                 'max_score' => $scores->max(),
