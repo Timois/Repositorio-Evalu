@@ -130,7 +130,6 @@ class StudentEvaluationController extends Controller
         ]);
     }
 
-
     // funcion para obtener las preguntas con sus respuestas correctas
     public function getQuestionsWithCorrectAnswers($id)
     {

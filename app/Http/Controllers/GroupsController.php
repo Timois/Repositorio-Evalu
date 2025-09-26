@@ -444,7 +444,7 @@ class GroupsController extends Controller
                 'status'         => $test->status,
             ];
         });
-
+        
         return response()->json([
             'evaluation'       => $evaluation->title,
             'group'            => $group->name,
