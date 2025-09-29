@@ -7,6 +7,8 @@ use App\Jobs\GenerateGroupResultsJob;
 use App\Models\Evaluation;
 use App\Models\Group;
 use App\Models\Laboratorie;
+use App\Models\Result;
+use App\Models\Student;
 use App\Models\StudentTest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -383,6 +385,77 @@ class GroupsController extends Controller
         }
     }
 
+    //actualizar estado y hora final para todos los estudiantes del grupo
+    public function finalizeGroupEvaluation($groupId)
+    {
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        if (!$group->start_time) {
+            return response()->json(['message' => 'El examen no ha sido iniciado'], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // 🔹 Marcar grupo como finalizado
+            $group->end_time = now();
+            $group->status = 'completado';
+            $group->save();
+
+            // 🔹 Obtener solo los student_tests pendientes (no iniciaron el examen)
+            $studentTests = StudentTest::whereIn('student_id', function ($query) use ($groupId) {
+                $query->select('student_id')
+                    ->from('group_student')
+                    ->where('group_id', $groupId);
+            })
+                ->where('evaluation_id', $group->evaluation_id)
+                ->where('status', 'pendiente') // solo los no presentados
+                ->get();
+
+            foreach ($studentTests as $studentTest) {
+                // 🔹 Calcular total de preguntas para marcar como no respondidas
+                $totalQuestions = is_array($studentTest->questions_order)
+                    ? count($studentTest->questions_order)
+                    : count(json_decode($studentTest->questions_order, true));
+
+                $studentTest->status = 'completado';
+                $studentTest->correct_answers = 0;
+                $studentTest->incorrect_answers = 0;
+                $studentTest->not_answered = $totalQuestions;
+                $studentTest->end_time = now()->format('H:i:s');
+                $studentTest->updated_at = now();
+                $studentTest->save();
+
+                // 🔹 Actualizar resultados
+                Result::where('student_test_id', $studentTest->id)
+                    ->update([
+                        'status' => 'no_se_presento',
+                        'qualification' => 0,
+                        'exam_duration' => '00:00:00',
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Examen finalizado correctamente para estudiantes no presentados',
+                'group_id' => $group->id,
+                'end_time' => $group->end_time
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al finalizar el examen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     public function listFinalResultsByGroup($groupId)
     {
@@ -444,7 +517,7 @@ class GroupsController extends Controller
                 'status'         => $test->status,
             ];
         });
-        
+
         return response()->json([
             'evaluation'       => $evaluation->title,
             'group'            => $group->name,

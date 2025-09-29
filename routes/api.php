@@ -221,8 +221,8 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->middle
 });
 
 Route::controller(ResultsController::class)->prefix('results')->middleware($authPersona)->group(function () {
-    Route::get("/list/{id}", "showResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
-    Route::post("/finalResults/{id}", "listFinalResultsByEvaluation");
+    Route::post("/list/{id}", "listFinalResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
+    
 });
 
 Route::controller(LaboratoriesController::class)->prefix('laboratories')->middleware($authPersona)->group(function () {
@@ -243,6 +243,7 @@ Route::controller(GroupsController::class)->middleware($authPersona)->prefix('gr
     Route::post("/resumeGroup/{id}", "continueGroupEvaluation")->middleware('auth:persona', 'permission:reanudar-evaluacion-grupo');
     Route::post("/stopGroup/{id}", "stopGroupEvaluation")->middleware('auth:persona', 'permission:finalizar-evaluacion-grupo');
     Route::get("/resultsGroup/{id}", "listFinalResultsByGroup")->middleware('auth:persona', 'permission:ver-resultados-por-grupo');
+    Route::put("/endGroup/{id}", "endGroupEvaluation");
 });
 
 Route::group(['middleware' => ['auth:api']], function () {

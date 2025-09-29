@@ -71,38 +71,46 @@ class StudentAnswersController extends Controller
             'status' => 'completado',
         ]);
 
-        // Duración
-        $duration = \Carbon\Carbon::parse($studentTest->start_time)->diff(now())->format('%H:%I:%S');
-
-        // Evaluación y resultado
-        $evaluation = $studentTest->evaluation;
-        $status = $totalScore >= $evaluation->passing_score ? 'admitido' : 'no_admitido';
-
-        $result = Result::create([
-            'student_test_id' => $studentTestId,
-            'qualification'   => $totalScore,
-            'maximum_score'   => 0, // temporal
-            'minimum_score'   => 0, // temporal
-            'exam_duration'   => $duration,
-            'status'          => $status,
-        ]);
-
-        // Calcular min y max
-        $scores = Result::whereHas('studentTest', fn($q) => $q->where('evaluation_id', $evaluation->id))
-            ->pluck('qualification');
-        $result->update([
-            'minimum_score' => $scores->min() ?? 0,
-            'maximum_score' => $scores->max() ?? 0,
-        ]);
-
         return response()->json([
-            'message' => 'Examen finalizado y respuestas guardadas.',
+            'message' => 'Prueba finalizada y respuestas guardadas.',
             'qualification' => $totalScore,
-            'status' => $status,
-            'min_score' => $scores->min(),
-            'max_score' => $scores->max(),
-            'passing_score' => $evaluation->passing_score,
+            'correct_answers' => $correctCount,
+            'incorrect_answers' => $incorrectCount,
+            'not_answered' => $notAnsweredCount,
         ], 201);
+        
+        // // Duración
+        // $duration = \Carbon\Carbon::parse($studentTest->start_time)->diff(now())->format('%H:%I:%S');
+
+        // // Evaluación y resultado
+        // $evaluation = $studentTest->evaluation;
+        // $status = $totalScore >= $evaluation->passing_score ? 'admitido' : 'no_admitido';
+
+        // $result = Result::create([
+        //     'student_test_id' => $studentTestId,
+        //     'qualification'   => $totalScore,
+        //     'maximum_score'   => 0, // temporal
+        //     'minimum_score'   => 0, // temporal
+        //     'exam_duration'   => $duration,
+        //     'status'          => $status,
+        // ]);
+
+        // // Calcular min y max
+        // $scores = Result::whereHas('studentTest', fn($q) => $q->where('evaluation_id', $evaluation->id))
+        //     ->pluck('qualification');
+        // $result->update([
+        //     'minimum_score' => $scores->min() ?? 0,
+        //     'maximum_score' => $scores->max() ?? 0,
+        // ]);
+
+        // return response()->json([
+        //     'message' => 'Examen finalizado y respuestas guardadas.',
+        //     'qualification' => $totalScore,
+        //     'status' => $status,
+        //     'min_score' => $scores->min(),
+        //     'max_score' => $scores->max(),
+        //     'passing_score' => $evaluation->passing_score,
+        // ], 201);
     }
 
     public function hasAnswered($studentTestId)

@@ -68,8 +68,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
             $table->double('qualification'); // Puntaje obtenido en la prueba
-            $table->double('maximum_score');   // Puntaje maximo de la prueba
-            $table->integer('minimum_score');   // Puntaje minimo de la prueba
             $table->string('exam_duration');     // Duracion de la prueba
             $table->enum('status', ['admitido', 'no_admitido', 'no_se_presento'])->default('evaluado');
             $table->timestamps();
