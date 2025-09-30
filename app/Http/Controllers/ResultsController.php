@@ -83,10 +83,8 @@ class ResultsController extends Controller
             'evaluation' => $evaluation->title,
             'passing_score' => $evaluation->passing_score,
             'students_results' => $results,
-            'resumen' => [
-                'nota_maxima' => $maximumScore,
-                'nota_minima' => $minimumScore,
-            ]
+            'maximum_score' => $maximumScore,
+            'minimum_score' => $minimumScore
         ]);
     }
 }

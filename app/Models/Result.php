@@ -13,8 +13,6 @@ class Result extends Model
     protected $fillable = [
         'student_test_id',
         'qualification',
-        'maximum_score',
-        'minimum_score',
         'exam_duration',
         'status',
     ];
