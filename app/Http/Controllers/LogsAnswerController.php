@@ -79,8 +79,8 @@ class LogsAnswerController extends Controller
             $studentTestId = $request->student_test_id;
             $studentTest = StudentTest::with('evaluation')->findOrFail($studentTestId);
 
-            // 🚫 Evitar doble envío si ya está finalizado
-            if ($studentTest->status === 'completado') {
+            // 🚫 Evitar doble envío si ya está finalizado y NO viene con finalize
+            if ($studentTest->status === 'completado' && !$request->boolean('finalize')) {
                 return response()->json([
                     'message' => 'Ya has finalizado esta evaluación.'
                 ], 409);
@@ -161,41 +161,11 @@ class LogsAnswerController extends Controller
                 'not_answered' => $notAnsweredCount,
                 'status' => 'completado',
             ]);
-
-            // Duración
-            $duration = \Carbon\Carbon::parse($studentTest->start_time)->diff(now())->format('%H:%I:%S');
-
-            // Evaluación y resultado
-            $evaluation = $studentTest->evaluation;
-            $status = $totalScore >= $evaluation->passing_score ? 'admitido' : 'no_admitido';
-
-            $result = Result::create([
-                'student_test_id' => $studentTestId,
-                'qualification'   => $totalScore,
-                'maximum_score'   => 0, // temporal
-                'minimum_score'   => 0, // temporal
-                'exam_duration'   => $duration,
-                'status'          => $status,
-            ]);
-
-            // Calcular min y max
-            $scores = Result::whereHas('studentTest', fn($q) => $q->where('evaluation_id', $evaluation->id))
-                ->pluck('qualification');
-            $result->update([
-                'minimum_score' => $scores->min() ?? 0,
-                'maximum_score' => $scores->max() ?? 0,
-            ]);
-
             DB::commit();
-
             return response()->json([
-                'message' => 'Examen finalizado y respuestas guardadas.',
-                'score' => $totalScore,
-                'status' => $status,
-                'min_score' => $scores->min(),
-                'max_score' => $scores->max(),
-                'passing_score' => $evaluation->passing_score,
-            ], 201);
+                'message' => 'Respuestas guardadas correctamente.',
+                'score' => $totalScore
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

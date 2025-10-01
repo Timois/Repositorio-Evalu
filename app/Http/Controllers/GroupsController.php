@@ -401,36 +401,43 @@ class GroupsController extends Controller
         DB::beginTransaction();
 
         try {
-            // 🔹 Marcar grupo como finalizado
-            $group->end_time = now();
-            $group->status = 'completado';
-            $group->save();
-
-            // 🔹 Obtener solo los student_tests pendientes (no iniciaron el examen)
-            $studentTests = StudentTest::whereIn('student_id', function ($query) use ($groupId) {
-                $query->select('student_id')
-                    ->from('group_student')
-                    ->where('group_id', $groupId);
+            // 🔹 Procesar primero los student_tests en progreso (guardar sus respuestas antes de cerrar grupo)
+            $studentTestsInProgress = StudentTest::whereIn('student_id', function ($q) use ($groupId) {
+                $q->select('student_id')->from('group_student')->where('group_id', $groupId);
             })
                 ->where('evaluation_id', $group->evaluation_id)
-                ->where('status', 'pendiente') // solo los no presentados
+                ->where('status', 'en_progreso')
                 ->get();
 
-            foreach ($studentTests as $studentTest) {
-                // 🔹 Calcular total de preguntas para marcar como no respondidas
+            foreach ($studentTestsInProgress as $studentTest) {
+                // 👇 Invocamos la misma lógica que usas en store()
+                app()->call([self::class, 'store'], [
+                    'request' => new Request(['student_test_id' => $studentTest->id])
+                ]);
+            }
+
+            // 🔹 Marcar estudiantes que nunca iniciaron como completados con 0 puntos
+            $studentTestsPending = StudentTest::whereIn('student_id', function ($q) use ($groupId) {
+                $q->select('student_id')->from('group_student')->where('group_id', $groupId);
+            })
+                ->where('evaluation_id', $group->evaluation_id)
+                ->where('status', 'pendiente')
+                ->get();
+
+            foreach ($studentTestsPending as $studentTest) {
                 $totalQuestions = is_array($studentTest->questions_order)
                     ? count($studentTest->questions_order)
                     : count(json_decode($studentTest->questions_order, true));
 
-                $studentTest->status = 'completado';
-                $studentTest->correct_answers = 0;
-                $studentTest->incorrect_answers = 0;
-                $studentTest->not_answered = $totalQuestions;
-                $studentTest->end_time = now()->format('H:i:s');
-                $studentTest->updated_at = now();
-                $studentTest->save();
+                $studentTest->update([
+                    'status' => 'completado',
+                    'correct_answers' => 0,
+                    'incorrect_answers' => 0,
+                    'not_answered' => $totalQuestions,
+                    'end_time' => now()->format('H:i:s'),
+                    'updated_at' => now(),
+                ]);
 
-                // 🔹 Actualizar resultados
                 Result::where('student_test_id', $studentTest->id)
                     ->update([
                         'status' => 'no_se_presento',
@@ -440,10 +447,16 @@ class GroupsController extends Controller
                     ]);
             }
 
+            // 🔹 Ahora sí, marcar grupo como finalizado
+            $group->update([
+                'end_time' => now(),
+                'status' => 'completado'
+            ]);
+
             DB::commit();
 
             return response()->json([
-                'message' => 'Examen finalizado correctamente para estudiantes no presentados',
+                'message' => 'Examen finalizado correctamente. Se guardaron todas las respuestas antes de cerrar el grupo.',
                 'group_id' => $group->id,
                 'end_time' => $group->end_time
             ]);
