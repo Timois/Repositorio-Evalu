@@ -410,9 +410,10 @@ class GroupsController extends Controller
                 ->get();
 
             foreach ($studentTestsInProgress as $studentTest) {
-                // 👇 Invocamos la misma lógica que usas en store()
-                app()->call([self::class, 'store'], [
-                    'request' => new Request(['student_test_id' => $studentTest->id])
+                // 👇 Invocamos la misma lógica que usas en bulkSave
+                app()->call([self::class, 'bulkSave'], [
+                    'request' => new Request(['student_test_id' => $studentTest->id,
+                        'finalize' => true])
                 ]);
             }
 

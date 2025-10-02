@@ -92,6 +92,7 @@ class StudenTestsController extends Controller
                 'maternal_surname' => $test->student->maternal_surname,
                 'code' => $test->code,
                 'score' => $test->score_obtained,
+                'status' => $test->status
             ];
         });
 

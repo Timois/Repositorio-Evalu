@@ -10,15 +10,57 @@ use Carbon\Carbon;
 
 class ResultsController extends Controller
 {
-    public function listFinalResultsByEvaluation($evaluationId)
+    public function showResultsByEvaluation($evaluationId)
+    {
+        $evaluation = Evaluation::find($evaluationId);
+        if (!$evaluation) {
+            return response()->json(['message' => 'No se encontró la evaluación'], 404);
+        }
+
+        $studentTests = StudentTest::with('student')
+            ->where('evaluation_id', $evaluationId)
+            ->get();
+
+        if ($studentTests->isEmpty()) {
+            return response()->json(['message' => 'No hay estudiantes asignados a esta evaluación'], 404);
+        }
+
+        $results = $studentTests->map(function ($test) {
+            $duration = null;
+
+            if ($test->start_time && $test->end_time) {
+                $start = \Carbon\Carbon::parse($test->start_time);
+                $end = \Carbon\Carbon::parse($test->end_time);
+                $duration = $start->diffInMinutes($end);
+            }
+
+            return [
+                'student_id'     => $test->student_id,
+                'student_ci'     => $test->student->ci,
+                'score_obtained' => $test->score_obtained,
+                'not_answered'   => $test->not_answered,
+                'exam_duration'  => $duration,
+                'status'         => $test->status ?? 'pendiente',
+            ];
+        });
+
+        // Agrupamos estados
+        $status = $studentTests->groupBy('status')->map->count();
+
+        return response()->json([
+            'evaluation_id'    => $evaluationId,
+            'students_results' => $results,
+            'status'   => $status,
+        ]);
+    }
+
+    public function saveResults($evaluationId)
     {
         $evaluation = Evaluation::find($evaluationId);
 
         if (!$evaluation) {
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
-
-        // Obtener todos los student_tests de la evaluación
         $studentTests = StudentTest::with('student')
             ->where('evaluation_id', $evaluationId)
             ->get();
@@ -26,27 +68,6 @@ class ResultsController extends Controller
         if ($studentTests->isEmpty()) {
             return response()->json(['message' => 'No hay estudiantes en esta evaluación'], 404);
         }
-
-        // Verificar si existen pruebas sin finalizar
-        $incompleteTests = $studentTests->filter(function ($test) {
-            return $test->status !== 'completado'; // Ajusta el nombre del estado según tu modelo
-        });
-
-        if ($incompleteTests->isNotEmpty()) {
-            return response()->json([
-                'message' => 'La evaluación aún no ha concluido en todos los grupos. Existen pruebas sin finalizar.',
-                'pending_students' => $incompleteTests->map(function ($test) {
-                    return [
-                        'student_name' => $test->student->name,
-                        'student_ci'   => $test->student->ci,
-                        'status'       => $test->status,
-                    ];
-                })->values()
-            ], 400);
-        }
-
-        $results = [];
-        $allScores = [];
 
         foreach ($studentTests as $test) {
             $score = $test->score_obtained;
@@ -64,27 +85,8 @@ class ResultsController extends Controller
                     'status'        => $status,
                 ]
             );
-
-            $allScores[] = $score;
-
-            $results[] = [
-                'student_name' => $test->student->name,
-                'student_ci' => $test->student->ci,
-                'score_obtained' => $score,
-                'exam_duration' => $examDuration,
-                'status' => $status,
-            ];
         }
 
-        $maximumScore = max($allScores);
-        $minimumScore = min($allScores);
-
-        return response()->json([
-            'evaluation' => $evaluation->title,
-            'passing_score' => $evaluation->passing_score,
-            'students_results' => $results,
-            'maximum_score' => $maximumScore,
-            'minimum_score' => $minimumScore
-        ]);
+        return response()->json(['message' => 'Resultados guardados correctamente'], 200);
     }
 }

@@ -221,8 +221,8 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->middle
 });
 
 Route::controller(ResultsController::class)->prefix('results')->middleware($authPersona)->group(function () {
-    Route::post("/list/{id}", "listFinalResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
-    
+    Route::post("/list/{id}", "showResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
+    Route::post("/save/{id}", "saveResults")->middleware('auth:persona', 'permission:guardar-resultados');
 });
 
 Route::controller(LaboratoriesController::class)->prefix('laboratories')->middleware($authPersona)->group(function () {
@@ -254,7 +254,6 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get("/findAnswersCorrect/{id}", "getQuestionsWithCorrectAnswers");
     });
     Route::controller(StudentAnswersController::class)->prefix('student_answers')->group(function () {
-        Route::post("/save", "store");
         Route::get("/list/{student_test_id}", "hasAnswered");
     });
 
