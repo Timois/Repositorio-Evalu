@@ -81,10 +81,26 @@ class StudenTestsController extends Controller
             ->where('evaluation_id', $evaluationId)
             ->whereNotNull('score_obtained')
             ->orderByDesc('score_obtained')
+            ->orderByRaw("EXTRACT(EPOCH FROM (end_time - start_time)) ASC") // menor tiempo primero
             ->get();
 
         // Formatear la lista
         $report = $studentTests->map(function ($test) {
+            if ($test->end_time && $test->start_time) {
+                $start = \Carbon\Carbon::parse($test->start_time);
+                $end = \Carbon\Carbon::parse($test->end_time);
+                $diffSeconds = $end->diffInSeconds($start);
+
+                // Convertir a horas:minutos:segundos
+                $hours = floor($diffSeconds / 3600);
+                $minutes = floor(($diffSeconds % 3600) / 60);
+                $seconds = $diffSeconds % 60;
+
+                $formattedDuration = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+            } else {
+                $formattedDuration = null;
+            }
+
             return [
                 'ci' => $test->student->ci,
                 'name' => $test->student->name,
@@ -92,6 +108,9 @@ class StudenTestsController extends Controller
                 'maternal_surname' => $test->student->maternal_surname,
                 'code' => $test->code,
                 'score' => $test->score_obtained,
+                'hora_inicio' => $test->start_time,
+                'hora_fin' => $test->end_time,
+                'duracion' => $formattedDuration, // HH:MM:SS
                 'status' => $test->status
             ];
         });
@@ -109,7 +128,7 @@ class StudenTestsController extends Controller
             ->where('status', 'completado')
             ->whereNotNull('score_obtained')
             ->pluck('score_obtained'); // solo las notas
-        
+
         $count = $scores->count();
         if ($count === 0) {
             return response()->json(['message' => 'No hay datos disponibles.']);

@@ -213,7 +213,7 @@ class QuestionEvaluationController extends Controller
                         $allQuestionsForStudent[] = [
                             'student_test_id' => $studentTest->id,
                             'question_id' => $pregunta->id,
-                            'score_assigned' => round($puntajePorPregunta, 2),
+                            'score_assigned' => $puntajePorPregunta,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
