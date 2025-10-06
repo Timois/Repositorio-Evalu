@@ -214,7 +214,7 @@ class QuestionImagesImport implements ToCollection
             $exists = QuestionBank::where('question', $dataRow['pregunta'])
                 ->where('area_id', $areaId)
                 ->exists();
-           
+
             if ($exists) {
                 // Duplicada → registrar y salir
                 $this->duplicateDetails[] = [
@@ -238,11 +238,11 @@ class QuestionImagesImport implements ToCollection
                 'image'          => $imagePath,
                 'status'         => 'activo',
             ]);
-            
+
             $question->academicManagementPeriod()->attach($this->periodId);
-            
+
             $answers = $this->processAnswers($question, $dataRow);
-            
+
             // Registrar  la pregunta exitosa
             $this->registeredQuestions[] = [
                 'row' => $index + 1,
@@ -275,12 +275,26 @@ class QuestionImagesImport implements ToCollection
         $answers = [];
 
         try {
+            // Identificar columnas que empiezan con 'opcion'
             $optionColumns = array_filter(array_keys($dataRow), fn($key) => strpos($key, 'opcion') === 0);
 
-            $correctAnswers = isset($dataRow['respuesta correcta'])
-                ? array_map('trim', explode(',', strtolower($dataRow['respuesta correcta'])))
-                : [];
-            
+            // Determinar el tipo de pregunta
+            $tipoPregunta = strtolower(trim($dataRow['tipo'] ?? ''));
+
+            // Determinar respuestas correctas según tipo
+            if ($tipoPregunta === 'multiple') {
+                // En preguntas de tipo múltiple, se permiten varias respuestas separadas por coma
+                $correctAnswers = isset($dataRow['respuesta correcta'])
+                    ? array_map('trim', explode(',', strtolower($dataRow['respuesta correcta'])))
+                    : [];
+            } else {
+                // En preguntas de tipo única o cualquier otro tipo, solo se toma una respuesta correcta
+                $correctAnswers = isset($dataRow['respuesta correcta'])
+                    ? [strtolower(trim($dataRow['respuesta correcta']))]
+                    : [];
+            }
+
+            // Crear respuestas
             foreach ($optionColumns as $optionKey) {
                 if (!empty($dataRow[$optionKey])) {
                     $answerText = trim($dataRow[$optionKey]);
@@ -300,7 +314,6 @@ class QuestionImagesImport implements ToCollection
 
         return $answers;
     }
-
 
     public function getImportSummary()
     {

@@ -85,11 +85,13 @@ class GroupsController extends Controller
             return response()->json(['message' => 'El laboratorio debe tener más de 3 equipos para permitir al menos 3 equipos libres.'], 400);
         }
 
-        // 4. Verificar si hay suficientes estudiantes sin asignar
         $assignedStudentsCount = DB::table('group_student')
+            ->join('groups', 'group_student.group_id', '=', 'groups.id')
+            ->where('groups.evaluation_id', $request->evaluation_id)
             ->whereIn('student_id', $students->pluck('student_id'))
             ->distinct('student_id')
             ->count();
+
 
         $unassignedStudentsCount = $totalStudents - $assignedStudentsCount;
 
@@ -120,11 +122,12 @@ class GroupsController extends Controller
         $group->save();
 
         // 7. Asignar estudiantes al grupo
-        // Obtener los IDs de estudiantes ya asignados
         $assignedStudentIds = DB::table('group_student')
-            ->select('student_id')
+            ->join('groups', 'group_student.group_id', '=', 'groups.id')
+            ->where('groups.evaluation_id', $request->evaluation_id)
             ->pluck('student_id')
             ->toArray();
+
 
         // Filtrar estudiantes no asignados y tomar la cantidad calculada
         $studentsToAssign = $students->whereNotIn('student_id', $assignedStudentIds)
@@ -412,8 +415,10 @@ class GroupsController extends Controller
             foreach ($studentTestsInProgress as $studentTest) {
                 // 👇 Invocamos la misma lógica que usas en bulkSave
                 app()->call([self::class, 'bulkSave'], [
-                    'request' => new Request(['student_test_id' => $studentTest->id,
-                        'finalize' => true])
+                    'request' => new Request([
+                        'student_test_id' => $studentTest->id,
+                        'finalize' => true
+                    ])
                 ]);
             }
 
