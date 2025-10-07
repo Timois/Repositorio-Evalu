@@ -28,7 +28,8 @@ class StudentEvaluationController extends Controller
                 'evaluations.title',
                 'student_tests.status as status', // pendiente, en_progreso, completado
                 'student_tests.score_obtained',
-                'student_tests.id as student_test_id'
+                'student_tests.id as student_test_id',
+                DB::raw($student->id . ' as student_id') // <-- agregamos el id del estudiante
             )
             ->where('student_tests.student_id', $student->id)
             ->orderBy('evaluations.created_at', 'desc')
