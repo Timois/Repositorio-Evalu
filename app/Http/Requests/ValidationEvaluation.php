@@ -53,7 +53,7 @@ class ValidationEvaluation extends FormRequest
             'places' => 'required|integer|min:0',
             'date_of_realization' => 'required|date_format:Y-m-d|after_or_equal:today',
             'time' => 'required|integer',
-            'status' => 'sometimes|in:active,inactive',
+            'status' => 'sometimes|in:activo,inactivo',
         ];
 
         // Modificar reglas para actualización (PUT/PATCH)
@@ -64,7 +64,7 @@ class ValidationEvaluation extends FormRequest
             $rules['places'] = 'sometimes|integer|min:0';
             $rules['date_of_realization'] = 'sometimes|date_format:Y-m-d|after_or_equal:today';
             $rules['time'] = 'sometimes|integer';
-            $rules['status'] = 'sometimes|in:active,inactive';
+            $rules['status'] = 'sometimes|in:activo,inactivo';
         }
 
         return $rules;
@@ -109,6 +109,7 @@ class ValidationEvaluation extends FormRequest
             'date_of_realization.date' => 'La fecha de realización debe ser una fecha.',
             'time.required' => 'El tiempo es obligatorio.',
             'time.integer' => 'El tiempo debe ser un número entero.',
+            'status.in' => 'El estado debe ser "activo" o "inactivo".',
         ];
     }
 }

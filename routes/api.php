@@ -250,7 +250,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::controller(StudentEvaluationController::class)->prefix('student_evaluations')->group(function () {
         Route::get("/list/{ci}", "findEvaluations");
         Route::get("/find/{id}", "findById");
-        Route::get("/questions/{id}", "getQuestionsWithAnswers");
+        Route::get("/questions/{studentId}/{evaluationId}", "getQuestionsByStudentAndEvaluation");
         Route::get("/findAnswersCorrect/{id}", "getQuestionsWithCorrectAnswers");
     });
     Route::controller(StudentAnswersController::class)->prefix('student_answers')->group(function () {

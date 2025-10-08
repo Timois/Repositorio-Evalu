@@ -52,67 +52,30 @@ class StudentEvaluationController extends Controller
         return response()->json($evaluation);
     }
 
-    public function getQuestionsWithAnswers($id)
+    public function getQuestionsByStudentAndEvaluation($studentId, $evaluationId)
     {
         // 1️⃣ Buscar al estudiante
-        $student = Student::find($id);
+        $student = Student::find($studentId);
         if (!$student) {
             return response()->json(['message' => 'El estudiante no existe'], 404);
         }
 
-        // 2️⃣ Consultar todas las evaluaciones que tiene el estudiante
-        $studentTests = StudentTest::where('student_id', $student->id)
-            ->with('evaluation:id,title,date_of_realization,status')
-            ->get();
-
-        if ($studentTests->isEmpty()) {
-            return response()->json(['message' => 'El estudiante no tiene evaluaciones registradas'], 404);
-        }
-
-        // 3️⃣ Ver cuántas evaluaciones tiene
-        $evaluations = $studentTests->map(function ($test) {
-            return [
-                'evaluation_id'   => $test->evaluation_id,
-                'evaluation_name' => $test->evaluation->title,
-                'date'            => $test->evaluation->date_of_realization,
-                'status'          => $test->evaluation->status,
-                'test_code'       => $test->code,
-                'student_test_id' => $test->id,
-            ];
-        })->unique('evaluation_id')->values();
-
-        // Si tiene más de una evaluación, mostrar todas
-        if ($evaluations->count() > 1) {
-            return response()->json([
-                'message' => 'El estudiante tiene varias evaluaciones registradas, seleccione una.',
-                'evaluations' => $evaluations,
-            ], 200);
-        }
-
-        // 4️⃣ Si solo tiene una evaluación, continuar automáticamente
-        $test = $studentTests->first();
-        $evaluation = $test->evaluation;
-
+        // 2️⃣ Buscar la evaluación
+        $evaluation = Evaluation::find($evaluationId);
         if (!$evaluation) {
-            return response()->json(['message' => 'Evaluación no encontrada'], 404);
+            return response()->json(['message' => 'La evaluación no existe'], 404);
         }
 
-        // 5️⃣ Verificar si el grupo ya completó la evaluación
-        $group = $student->groups()
+        // 3️⃣ Buscar la prueba (student_test) asignada al estudiante para esa evaluación
+        $test = StudentTest::where('student_id', $student->id)
             ->where('evaluation_id', $evaluation->id)
             ->first();
 
-        if ($group && $group->status === 'completado') {
-            return response()->json([
-                'message'         => 'La evaluación de este grupo ya fue finalizada',
-                'examCompleted'   => true,
-                'student_test_id' => $test->id,
-                'test_code'       => $test->code,
-                'evaluation_id'   => $test->evaluation_id
-            ], 200);
+        if (!$test) {
+            return response()->json(['message' => 'No se encontró una prueba asignada a este estudiante para la evaluación seleccionada'], 404);
         }
 
-        // 6️⃣ Calcular tiempos y preguntas
+        // 4️⃣ Calcular tiempos
         $timezone = 'America/La_Paz';
         $startTime = empty($test->start_time)
             ? Carbon::parse($evaluation->date_of_realization, $timezone)
@@ -127,14 +90,14 @@ class StudentEvaluationController extends Controller
             ? 0
             : $now->diffInSeconds($endTime, false);
 
-        // 7️⃣ Obtener las preguntas con respuestas
+        // 5️⃣ Obtener las preguntas con respuestas
         $studentQuestions = StudentTestQuestion::with('question.bank_answers')
             ->where('student_test_id', $test->id)
             ->orderBy('question_order')
             ->get();
 
         if ($studentQuestions->isEmpty()) {
-            return response()->json(['message' => 'No hay preguntas asignadas a este estudiante'], 404);
+            return response()->json(['message' => 'No hay preguntas asignadas para esta prueba'], 404);
         }
 
         $formattedQuestions = $studentQuestions->map(function ($sq) {
@@ -150,12 +113,12 @@ class StudentEvaluationController extends Controller
             ];
         });
 
-        // 8️⃣ Retornar la prueba con todo el contenido
+        // 6️⃣ Retornar toda la información
         return response()->json([
             'student_test_id'    => $test->id,
             'test_code'          => $test->code,
             'evaluation_id'      => $test->evaluation_id,
-            'evaluation_name'    => $evaluation->name,
+            'evaluation_name'    => $evaluation->title,
             'start_time'         => $startTime->toIso8601String(),
             'end_time'           => $endTime->toIso8601String(),
             'current_time'       => $now->toIso8601String(),

@@ -32,10 +32,6 @@ class AuthStudentController extends Controller
         // Buscar al usuario por CI
         $persona = UserStudent::where('ci', $request->ci)->first();
 
-        $grupo_student = DB::table('group_student')->where('student_id', $persona->id)->first();
-
-        $grupo = Group::find($grupo_student->group_id);
-
         if (!$persona) {
             return response()->json(['error' => 'CI no encontrado'], 401);
         }
@@ -45,10 +41,18 @@ class AuthStudentController extends Controller
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
 
-        // ✅ Si no ha iniciado aún, ponerlo como "activo" y continuar
-        $persona->update(['status' => 'activo']);
-        $rol = Role::where('name', 'postulante')->first();
+        // Buscar el grupo del estudiante (si tiene)
+        $grupo_student = DB::table('group_student')->where('student_id', $persona->id)->first();
+        $grupo = null;
 
+        if ($grupo_student) {
+            $grupo = Group::find($grupo_student->group_id);
+        }
+
+        // ✅ Actualizar estado a "activo"
+        $persona->update(['status' => 'activo']);
+
+        $rol = Role::where('name', 'postulante')->first();
         $token = Auth::guard('api')->login($persona);
 
         return response()->json([
@@ -60,11 +64,11 @@ class AuthStudentController extends Controller
                         ($persona->maternal_surname ?? '')
                 ),
                 'ci' => $persona->ci,
-                'group' => $grupo->id,
+                // ✅ Mostrar nombre del grupo o mensaje claro
+                'group' => $grupo ? $grupo->name : 'Sin grupo asignado',
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),
-
         ]);
     }
 
