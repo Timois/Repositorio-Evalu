@@ -65,7 +65,7 @@ class AuthStudentController extends Controller
                 ),
                 'ci' => $persona->ci,
                 // ✅ Mostrar nombre del grupo o mensaje claro
-                'group' => $grupo ? $grupo->name : 'Sin grupo asignado',
+                'group' => $grupo ? $grupo->id : 'Sin grupo asignado',
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),

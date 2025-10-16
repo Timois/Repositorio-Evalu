@@ -326,7 +326,7 @@ class GroupsController extends Controller
         }
     }
 
-    public function stopGroupEvaluation($groupId, Request $request)
+    public function stopGroupEvaluation($groupId)
     {
         $group = Group::with('evaluation')->find($groupId);
 
@@ -475,7 +475,6 @@ class GroupsController extends Controller
         }
     }
 
-
     public function listFinalResultsByGroup($groupId)
     {
         $group = Group::with('evaluation')->find($groupId);
@@ -524,18 +523,32 @@ class GroupsController extends Controller
                 . ' ' . ($student->maternal_surname ?? '');
 
             $examDuration = 0;
+            $formattedDuration = '00:00:00';
             if ($test->start_time && $test->end_time) {
                 $examDuration = $test->end_time->diffInSeconds($test->start_time);
+                $formattedDuration = gmdate('H:i:s', $examDuration);
             }
 
             return [
                 'student_name'   => trim($fullName),
                 'student_ci'     => $student->ci,
                 'score_obtained' => $test->score_obtained ?? 0,
-                'exam_duration'  => $examDuration,
+                'exam_duration'  => $formattedDuration,
+                'duration_seconds' => $examDuration, // se usa solo para ordenar
                 'status'         => $test->status,
             ];
-        });
+        })
+            // Ordenar primero por calificación descendente y luego por menor tiempo
+            ->sortBy([
+                ['score_obtained', 'desc'],
+                ['duration_seconds', 'asc'],
+            ])
+            // Reindexar y eliminar el campo auxiliar
+            ->values()
+            ->map(function ($item) {
+                unset($item['duration_seconds']);
+                return $item;
+            });
 
         return response()->json([
             'evaluation'       => $evaluation->title,

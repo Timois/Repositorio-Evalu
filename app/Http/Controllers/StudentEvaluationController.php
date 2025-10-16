@@ -20,16 +20,24 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'El estudiante no existe'], 404);
         }
 
-        // Obtener todas las evaluaciones del estudiante (programadas o finalizadas)
+        // Obtener el id del grupo del estudiante
+        $groupStudent = DB::table('group_student')->where('student_id', $student->id)->first();
+        if (!$groupStudent) {
+            return response()->json(['message' => 'El estudiante no está asignado a ningún grupo'], 404);
+        }
+
+        // Obtener todas las evaluaciones del estudiante con estado del grupo
         $evaluations = DB::table('student_tests')
             ->join('evaluations', 'student_tests.evaluation_id', '=', 'evaluations.id')
+            ->join('group_student', 'group_student.student_id', '=', 'student_tests.student_id')
+            ->join('groups', 'groups.id', '=', 'group_student.group_id') // ahora sí funciona
             ->select(
                 'evaluations.id as evaluation_id',
                 'evaluations.title',
-                'student_tests.status as status', // pendiente, en_progreso, completado
+                'groups.status as group_status',
                 'student_tests.score_obtained',
                 'student_tests.id as student_test_id',
-                DB::raw($student->id . ' as student_id') // <-- agregamos el id del estudiante
+                DB::raw($student->id . ' as student_id')
             )
             ->where('student_tests.student_id', $student->id)
             ->orderBy('evaluations.created_at', 'desc')
