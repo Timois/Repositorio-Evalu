@@ -4,13 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AnswerBank;
 use App\Models\LogsAnswer;
-use App\Models\Result;
-use App\Models\Student;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\StudentT;
 
 class LogsAnswerController extends Controller
 {

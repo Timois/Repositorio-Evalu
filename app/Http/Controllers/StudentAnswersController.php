@@ -2,19 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AnswerBank;
-use App\Models\LogsAnswer;
-use App\Models\Result;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
-use Illuminate\Http\Request;
+
 
 class StudentAnswersController extends Controller
 {
 
     public function hasAnswered($studentTestId)
     {
-        // Verifica si hay al menos una respuesta registrada (es decir, si el campo 'student_answer' no está nulo)
+        // Obtener el registro de StudentTest
+        $studentTest = StudentTest::find($studentTestId);
+
+        if (!$studentTest) {
+            return response()->json([
+                'answered' => false,
+                'message' => 'StudentTest no encontrado'
+            ], 404);
+        }
+
+        // Si el examen está completado, devolvemos la nota final
+        if ($studentTest->status === 'completado') {
+            return response()->json([
+                'answered' => true,
+                'score' => $studentTest->score_obtained ?? 0 // si no tiene nota asignada, devolvemos 0
+            ]);
+        }
+
+        // Si no está completado, verificamos si hay al menos una respuesta registrada
         $answered = StudentTestQuestion::where('student_test_id', $studentTestId)
             ->whereNotNull('student_answer')
             ->exists();
