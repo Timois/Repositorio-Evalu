@@ -40,7 +40,7 @@ class StudentEvaluationController extends Controller
                 DB::raw($student->id . ' as student_id')
             )
             ->where('student_tests.student_id', $student->id)
-            ->orderBy('evaluations.created_at', 'desc')
+            ->orderBy('evaluations.created_at', 'asc')
             ->get();
 
         if ($evaluations->isEmpty()) {
