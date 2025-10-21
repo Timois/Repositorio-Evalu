@@ -26,18 +26,29 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'El estudiante no está asignado a ningún grupo'], 404);
         }
 
-        // Obtener todas las evaluaciones del estudiante con estado del grupo
+        // Consultar las evaluaciones con carrera, periodo y gestión
         $evaluations = DB::table('student_tests')
             ->join('evaluations', 'student_tests.evaluation_id', '=', 'evaluations.id')
+            ->join('academic_management_period', 'evaluations.academic_management_period_id', '=', 'academic_management_period.id')
+            ->join('periods', 'academic_management_period.period_id', '=', 'periods.id')
+            ->join('academic_management_career', 'academic_management_period.academic_management_career_id', '=', 'academic_management_career.id')
+            ->join('careers', 'academic_management_career.career_id', '=', 'careers.id')
+            ->join('academic_management', 'academic_management_career.academic_management_id', '=', 'academic_management.id')
             ->join('group_student', 'group_student.student_id', '=', 'student_tests.student_id')
-            ->join('groups', 'groups.id', '=', 'group_student.group_id') // ahora sí funciona
+            ->join('groups', 'groups.id', '=', 'group_student.group_id')
             ->select(
                 'evaluations.id as evaluation_id',
                 'evaluations.title',
                 'groups.status as group_status',
                 'student_tests.score_obtained',
                 'student_tests.id as student_test_id',
-                DB::raw($student->id . ' as student_id')
+                DB::raw($student->id . ' as student_id'),
+
+                // Datos académicos
+                'careers.name as career_name',
+                'periods.period as period_name',
+                'periods.level as period_level',
+                'academic_management.year as gestion_year'
             )
             ->where('student_tests.student_id', $student->id)
             ->orderBy('evaluations.created_at', 'asc')
