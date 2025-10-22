@@ -360,16 +360,19 @@ class GroupsController extends Controller
                 ->get();
 
             foreach ($studentTests as $studentTest) {
-                // Calcular total de preguntas desde el array questions_order
-                $totalQuestions = is_array($studentTest->questions_order)
-                    ? count($studentTest->questions_order)
-                    : count(json_decode($studentTest->questions_order, true));
+                // Si ya tiene end_time, no actualizarlo
+                if (is_null($studentTest->end_time)) {
+                    // Calcular total de preguntas desde el array questions_order
+                    $totalQuestions = is_array($studentTest->questions_order)
+                        ? count($studentTest->questions_order)
+                        : count(json_decode($studentTest->questions_order, true));
 
-                $studentTest->status = 'completado';
-                $studentTest->not_answered = $totalQuestions - ($studentTest->correct_answers + $studentTest->incorrect_answers);
-                $studentTest->end_time = now()->format('H:i:s');
-                $studentTest->updated_at = now();
-                $studentTest->save();
+                    $studentTest->status = 'completado';
+                    $studentTest->not_answered = $totalQuestions - ($studentTest->correct_answers + $studentTest->incorrect_answers);
+                    $studentTest->end_time = now()->format('H:i:s');
+                    $studentTest->updated_at = now();
+                    $studentTest->save();
+                }
             }
 
             DB::commit();
