@@ -123,6 +123,7 @@ class PermissionSeeder extends Seeder
             'finalizar-evaluacion-grupo',
             'ver-resultados-por-grupo',
             'activar-preguntas',
+            'guardar-resultados',
         ];
 
         // Crear permisos si no existen

@@ -106,6 +106,7 @@ class StudenTestsController extends Controller
                 'name' => $test->student->name,
                 'paternal_surname' => $test->student->paternal_surname,
                 'maternal_surname' => $test->student->maternal_surname,
+                'student_test_id' => $test->id,
                 'code' => $test->code,
                 'score' => $test->score_obtained,
                 'hora_inicio' => $test->start_time,

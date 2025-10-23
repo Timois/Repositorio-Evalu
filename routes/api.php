@@ -222,7 +222,7 @@ Route::controller(StudenTestsController::class)->prefix('student_tests')->middle
 
 Route::controller(ResultsController::class)->prefix('results')->middleware($authPersona)->group(function () {
     Route::post("/list/{id}", "showResultsByEvaluation")->middleware('auth:persona', 'permission:ver-resultados');
-    Route::post("/save/{id}", "saveResults")->middleware('auth:persona', 'permission:guardar-resultados');
+    Route::post("/save/{id}", "saveResultsCurve")->middleware('auth:persona', 'permission:guardar-resultados');
 });
 
 Route::controller(LaboratoriesController::class)->prefix('laboratories')->middleware($authPersona)->group(function () {

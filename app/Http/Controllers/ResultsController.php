@@ -7,86 +7,100 @@ use App\Models\Result;
 use App\Models\Student;
 use App\Models\StudentTest;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ResultsController extends Controller
 {
     public function showResultsByEvaluation($evaluationId)
     {
         $evaluation = Evaluation::find($evaluationId);
+
         if (!$evaluation) {
             return response()->json(['message' => 'No se encontró la evaluación'], 404);
         }
 
-        $studentTests = StudentTest::with('student')
-            ->where('evaluation_id', $evaluationId)
+        // 🔹 Obtenemos los resultados desde la tabla results, junto al estudiante
+        $results = Result::with(['studentTest.student'])
+            ->whereHas('studentTest', function ($query) use ($evaluationId) {
+                $query->where('evaluation_id', $evaluationId);
+            })
             ->get();
 
-        if ($studentTests->isEmpty()) {
-            return response()->json(['message' => 'No hay estudiantes asignados a esta evaluación'], 404);
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No hay resultados registrados para esta evaluación'], 404);
         }
 
-        $results = $studentTests->map(function ($test) {
-            $duration = null;
+        // 🔹 Formateamos los datos de salida
+        $formattedResults = $results->map(function ($result) {
+            $studentTest = $result->studentTest;
+            $student = $studentTest?->student;
 
-            if ($test->start_time && $test->end_time) {
-                $start = \Carbon\Carbon::parse($test->start_time);
-                $end = \Carbon\Carbon::parse($test->end_time);
+            $duration = null;
+            if ($studentTest && $studentTest->start_time && $studentTest->end_time) {
+                $start = \Carbon\Carbon::parse($studentTest->start_time);
+                $end = \Carbon\Carbon::parse($studentTest->end_time);
                 $duration = $start->diffInMinutes($end);
             }
 
             return [
-                'student_id'     => $test->student_id,
-                'student_ci'     => $test->student->ci,
-                'score_obtained' => $test->score_obtained,
-                'not_answered'   => $test->not_answered,
+                'student_id'     => $student?->id,
+                'student_ci'     => $student?->ci,
+                'score_obtained' => $result->qualification,
                 'exam_duration'  => $duration,
-                'status'         => $test->status ?? 'pendiente',
+                'status'         => $result->status,
             ];
         });
 
-        // Agrupamos estados
-        $status = $studentTests->groupBy('status')->map->count();
+        // 🔹 Agrupamos por estado
+        $status = $formattedResults->groupBy('status')->map->count();
 
         return response()->json([
             'evaluation_id'    => $evaluationId,
-            'students_results' => $results,
-            'status'   => $status,
+            'students_results' => $formattedResults,
+            'status'           => $status,
         ]);
     }
 
-    public function saveResults($evaluationId)
+    public function saveResultsCurve(Request $request, $evaluationId)
     {
         $evaluation = Evaluation::find($evaluationId);
 
         if (!$evaluation) {
             return response()->json(['message' => 'Evaluación no encontrada'], 404);
         }
-        $studentTests = StudentTest::with('student')
-            ->where('evaluation_id', $evaluationId)
-            ->get();
 
-        if ($studentTests->isEmpty()) {
-            return response()->json(['message' => 'No hay estudiantes en esta evaluación'], 404);
-        }
+        $validated = $request->validate([
+            'min_score' => 'required|numeric|min:0|max:100',
+            'results' => 'required|array',
+            'results.*.student_test_id' => 'required|integer|exists:student_tests,id',
+            'results.*.qualification' => 'required|numeric|min:0|max:100',
+            'results.*.status' => 'required|string|in:admitido,no_admitido',
+        ]);
 
-        foreach ($studentTests as $test) {
-            $score = $test->score_obtained;
+        foreach ($validated['results'] as $resultData) {
+            $test = StudentTest::find($resultData['student_test_id']);
+            if (!$test) continue;
+
             $start = \Carbon\Carbon::parse($test->start_time);
             $end = \Carbon\Carbon::parse($test->end_time);
             $examDuration = $start->diff($end)->format('%H:%I:%S');
-            $status = $score >= $evaluation->passing_score ? 'admitido' : 'no_admitido';
 
-            // Guardar o actualizar result
             Result::updateOrCreate(
                 ['student_test_id' => $test->id],
                 [
-                    'qualification' => $score,
+                    'qualification' => $resultData['qualification'],
                     'exam_duration' => $examDuration,
-                    'status'        => $status,
+                    'status' => $resultData['status'],
                 ]
             );
         }
 
-        return response()->json(['message' => 'Resultados guardados correctamente'], 200);
+        // También puedes actualizar la nota mínima usada
+        $evaluation->update(['passing_score' => $validated['min_score']]);
+
+        return response()->json([
+            'message' => 'Resultados actualizados según la curva correctamente ✅',
+            'min_score' => $validated['min_score']
+        ]);
     }
 }
