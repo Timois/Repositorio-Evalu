@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\AcademicManagement;
 use App\Models\AcademicManagementCareer;
 use Carbon\Carbon;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 
@@ -90,5 +91,33 @@ class ValidationAcademicManagementPeriod extends FormRequest
             'academic_management_career_id.required' => 'El id de la gestion academica de la carrera es obligatorio',
             'academic_management_career_id.exists' => 'No existe el id de la gestion academica de la carrera',
         ];
+    }
+    public function withValidator(Validator $validator)
+    {
+        $validator->after(function ($validator) {
+            $careerId = $this->academic_management_career_id;
+            $periodId = $this->period_id;
+            $initialDate = Carbon::parse($this->initial_date);
+            $endDate = Carbon::parse($this->end_date);
+            $id = $this->route('id'); // para excluir el registro actual si estás editando
+
+            // Buscar si existe otro periodo que se solape
+            $exists = \App\Models\AcademicManagementPeriod::where('academic_management_career_id', $careerId)
+                ->where('period_id', $periodId)
+                ->where(function ($query) use ($initialDate, $endDate) {
+                    $query->whereBetween('initial_date', [$initialDate, $endDate])
+                        ->orWhereBetween('end_date', [$initialDate, $endDate])
+                        ->orWhere(function ($q) use ($initialDate, $endDate) {
+                            $q->where('initial_date', '<=', $initialDate)
+                                ->where('end_date', '>=', $endDate);
+                        });
+                })
+                ->when($id, fn($q) => $q->where('id', '!=', $id)) // excluir el actual si estás editando
+                ->exists();
+
+            if ($exists) {
+                $validator->errors()->add('period_id', 'El periodo ya existe en un rango de fechas que se solapa para esta carrera.');
+            }
+        });
     }
 }

@@ -55,7 +55,7 @@ class ValidationsCareer extends FormRequest
         // Si es una actualización
         $career = $this->route('id');
         if ($career) {
-            $validationName = 'string|max:50|regex:/[a-zA-Zñ]+/|unique:careers,name,' . $career;
+            $validationName = 'string|max:80|regex:/[a-zA-Zñ]+/|unique:careers,name,' . $career;
             $validationInitials = 'string|max:10|unique:careers,initials,' . $career;
             $validationLogo = 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048';
             $validationType = 'required|in:dependiente,mayor,carrera,facultad';
