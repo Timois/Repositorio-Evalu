@@ -34,17 +34,13 @@ class StudentEvaluationController extends Controller
             ->join('academic_management_career', 'academic_management_period.academic_management_career_id', '=', 'academic_management_career.id')
             ->join('careers', 'academic_management_career.career_id', '=', 'careers.id')
             ->join('academic_management', 'academic_management_career.academic_management_id', '=', 'academic_management.id')
-            ->join('group_student', 'group_student.student_id', '=', 'student_tests.student_id')
-            ->join('groups', 'groups.id', '=', 'group_student.group_id')
             ->select(
                 'evaluations.id as evaluation_id',
                 'evaluations.title',
-                'groups.status as group_status',
+                DB::raw("(SELECT status FROM groups WHERE id = {$groupStudent->group_id}) as group_status"),
                 'student_tests.score_obtained',
                 'student_tests.id as student_test_id',
                 DB::raw($student->id . ' as student_id'),
-
-                // Datos académicos
                 'careers.name as career_name',
                 'periods.period as period_name',
                 'periods.level as period_level',
@@ -53,7 +49,6 @@ class StudentEvaluationController extends Controller
             ->where('student_tests.student_id', $student->id)
             ->orderBy('evaluations.created_at', 'asc')
             ->get();
-
         if ($evaluations->isEmpty()) {
             return response()->json(['message' => 'El estudiante no tiene evaluaciones asignadas'], 404);
         }

@@ -194,7 +194,7 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::put("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-evaluaciones');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:buscar-evaluaciones-porId');
     Route::get("/findPeriod/{id}", 'findPeriodById')->middleware('auth:persona', 'permission:ver-informacion-del-periodo-asignado');
-    Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer')->middleware('permission:ver-evaluaciones-por-carrera');
+    Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer')->middleware('auth:persona', 'permission:ver-evaluaciones-por-carrera');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-evaluaciones');
     Route::get("/listExmansByPeriod/{id}", "findEvaluationsByPeriod")->middleware('auth:persona', 'permission:ver-evaluaciones-por-periodo');
 });

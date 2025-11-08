@@ -6,6 +6,7 @@ use App\Http\Requests\ValidationEvaluation;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
+use Spatie\Permission\Models\Permission;
 
 class EvaluationController extends Controller
 {
