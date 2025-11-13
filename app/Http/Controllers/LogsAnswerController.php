@@ -158,6 +158,13 @@ class LogsAnswerController extends Controller
                 'not_answered' => $notAnsweredCount,
                 'status' => 'completado',
             ]);
+
+            // Actualizar estado de la evaluación
+            $evaluation = $studentTest->evaluation;
+            if ($evaluation) {
+                $evaluation->status = 'inactivo';
+                $evaluation->save();
+            }
             DB::commit();
             return response()->json([
                 'message' => 'Respuestas guardadas correctamente.',

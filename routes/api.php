@@ -243,6 +243,7 @@ Route::controller(GroupsController::class)->prefix('groups')->group(function () 
     Route::post("/resumeGroup/{id}", "continueGroupEvaluation")->middleware('auth:persona', 'permission:reanudar-evaluacion-grupo');
     Route::post("/stopGroup/{id}", "stopGroupEvaluation")->middleware('auth:persona', 'permission:finalizar-evaluacion-grupo');
     Route::get("/resultsGroup/{id}", "listFinalResultsByGroup")->middleware('auth:persona', 'permission:ver-resultados-por-grupo');
+    Route::put("updateStatusGroup/{id}", "updateStatusGroup");
 });
 Route::put("/groups/endGroup/{id}", [GroupsController::class, "finalizeGroupEvaluation"]);
 

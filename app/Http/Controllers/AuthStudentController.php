@@ -41,14 +41,6 @@ class AuthStudentController extends Controller
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
 
-        // Buscar el grupo del estudiante (si tiene)
-        $grupo_student = DB::table('group_student')->where('student_id', $persona->id)->first();
-        $grupo = null;
-
-        if ($grupo_student) {
-            $grupo = Group::find($grupo_student->group_id);
-        }
-
         // ✅ Actualizar estado a "activo"
         $persona->update(['status' => 'activo']);
 
@@ -64,8 +56,6 @@ class AuthStudentController extends Controller
                         ($persona->maternal_surname ?? '')
                 ),
                 'ci' => $persona->ci,
-                // ✅ Mostrar nombre del grupo o mensaje claro
-                'group' => $grupo ? $grupo->id : 'Sin grupo asignado',
                 'role' => $rol->name,
             ],
             'permissions' => $rol->permissions->pluck('name'),

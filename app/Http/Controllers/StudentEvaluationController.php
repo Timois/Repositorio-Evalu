@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\StudentTest;
 use App\Models\StudentTestQuestion;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StudentEvaluationController extends Controller
@@ -20,35 +21,51 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'El estudiante no existe'], 404);
         }
 
-        // Obtener el id del grupo del estudiante
-        $groupStudent = DB::table('group_student')->where('student_id', $student->id)->first();
-        if (!$groupStudent) {
-            return response()->json(['message' => 'El estudiante no está asignado a ningún grupo'], 404);
-        }
-
-        // Consultar las evaluaciones con carrera, periodo y gestión
-        $evaluations = DB::table('student_tests')
-            ->join('evaluations', 'student_tests.evaluation_id', '=', 'evaluations.id')
+        $evaluations = DB::table('group_student')
+            ->join('groups', 'group_student.group_id', '=', 'groups.id')
+            ->join('evaluations', 'groups.evaluation_id', '=', 'evaluations.id')
             ->join('academic_management_period', 'evaluations.academic_management_period_id', '=', 'academic_management_period.id')
             ->join('periods', 'academic_management_period.period_id', '=', 'periods.id')
             ->join('academic_management_career', 'academic_management_period.academic_management_career_id', '=', 'academic_management_career.id')
             ->join('careers', 'academic_management_career.career_id', '=', 'careers.id')
             ->join('academic_management', 'academic_management_career.academic_management_id', '=', 'academic_management.id')
+            ->leftJoin('student_tests', function ($join) use ($student) {
+                $join->on('student_tests.evaluation_id', '=', 'evaluations.id')
+                    ->where('student_tests.student_id', '=', $student->id);
+            })
             ->select(
                 'evaluations.id as evaluation_id',
-                'evaluations.title',
-                DB::raw("(SELECT status FROM groups WHERE id = {$groupStudent->group_id}) as group_status"),
-                'student_tests.score_obtained',
-                'student_tests.id as student_test_id',
-                DB::raw($student->id . ' as student_id'),
+                'evaluations.status as evaluation_status',
+                'evaluations.title as evaluation_title',
+                'groups.id as group_id',
+                'groups.name as group_name',
+                'groups.status as group_status',
                 'careers.name as career_name',
                 'periods.period as period_name',
                 'periods.level as period_level',
-                'academic_management.year as gestion_year'
+                'academic_management.year as gestion_year',
+                'student_tests.id as student_test_id',
+                'student_tests.score_obtained',
+                DB::raw($student->id . ' as student_id')
             )
-            ->where('student_tests.student_id', $student->id)
+            ->where('group_student.student_id', $student->id)
+            ->groupBy(
+                'evaluations.id',
+                'evaluations.title',
+                'evaluations.status',
+                'groups.id',
+                'groups.name',
+                'groups.status',
+                'careers.name',
+                'periods.period',
+                'periods.level',
+                'academic_management.year',
+                'student_tests.id',
+                'student_tests.score_obtained'
+            )
             ->orderBy('evaluations.created_at', 'asc')
             ->get();
+
         if ($evaluations->isEmpty()) {
             return response()->json(['message' => 'El estudiante no tiene evaluaciones asignadas'], 404);
         }
@@ -132,7 +149,7 @@ class StudentEvaluationController extends Controller
             'student_test_id'    => $test->id,
             'test_code'          => $test->code,
             'evaluation_id'      => $test->evaluation_id,
-            'evaluation_name'    => $evaluation->title,
+            'evaluation_title'    => $evaluation->title,
             'start_time'         => $startTime->toIso8601String(),
             'end_time'           => $endTime->toIso8601String(),
             'current_time'       => $now->toIso8601String(),
@@ -142,24 +159,25 @@ class StudentEvaluationController extends Controller
     }
 
     // funcion para obtener las preguntas con sus respuestas correctas
-    public function getQuestionsWithCorrectAnswers($id)
+    public function getQuestionsWithCorrectAnswers($id, Request $request)
     {
         $student = Student::find($id);
         if (!$student) {
             return response()->json(['message' => 'El estudiante no existe'], 404);
         }
 
-        $test = StudentTest::where('student_id', $student->id)->first();
+        // Recibir evaluation_id desde la solicitud
+        $evaluationId = $request->evaluation_id;
+
+        // Buscar la prueba correcta
+        $test = StudentTest::where('student_id', $student->id)
+            ->where('evaluation_id', $evaluationId)
+            ->first();
+
         if (!$test) {
-            return response()->json(['message' => 'Prueba no encontrada'], 404);
+            return response()->json(['message' => 'Prueba no encontrada para esta evaluación'], 404);
         }
 
-        $evaluation = Evaluation::find($test->evaluation_id);
-        if (!$evaluation) {
-            return response()->json(['message' => 'Evaluación no encontrada'], 404);
-        }
-
-        // Obtener todas las respuestas posibles, no solo las correctas
         $studentQuestions = StudentTestQuestion::with(['question.bank_answers'])
             ->where('student_test_id', $test->id)
             ->get();

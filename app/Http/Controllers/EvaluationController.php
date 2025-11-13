@@ -27,6 +27,7 @@ class EvaluationController extends Controller
         $evaluation->places = $request->places;
         $evaluation->type = $request->type;
         $evaluation->time = $request->time;
+        $evaluation->status = 'activo';
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
         return response()->json($evaluation);

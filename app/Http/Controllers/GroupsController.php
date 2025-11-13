@@ -50,6 +50,18 @@ class GroupsController extends Controller
         ]);
     }
 
+    public function updateStatusGroup(Request $request, string $id)
+    {
+        $group = Group::find($id);
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado.'], 404);
+        }
+
+        $group->status = 'completado';
+        $group->save();
+
+        return response()->json(['message' => 'Estado del grupo actualizado correctamente.', 'group' => $group]);
+    }
     public function create(ValidationGroup $request)
     {
         // 1. Obtener los estudiantes
@@ -227,8 +239,6 @@ class GroupsController extends Controller
         if ($group->status !== 'pendiente') {
             return response()->json(['message' => 'El examen ya fue iniciado o no está pendiente'], 400);
         }
-
-
 
         DB::beginTransaction();
 
