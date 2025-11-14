@@ -50,6 +50,44 @@ class GroupsController extends Controller
         ]);
     }
 
+    public function getGroupStatus($groupId)
+    {
+        $group = Group::with('evaluation')->find($groupId);
+
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        $now = now();
+
+        // 🔥 Calcular time_left dependiendo del estado
+        if ($group->status === 'en_progreso') {
+            $timeLeft = max(0, $now->diffInSeconds(Carbon::parse($group->end_time), false));
+        } elseif ($group->status === 'pausado') {
+            // En pausa, tiempo restante se calcula igual, pero no debe avanzar
+            $timeLeft = max(0, $now->diffInSeconds(Carbon::parse($group->end_time), false));
+        } else {
+            // Para estados completado o pendiente
+            $timeLeft = 0;
+        }
+
+        // 🔥 Estado si ya terminó por tiempo
+        $examCompleted = ($group->status === 'completado') || ($timeLeft <= 0 && $group->status === 'en_progreso');
+
+        // 🔥 Si el examen está pausado, el alumno NO puede responder
+        $canAnswer = ($group->status === 'en_progreso' && $timeLeft > 0);
+
+        return response()->json([
+            'group' => $group,
+            'status' => $group->status,
+            'start_time' => $group->start_time,
+            'end_time' => $group->end_time,
+            'time_left' => $timeLeft,
+            'examCompleted' => $examCompleted,
+            'canAnswer' => $canAnswer,
+        ]);
+    }
+
     public function updateStatusGroup(Request $request, string $id)
     {
         $group = Group::find($id);
@@ -276,24 +314,34 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Token no encontrado'], 401);
         }
 
-        $group = Group::find($groupId);
+        $group = Group::with('evaluation')->find($groupId);
         if (!$group) {
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // ✅ Solo se puede pausar si está en progreso
         if ($group->status !== 'en_progreso') {
             return response()->json(['message' => 'El examen no está en curso'], 400);
         }
 
         try {
+            $now = now();
+            $end = Carbon::parse($group->end_time);
+
+            // 🔥 Calcular tiempo restante
+            $timeLeft = max(0, $now->diffInSeconds($end, false));
+
+            // 🔥 Guardar el tiempo restante para reanudarlo después
+            $group->time_left = $timeLeft;
+
+            // 🔥 Congelar el examen
             $group->status = 'pausado';
+
             $group->save();
 
             return response()->json([
                 'message' => 'Examen pausado correctamente',
                 'status'  => $group->status,
-                'roomId'  => $group->id, // 🔑 opcional, útil para el frontend
+                'time_left' => $timeLeft
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -315,18 +363,24 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // ✅ Solo se puede reanudar si está pausado
         if ($group->status !== 'pausado') {
             return response()->json(['message' => 'El examen no está pausado'], 400);
         }
 
         try {
+            $now = now();
+            $newEndTime = $now->copy()->addSeconds($group->time_left);
+
             $group->status = 'en_progreso';
+            $group->end_time = $newEndTime;
+            $group->time_left = null; // ya no hace falta
+
             $group->save();
 
             return response()->json([
                 'message' => 'Examen reanudado correctamente',
-                'status' => $group->status
+                'status' => $group->status,
+                'end_time' => $group->end_time
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -52,6 +52,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('description')->nullable();
             $table->integer('total_students')->nullable();
+            $table->integer('time_left')->nullable(); // Tiempo restante en segundos
             $table->dateTime('start_time')->nullable(); // Fecha y hora de inicio del examen para el grupo
             $table->dateTime('end_time')->nullable();   // Fecha y hora de fin del examen para el grupo
             $table->boolean('is_restricted')->default(true); // Si solo los estudiantes del grupo pueden rendir
