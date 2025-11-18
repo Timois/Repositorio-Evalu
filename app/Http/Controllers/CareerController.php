@@ -268,7 +268,7 @@ class CareerController extends Controller
     {
         $periods = AcademicManagementPeriod::where('academic_management_career_id', $academicManagementCareerId)
             ->with(['period' => function ($query) {
-                $query->select('id', 'period');
+                $query->select('id', 'period', 'level');
             }])
             ->get();
 
@@ -279,6 +279,7 @@ class CareerController extends Controller
             return [
                 'academic_management_period_id' => $periods->id,
                 'period_id' => $periods->period->id,
+                'period_level' => $periods->period->level,
                 'period' => $periods->period->period,
                 'initial_date' => $periods->initial_date,
                 'end_date' => $periods->end_date

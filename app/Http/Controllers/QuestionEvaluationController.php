@@ -92,6 +92,8 @@ class QuestionEvaluationController extends Controller
     public function asignQuestionsRandom(AssignQuestionRequest $request)
     {
         $evaluation = Evaluation::findOrFail($request->evaluation_id);
+        $periodId = $evaluation->academic_management_period_id;
+
         $ponderar = $request->ponderar;
         $areas = $request->areas;
         $totalNota = collect($areas)->sum('nota');
@@ -102,192 +104,161 @@ class QuestionEvaluationController extends Controller
 
         try {
             DB::beginTransaction();
-            // verificar disponibilidad de preguntas
             foreach ($areas as $areaData) {
                 $areaId = $areaData['id'];
+
                 if ($ponderar) {
-                    $cantidadFacil = $areaData['cantidadFacil'] ?? 0;
-                    $cantidadMedia = $areaData['cantidadMedia'] ?? 0;
-                    $cantidadDificil = $areaData['cantidadDificil'] ?? 0;
-                    $totalPreguntas = $cantidadFacil + $cantidadMedia + $cantidadDificil;
-                    if ($totalPreguntas == 0) continue;
-                    $preguntasDisponiblesFacil = QuestionBank::where('area_id', $areaId)
-                        ->where('dificulty', 'facil')
-                        ->count();
-                    $preguntasDisponiblesMedia = QuestionBank::where('area_id', $areaId)
-                        ->where('dificulty', 'medio')
-                        ->count();
-                    $preguntasDisponiblesDificil = QuestionBank::where('area_id', $areaId)
-                        ->where('dificulty', 'dificil')
-                        ->count();
-                    if ($preguntasDisponiblesFacil < $cantidadFacil || $preguntasDisponiblesMedia < $cantidadMedia || $preguntasDisponiblesDificil < $cantidadDificil) {
+                    $cantFacil = $areaData['cantidadFacil'] ?? 0;
+                    $cantMedio = $areaData['cantidadMedia'] ?? 0;
+                    $cantDificil = $areaData['cantidadDificil'] ?? 0;
+
+                    $dispFacil = $this->countQuestions($periodId, $areaId, 'facil');
+                    $dispMedio = $this->countQuestions($periodId, $areaId, 'medio');
+                    $dispDificil = $this->countQuestions($periodId, $areaId, 'dificil');
+
+                    if ($dispFacil < $cantFacil || $dispMedio < $cantMedio || $dispDificil < $cantDificil) {
                         return response()->json([
                             'success' => false,
-                            'message' => "No hay suficientes preguntas disponibles para esta área."
+                            'message' => "No hay suficientes preguntas disponibles para el área."
                         ], 409);
                     }
                 } else {
                     $cantidadTotal = $areaData['cantidadTotal'] ?? 0;
                     if ($cantidadTotal == 0) continue;
-                    $preguntasDisponibles = QuestionBank::where('area_id', $areaId)
-                        ->count();
-                    if ($preguntasDisponibles < $cantidadTotal) {
+
+                    $dispTotal = $this->countQuestions($periodId, $areaId, null);
+
+                    if ($dispTotal < $cantidadTotal) {
                         return response()->json([
                             'success' => false,
-                            'message' => "No hay suficientes preguntas disponibles para esta área."
+                            'message' => "No hay suficientes preguntas disponibles en el área."
                         ], 409);
-                    }   
+                    }
                 }
             }
-            // Obtener todos los student_tests de esta evaluación
             $studentTests = StudentTest::where('evaluation_id', $evaluation->id)->get();
-            $studentTestsConPreguntas = StudentTestQuestion::whereIn('student_test_id', $studentTests->pluck('id'))->pluck('student_test_id')->unique();
+            $asignadas = StudentTestQuestion::whereIn('student_test_id', $studentTests->pluck('id'))
+                ->pluck('student_test_id')
+                ->unique();
 
-            if ($studentTestsConPreguntas->isNotEmpty()) {
-                $studentTestsConPreguntas->implode(', ');
+            if ($asignadas->isNotEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Ya se asignaron preguntas a los estudiantes. No se puede volver a asignar."
+                    'message' => "Ya se asignaron preguntas antes."
                 ], 409);
             }
-
             foreach ($studentTests as $studentTest) {
-                $allQuestionsForStudent = [];
+                $allForStudent = [];
 
                 foreach ($areas as $areaData) {
                     $areaId = $areaData['id'];
                     $notaArea = $areaData['nota'];
 
                     if ($ponderar) {
-                        $cantidadFacil = $areaData['cantidadFacil'] ?? 0;
-                        $cantidadMedia = $areaData['cantidadMedia'] ?? 0;
-                        $cantidadDificil = $areaData['cantidadDificil'] ?? 0;
-                        $totalPreguntas = $cantidadFacil + $cantidadMedia + $cantidadDificil;
+                        $cantFacil = $areaData['cantidadFacil'] ?? 0;
+                        $cantMedio = $areaData['cantidadMedia'] ?? 0;
+                        $cantDificil = $areaData['cantidadDificil'] ?? 0;
 
-                        if ($totalPreguntas == 0) continue;
+                        $totalPreg = $cantFacil + $cantMedio + $cantDificil;
+                        if ($totalPreg == 0) continue;
+                        $puntaje = $notaArea / $totalPreg;
+                        $pf = $this->getQuestionsByDifficulty($periodId, $areaId, 'facil', $cantFacil);
+                        $pm = $this->getQuestionsByDifficulty($periodId, $areaId, 'medio', $cantMedio);
+                        $pd = $this->getQuestionsByDifficulty($periodId, $areaId, 'dificil', $cantDificil);
 
-                        // Verificar disponibilidad de preguntas (activas e inactivas)
-                        $preguntasDisponiblesFacil = QuestionBank::where('area_id', $areaId)
-                            ->where('dificulty', 'facil')
-                            ->count();
-                        $preguntasDisponiblesMedia = QuestionBank::where('area_id', $areaId)
-                            ->where('dificulty', 'medio')
-                            ->count();
-                        $preguntasDisponiblesDificil = QuestionBank::where('area_id', $areaId)
-                            ->where('dificulty', 'dificil')
-                            ->count();
-
-                        if (
-                            $preguntasDisponiblesFacil < $cantidadFacil ||
-                            $preguntasDisponiblesMedia < $cantidadMedia ||
-                            $preguntasDisponiblesDificil < $cantidadDificil
-                        ) {
-                            throw new \Exception("No hay suficientes preguntas (activas o inactivas) disponibles para el área {$areaId}.");
-                        }
-
-                        $puntajePorPregunta = $notaArea / $totalPreguntas;
-
-                        // Seleccionar preguntas por dificultad
-                        $preguntasFacil = $this->getQuestionsByDifficulty($areaId, 'facil', $cantidadFacil);
-                        $preguntasMedia = $this->getQuestionsByDifficulty($areaId, 'medio', $cantidadMedia);
-                        $preguntasDificil = $this->getQuestionsByDifficulty($areaId, 'dificil', $cantidadDificil);
-
-                        $preguntas = $preguntasFacil->concat($preguntasMedia)->concat($preguntasDificil)->shuffle();
+                        $preguntas = $pf->concat($pm)->concat($pd)->shuffle();
                     } else {
-                        $totalPreguntas = $areaData['cantidadTotal'];
-                        if ($totalPreguntas == 0) continue;
+                        $cantidadTotal = $areaData['cantidadTotal'];
+                        if ($cantidadTotal == 0) continue;
 
-                        // Verificar disponibilidad total de preguntas
-                        $preguntasDisponibles = QuestionBank::where('area_id', $areaId)->count();
-                        if ($preguntasDisponibles < $totalPreguntas) {
-                            throw new \Exception("No hay suficientes preguntas (activas o inactivas) disponibles para el área {$areaId}.");
-                        }
+                        $puntaje = $notaArea / $cantidadTotal;
 
-                        $puntajePorPregunta = $notaArea / $totalPreguntas;
-
-                        // Seleccionar preguntas sin considerar dificultad
-                        $preguntas = $this->getQuestions($areaId, $totalPreguntas);
+                        $preguntas = $this->getQuestions($periodId, $areaId, $cantidadTotal);
                     }
 
                     foreach ($preguntas as $pregunta) {
-                        $allQuestionsForStudent[] = [
+                        $allForStudent[] = [
                             'student_test_id' => $studentTest->id,
                             'question_id' => $pregunta->id,
-                            'score_assigned' => $puntajePorPregunta,
+                            'score_assigned' => $puntaje,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
 
-                        // Marcar la pregunta como inactiva
                         $pregunta->update(['status' => 'inactivo']);
                     }
                 }
 
-                // Insertar todas las preguntas para el estudiante
-                StudentTestQuestion::insert($allQuestionsForStudent);
+                StudentTestQuestion::insert($allForStudent);
 
-                // Guardar el orden para la tabla student_tests.questions_order
-                $studentTest->questions_order = collect($allQuestionsForStudent)->pluck('question_id')->toJson();
+                $studentTest->questions_order = collect($allForStudent)->pluck('question_id')->toJson();
                 $studentTest->save();
             }
 
             DB::commit();
-
-            return response()->json(['success' => true, 'message' => 'Preguntas asignadas correctamente a todos los estudiantes.']);
+            return response()->json(['success' => true, 'message' => 'Preguntas asignadas correctamente.']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
-
-    private function getQuestionsByDifficulty($areaId, $difficulty, $quantity)
+    private function countQuestions($periodId, $areaId, $difficulty = null)
     {
-        // Primero intentar obtener preguntas activas
-        $activeQuestions = QuestionBank::where('area_id', $areaId)
-            ->where('dificulty', $difficulty)
+        return QuestionBank::where('area_id', $areaId)
+            ->when($difficulty, fn($q) => $q->where('dificulty', $difficulty))
             ->where('status', 'activo')
-            ->inRandomOrder()
-            ->take($quantity)
-            ->get();
-
-        // Si no hay suficientes preguntas activas, complementar con inactivas
-        if ($activeQuestions->count() < $quantity) {
-            $remainingQuantity = $quantity - $activeQuestions->count();
-            $inactiveQuestions = QuestionBank::where('area_id', $areaId)
-                ->where('dificulty', $difficulty)
-                ->where('status', 'inactivo')
-                ->inRandomOrder()
-                ->take($remainingQuantity)
-                ->get();
-
-            return $activeQuestions->concat($inactiveQuestions);
-        }
-
-        return $activeQuestions;
+            ->whereIn('id', function ($q) use ($periodId) {
+                $q->select('bank_question_id')
+                    ->from('academic_management_period_bank_question')
+                    ->where('academic_management_period_id', $periodId);
+            })
+            ->count();
     }
-
-    private function getQuestions($areaId, $quantity)
+    private function getQuestionsByDifficulty($periodId, $areaId, $difficulty, $quantity)
     {
-        // Primero intentar obtener preguntas activas
-        $activeQuestions = QuestionBank::where('area_id', $areaId)
+        return QuestionBank::where('area_id', $areaId)
+            ->where('dificulty', $difficulty)
+            ->where('status', 'activo') // solo activas
+            ->whereIn('id', function ($q) use ($periodId) {
+                $q->select('bank_question_id')
+                    ->from('academic_management_period_bank_question')
+                    ->where('academic_management_period_id', $periodId);
+            })
+            ->inRandomOrder()
+            ->take($quantity)
+            ->get();
+    }
+    private function getQuestions($periodId, $areaId, $quantity)
+    {
+        $active = QuestionBank::where('area_id', $areaId)
             ->where('status', 'activo')
+            ->whereIn('id', function ($q) use ($periodId) {
+                $q->select('bank_question_id')
+                    ->from('academic_management_period_bank_question')
+                    ->where('academic_management_period_id', $periodId);
+            })
             ->inRandomOrder()
             ->take($quantity)
             ->get();
 
-        // Si no hay suficientes preguntas activas, complementar con inactivas
-        if ($activeQuestions->count() < $quantity) {
-            $remainingQuantity = $quantity - $activeQuestions->count();
-            $inactiveQuestions = QuestionBank::where('area_id', $areaId)
+        if ($active->count() < $quantity) {
+            $remaining = $quantity - $active->count();
+
+            $inactive = QuestionBank::where('area_id', $areaId)
                 ->where('status', 'inactivo')
+                ->whereIn('id', function ($q) use ($periodId) {
+                    $q->select('bank_question_id')
+                        ->from('academic_management_period_bank_question')
+                        ->where('academic_management_period_id', $periodId);
+                })
                 ->inRandomOrder()
-                ->take($remainingQuantity)
+                ->take($remaining)
                 ->get();
 
-            return $activeQuestions->concat($inactiveQuestions);
+            return $active->concat($inactive);
         }
 
-        return $activeQuestions;
+        return $active;
     }
 
     public function completeStudentTest($studentTestId)
@@ -326,32 +297,36 @@ class QuestionEvaluationController extends Controller
     {
         $request->validate([
             'area_id' => 'required|exists:areas,id',
+            'evaluation_id' => 'required|exists:evaluations,id',
         ]);
+
         $areaId = $request->input('area_id');
+        $evaluation = Evaluation::findOrFail($request->evaluation_id);
 
-        $facil = QuestionBank::where('area_id', $areaId)
-            ->where('dificulty', 'facil')
-            ->where('status', 'activo')
-            ->count();
+        $periodId = $evaluation->academic_management_period_id;
 
-        $media = QuestionBank::where('area_id', $areaId)
-            ->where('dificulty', 'medio')
+        $baseQuery = QuestionBank::where('area_id', $areaId)
             ->where('status', 'activo')
-            ->count();
+            ->whereIn('id', function ($query) use ($periodId) {
+                $query->select('bank_question_id')
+                    ->from('academic_management_period_bank_question')
+                    ->where('academic_management_period_id', $periodId);
+            });
 
-        $dificil = QuestionBank::where('area_id', $areaId)
-            ->where('dificulty', 'dificil')
-            ->where('status', 'activo')
-            ->count();
+        $facil = (clone $baseQuery)->where('dificulty', 'facil')->count();
+        $media = (clone $baseQuery)->where('dificulty', 'medio')->count();
+        $dificil = (clone $baseQuery)->where('dificulty', 'dificil')->count();
 
         return response()->json([
             'area_id' => (int)$areaId,
+            'period_id' => $periodId,
             'facil' => $facil,
             'media' => $media,
             'dificil' => $dificil,
             'total' => $facil + $media + $dificil,
         ]);
     }
+
     public function find()
     {
         $questions = QuestionEvaluation::orderBy('id', 'ASC')->get();
@@ -389,27 +364,44 @@ class QuestionEvaluationController extends Controller
         ]);
     }
 
-    public function activeQuestions(string $id)
+    public function activeQuestions(Request $request, string $areaId)
     {
-        $area = Areas::find($id);
+        $request->validate([
+            'evaluation_id' => 'required|exists:evaluations,id'
+        ]);
 
+        $evaluation = Evaluation::findOrFail($request->evaluation_id);
+
+        $periodId = $evaluation->academic_management_period_id;
+
+        $area = Areas::find($areaId);
         if (!$area) {
             return response()->json(['error' => 'El área no existe'], 404);
         }
 
-        // Activar todas las preguntas inactivas del área
-        $updated = QuestionBank::where('area_id', $id)
+        $preguntasDelPeriodo = DB::table('academic_management_period_bank_question')
+            ->where('academic_management_period_id', $periodId)
+            ->pluck('bank_question_id');
+
+        if ($preguntasDelPeriodo->isEmpty()) {
+            return response()->json([
+                'message' => 'El periodo no tiene preguntas registradas.'
+            ], 404);
+        }
+
+        $updated = QuestionBank::where('area_id', $areaId)
+            ->whereIn('id', $preguntasDelPeriodo)
             ->where('status', 'inactivo')
             ->update(['status' => 'activo']);
 
         if ($updated === 0) {
             return response()->json([
-                'message' => 'No hay preguntas inactivas en esta área'
+                'message' => 'No hay preguntas inactivas en este periodo para esta área.'
             ], 200);
         }
 
         return response()->json([
-            'message' => 'Preguntas activadas correctamente',
+            'message' => 'Preguntas activadas correctamente.',
             'preguntas_activadas' => $updated
         ], 200);
     }
