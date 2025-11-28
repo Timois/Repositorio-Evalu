@@ -21,10 +21,11 @@ class ValidationLaboratorie extends FormRequest
      */
     public function rules(): array
     {
+        $validationCareerId = 'required|exists:careers,id';
         $validationName = 'required|string';
         $validationLocation = 'required|string|max:255';
         $validationEquipmentCount = 'required|integer|min:0';
-
+        $validationStatus = 'in:activo,inactivo';
         $labId = $this->route('id');
         if ($labId) {
             $validationName = 'sometimes|string';
@@ -32,9 +33,11 @@ class ValidationLaboratorie extends FormRequest
             $validationEquipmentCount = 'sometimes|integer|min:0';
         }
         return [
+            'career_id' => $validationCareerId,
             'name' => $validationName,
             'location' => $validationLocation,
             'equipment_count' => $validationEquipmentCount,
+            'status' => $validationStatus
         ];
     }
     protected function prepareForValidation()
@@ -47,6 +50,8 @@ class ValidationLaboratorie extends FormRequest
     public function messages()
     {
         return [
+            'career_id.required' => 'El ID de la carrera es obligatorio.',
+            'career_id.exists' => 'La carrera especificada no existe.',
             'name.required' => 'El nombre del laboratorio es obligatorio.',
             'name.string' => 'El nombre del laboratorio debe ser una cadena de texto.',
             'location.required' => 'La ubicación del laboratorio es obligatoria.',
@@ -55,6 +60,7 @@ class ValidationLaboratorie extends FormRequest
             'equipment_count.required' => 'La cantidad de equipos es obligatoria.',
             'equipment_count.integer' => 'La cantidad de equipos debe ser un número entero.',
             'equipment_count.min' => 'La cantidad de equipos debe ser mayor o igual a 0.',
+            'status.in' => 'El estado debe ser "activo" o "inactivo".',
         ];
     }
 }

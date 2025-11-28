@@ -11,8 +11,11 @@ class Group extends Model
     protected $table = 'groups';
     protected $fillable = [
         'evaluation_id',
+        'laboratory_id',
         'name',
         'description',
+        'start_time',
+        'end_time',
         'total_students',
     ];
     public function evaluation()

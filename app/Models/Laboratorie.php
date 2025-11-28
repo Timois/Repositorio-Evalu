@@ -17,6 +17,10 @@ class Laboratorie extends Model
     // Relación con grupos
     public function groups()
     {
-        return $this->hasMany(Group::class);
+        return $this->hasMany(Group::class, 'laboratory_id', 'id');
+    }
+    public function career()
+    {
+        return $this->belongsTo(Career::class);
     }
 }

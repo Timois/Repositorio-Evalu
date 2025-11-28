@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
                 'role' => 'super-admin'
             ],
             [
-                'name' => 'Docente chapatin',
+                'name' => 'Juan Perez',
                 'email' => 'usuario@example.com',
                 'password' => Hash::make('password123'),
                 'role' => ['docente']

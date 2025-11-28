@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ValidationGroup;
-use App\Jobs\GenerateGroupResultsJob;
 use App\Models\Evaluation;
 use App\Models\Group;
 use App\Models\Laboratorie;
 use App\Models\Result;
-use App\Models\Student;
 use App\Models\StudentTest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -102,114 +100,79 @@ class GroupsController extends Controller
     }
     public function create(ValidationGroup $request)
     {
-        // 1. Obtener los estudiantes
-        $studentsQuery = StudentTest::with('student')
-            ->where('evaluation_id', $request->evaluation_id);
+        DB::beginTransaction();
 
-        if ($request->order_type === 'alphabetical') {
-            $studentsQuery->join('students', 'student_tests.student_id', '=', 'students.id')
-                ->orderBy('students.paternal_surname', 'asc');
-        } elseif ($request->order_type === 'id_asc') {
-            $studentsQuery->join('students', 'student_tests.student_id', '=', 'students.id')
-                ->orderBy('students.id', 'asc');
-        } else {
-            return response()->json(['message' => 'Tipo de orden no válido. Use "alphabetical" o "id_asc".'], 400);
+        try {
+            // Convertir fechas enviadas en formato ISO 8601
+            $start = Carbon::parse($request->start_time);
+            $end   = Carbon::parse($request->end_time);
+
+            // Validar que la hora final sea mayor que la inicial
+            if ($end->lessThanOrEqualTo($start)) {
+                return response()->json([
+                    'message' => 'La fecha/hora de fin debe ser mayor que la de inicio.'
+                ], 422);
+            }
+
+            // Obtener laboratorios válidos
+            $laboratories = Laboratorie::whereIn('id', $request->laboratory_ids)->get();
+
+            if ($laboratories->count() !== count($request->laboratory_ids)) {
+                return response()->json([
+                    'message' => 'Uno o más laboratorios no existen.'
+                ], 404);
+            }
+
+            $createdGroups = [];
+            foreach ($laboratories as $lab) {
+
+                // Validar solapamiento de horarios dentro del mismo laboratorio
+                $exists = Group::where('laboratory_id', $lab->id)
+                    ->where(function ($q) use ($start, $end) {
+                        $q->whereBetween('start_time', [$start, $end])
+                            ->orWhereBetween('end_time', [$start, $end])
+                            ->orWhere(function ($q2) use ($start, $end) {
+                                $q2->where('start_time', '<=', $start)
+                                    ->where('end_time', '>=', $end);
+                            });
+                    })
+                    ->exists();
+
+                if ($exists) {
+                    return response()->json([
+                        'message' => "Ya existe un grupo en el laboratorio '{$lab->name}' que se solapa con ese horario."
+                    ], 409); // 409 Conflict
+                }
+
+                // Crear grupo
+                $group = Group::create([
+                    'evaluation_id'  => $request->evaluation_id,
+                    'laboratory_id'  => $lab->id,
+                    'name'           => $request->name,
+                    'description'    => $request->description ?? '',
+                    'total_students' => 0, // aún no se asignan estudiantes
+                    'start_time'     => $start,
+                    'end_time'       => $end,
+                ]);
+
+                // Retornar con relación de laboratorio incluida
+                $createdGroups[] = $group->load('lab');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Grupos creados correctamente.',
+                'groups'  => $createdGroups
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error interno del servidor.',
+                'error'   => $e->getMessage()
+            ], 500);
         }
-
-        $students = $studentsQuery->get();
-        $totalStudents = $students->count();
-
-        if ($totalStudents === 0) {
-            return response()->json(['message' => 'No hay estudiantes en esta evaluación.'], 400);
-        }
-
-        // 2. Obtener la capacidad del laboratorio seleccionado
-        $laboratory = Laboratorie::find($request->laboratory_id);
-        if (!$laboratory) {
-            return response()->json(['message' => 'Laboratorio no encontrado.'], 404);
-        }
-        $laboratoryCapacity = $laboratory->equipment_count;
-
-        // 3. Validar que el laboratorio tenga suficiente capacidad
-        if ($laboratoryCapacity <= 3) {
-            return response()->json(['message' => 'El laboratorio debe tener más de 3 equipos para permitir al menos 3 equipos libres.'], 400);
-        }
-
-        $assignedStudentsCount = DB::table('group_student')
-            ->join('groups', 'group_student.group_id', '=', 'groups.id')
-            ->where('groups.evaluation_id', $request->evaluation_id)
-            ->whereIn('student_id', $students->pluck('student_id'))
-            ->distinct('student_id')
-            ->count();
-
-
-        $unassignedStudentsCount = $totalStudents - $assignedStudentsCount;
-
-        if ($unassignedStudentsCount === 0) {
-            return response()->json(['message' => 'No hay estudiantes sin asignar para este grupo.'], 400);
-        }
-
-        // 5. Calcular cuántos estudiantes asignar al grupo de manera equitativa
-        $maxStudentsPerGroup = $laboratoryCapacity - 3; // Capacidad ajustada
-        // Estimar cuántos grupos son necesarios para los estudiantes sin asignar
-        $estimatedGroupsNeeded = ceil($unassignedStudentsCount / $maxStudentsPerGroup);
-        // Calcular estudiantes por grupo para una distribución equitativa
-        $studentsToAssignCount = ceil($unassignedStudentsCount / max(1, $estimatedGroupsNeeded));
-
-        // Asegurarse de no exceder la capacidad ajustada
-        $studentsToAssignCount = min($studentsToAssignCount, $maxStudentsPerGroup);
-        $evaluation = Evaluation::find($request->evaluation_id);
-        $examDate = Carbon::parse($evaluation->date_of_realization);
-        // 6. Crear y guardar el grupo
-        $group = new Group();
-        $group->evaluation_id = $request->evaluation_id;
-        $group->laboratory_id = $request->laboratory_id;
-        $group->name = $request->name;
-        $group->total_students = $studentsToAssignCount;
-        $group->description = $request->description;
-        $group->start_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->start_time);
-        $group->end_time = Carbon::parse($examDate->format('Y-m-d') . ' ' . $request->end_time);
-        $group->save();
-
-        // 7. Asignar estudiantes al grupo
-        $assignedStudentIds = DB::table('group_student')
-            ->join('groups', 'group_student.group_id', '=', 'groups.id')
-            ->where('groups.evaluation_id', $request->evaluation_id)
-            ->pluck('student_id')
-            ->toArray();
-
-
-        // Filtrar estudiantes no asignados y tomar la cantidad calculada
-        $studentsToAssign = $students->whereNotIn('student_id', $assignedStudentIds)
-            ->take($studentsToAssignCount);
-
-        $assignments = [];
-        foreach ($studentsToAssign as $student) {
-            $assignments[] = [
-                'group_id' => $group->id,
-                'student_id' => $student->student_id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        // Insertar las asignaciones en la tabla group_student
-        if (!empty($assignments)) {
-            DB::table('group_student')->insert($assignments);
-        }
-
-        // 8. Calcular estudiantes sin asignar después de la asignación
-        $newAssignedCount = count($assignments);
-        $newUnassignedStudentsCount = $unassignedStudentsCount - $newAssignedCount;
-
-        // 9. Respuesta con información del grupo y estudiantes sin asignar
-        return response()->json([
-            'group' => $group,
-            'assigned_students' => $newAssignedCount,
-            'unassigned_students' => $newUnassignedStudentsCount,
-            'available_equipment' => $laboratoryCapacity - $newAssignedCount,
-            'message' => 'Grupo creado y estudiantes asignados equitativamente, dejando al menos equipos libres.'
-        ], 201);
     }
 
     public function update(ValidationGroup $request, string $id)

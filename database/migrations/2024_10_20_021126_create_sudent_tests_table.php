@@ -39,9 +39,11 @@ return new class extends Migration
         });
         Schema::create('laboratories', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('career_id')->constrained('careers', 'id')->onDelete('cascade'); // Relación con carreras
             $table->string('name');
             $table->string('location')->nullable(); // Ubicación física (opcional)
             $table->integer('equipment_count'); // Cantidad de equipos disponibles
+            $table->enum('status', ['activo', 'inactivo'])->default('activo'); // Estado del laboratorio
             $table->timestamps();
         });
 
