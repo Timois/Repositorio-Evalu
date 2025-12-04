@@ -103,67 +103,58 @@ class GroupsController extends Controller
         DB::beginTransaction();
 
         try {
-            // Convertir fechas enviadas en formato ISO 8601
             $start = Carbon::parse($request->start_time);
             $end   = Carbon::parse($request->end_time);
 
-            // Validar que la hora final sea mayor que la inicial
             if ($end->lessThanOrEqualTo($start)) {
                 return response()->json([
                     'message' => 'La fecha/hora de fin debe ser mayor que la de inicio.'
                 ], 422);
             }
 
-            // Obtener laboratorios válidos
-            $laboratories = Laboratorie::whereIn('id', $request->laboratory_ids)->get();
+            // Validación: laboratorio único
+            $laboratory = Laboratorie::find($request->laboratory_id);
 
-            if ($laboratories->count() !== count($request->laboratory_ids)) {
+            if (!$laboratory) {
                 return response()->json([
-                    'message' => 'Uno o más laboratorios no existen.'
+                    'message' => 'El laboratorio no existe.'
                 ], 404);
             }
 
-            $createdGroups = [];
-            foreach ($laboratories as $lab) {
+            // Validar solapamiento
+            $exists = Group::where('laboratory_id', $laboratory->id)
+                ->where(function ($q) use ($start, $end) {
+                    $q->whereBetween('start_time', [$start, $end])
+                        ->orWhereBetween('end_time', [$start, $end])
+                        ->orWhere(function ($q2) use ($start, $end) {
+                            $q2->where('start_time', '<=', $start)
+                                ->where('end_time', '>=', $end);
+                        });
+                })
+                ->exists();
 
-                // Validar solapamiento de horarios dentro del mismo laboratorio
-                $exists = Group::where('laboratory_id', $lab->id)
-                    ->where(function ($q) use ($start, $end) {
-                        $q->whereBetween('start_time', [$start, $end])
-                            ->orWhereBetween('end_time', [$start, $end])
-                            ->orWhere(function ($q2) use ($start, $end) {
-                                $q2->where('start_time', '<=', $start)
-                                    ->where('end_time', '>=', $end);
-                            });
-                    })
-                    ->exists();
-
-                if ($exists) {
-                    return response()->json([
-                        'message' => "Ya existe un grupo en el laboratorio '{$lab->name}' que se solapa con ese horario."
-                    ], 409); // 409 Conflict
-                }
-
-                // Crear grupo
-                $group = Group::create([
-                    'evaluation_id'  => $request->evaluation_id,
-                    'laboratory_id'  => $lab->id,
-                    'name'           => $request->name,
-                    'description'    => $request->description ?? '',
-                    'total_students' => 0, // aún no se asignan estudiantes
-                    'start_time'     => $start,
-                    'end_time'       => $end,
-                ]);
-
-                // Retornar con relación de laboratorio incluida
-                $createdGroups[] = $group->load('lab');
+            if ($exists) {
+                return response()->json([
+                    'message' => "Ya existe un grupo en el laboratorio '{$laboratory->name}' que se solapa con ese horario."
+                ], 409);
             }
+
+            // Crear grupo único
+            $group = Group::create([
+                'evaluation_id'  => $request->evaluation_id,
+                'laboratory_id'  => $laboratory->id,
+                'name'           => $request->name,
+                'description'    => $request->description ?? '',
+                'total_students' => 0,
+                'start_time'     => $start,
+                'end_time'       => $end,
+            ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Grupos creados correctamente.',
-                'groups'  => $createdGroups
+                'message' => 'Grupo creado correctamente.',
+                'group'   => $group->load('lab')
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();

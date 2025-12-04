@@ -231,7 +231,7 @@ Route::controller(LaboratoriesController::class)->prefix('laboratories')->group(
     Route::get("/listByCareer/{id}", "findByCareerId")->middleware('auth:persona', 'permission:ver-laboratorios-por-carrera');
     Route::put("/edit/{id}", "update")->middleware('auth:persona', 'permission:editar-laboratorios');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-laboratorios-por-id');
-    Route::get("/horario/{id}", "getScheduleById")->middleware('auth:persona', 'permission:ver-horario-laboratorio');
+    Route::post("/horario/ids", "getScheduleById")->middleware('auth:persona', 'permission:ver-horario-laboratorio');
 });
 
 Route::controller(GroupsController::class)->prefix('groups')->group(function () {
