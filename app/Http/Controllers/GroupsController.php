@@ -7,6 +7,7 @@ use App\Models\Evaluation;
 use App\Models\Group;
 use App\Models\Laboratorie;
 use App\Models\Result;
+use App\Models\Student;
 use App\Models\StudentTest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -576,6 +577,61 @@ class GroupsController extends Controller
             'group'            => $group->name,
             'passing_score'    => $evaluation->passing_score,
             'students_results' => $results,
+        ]);
+    }
+
+    public function asignStudentsToGroup(Request $request, $groupId)
+    {
+        $group = Group::find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        }
+
+        // Obtener laboratorio asociado
+        $laboratory = Laboratorie::find($group->laboratory_id);
+        if (!$laboratory) {
+            return response()->json(['message' => 'Laboratorio no encontrado'], 404);
+        }
+
+        $capacidad = $laboratory->equipment_count;
+
+        // Equipos que se deben reservar (puedes cambiarlo a 4)
+        $equipos_reservados = 5;
+
+        // Capacidad real disponible
+        $capacidad_disponible = max(0, $capacidad - $equipos_reservados);
+
+        // Orden enviado desde el frontend
+        $orden = $request->order_type ?? 'apellido';
+
+        // Obtener estudiantes no asignados aún
+        if ($orden === 'apellido') {
+            $students = Student::orderBy('paternal_surname', 'ASC')->get();
+        } else {
+            $students = Student::orderBy('id', 'ASC')->get();
+        }
+
+        // Limitar cantidad según capacidad disponible
+        $studentsToAssign = $students->take($capacidad_disponible);
+
+        // Limpiar asignaciones previas del grupo
+        $group->students()->detach();
+
+        // Asignar estudiantes al grupo
+        foreach ($studentsToAssign as $student) {
+            $group->students()->attach($student->id);
+        }
+
+        // Actualizar cantidad final
+        $group->total_students = $studentsToAssign->count();
+        $group->save();
+
+        return response()->json([
+            'message' => 'Estudiantes asignados automáticamente',
+            'total_students' => $group->total_students,
+            'capacidad_laboratorio' => $capacidad,
+            'equipos_reservados' => $equipos_reservados,
+            'capacidad_ocupada' => $capacidad_disponible
         ]);
     }
 }

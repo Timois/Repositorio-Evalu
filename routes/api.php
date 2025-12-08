@@ -247,6 +247,7 @@ Route::controller(GroupsController::class)->prefix('groups')->group(function () 
     Route::get("/resultsGroup/{id}", "listFinalResultsByGroup")->middleware('auth:persona', 'permission:ver-resultados-por-grupo');
     Route::put("updateStatusGroup/{id}", "updateStatusGroup");
     Route::get("/getStatusGroup/{id}", "getGroupStatus");
+    Route::post("/addStudentsToGroup/{groupId}", "asignStudentsToGroup")->middleware('auth:persona', 'permission:asignar-postulantes-a-grupos');
 });
 Route::put("/groups/endGroup/{id}", [GroupsController::class, "finalizeGroupEvaluation"]);
 

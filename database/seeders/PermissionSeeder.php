@@ -126,7 +126,8 @@ class PermissionSeeder extends Seeder
             'guardar-resultados',
             'ver-resultados',
             'ver-laboratorios-por-carrera',
-            'ver-horario-laboratorio'
+            'ver-horario-laboratorio',
+            'asignar-postulantes-a-grupos'
         ];
 
         // Crear permisos si no existen

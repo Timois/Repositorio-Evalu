@@ -38,27 +38,13 @@ class ValidationGroup extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Validación duración del grupo
-            if ($this->evaluation_id && $this->filled('start_time') && $this->filled('end_time')) {
-                $evaluation = Evaluation::find($this->evaluation_id);
-                $start = Carbon::parse($this->start_time);
-                $end   = Carbon::parse($this->end_time);
-                $durationMinutes = $start->diffInMinutes($end);
-
-                if ($durationMinutes > $evaluation->time) {
-                    $validator->errors()->add(
-                        'end_time',
-                        "La duración del grupo ({$durationMinutes} min) excede la duración del examen ({$evaluation->time} min)."
-                    );
-                }
-            }
             // Validar capacidad del laboratorio único
             if ($this->has('laboratory_id')) {
                 $lab = Laboratorie::find($this->laboratory_id);
-                if ($lab && $lab->equipment_count <= 3) {
+                if ($lab && $lab->equipment_count <= 5) {
                     $validator->errors()->add(
                         'laboratory_id',
-                        "El laboratorio '{$lab->name}' no tiene capacidad suficiente (mínimo 4 equipos)."
+                        "El laboratorio '{$lab->name}' no tiene capacidad suficiente (mínimo 5 equipos)."
                     );
                 }
             }
