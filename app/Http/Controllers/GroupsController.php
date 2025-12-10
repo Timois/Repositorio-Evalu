@@ -587,43 +587,46 @@ class GroupsController extends Controller
             return response()->json(['message' => 'Grupo no encontrado'], 404);
         }
 
-        // Obtener laboratorio asociado
+        // Obtener laboratorio
         $laboratory = Laboratorie::find($group->laboratory_id);
         if (!$laboratory) {
             return response()->json(['message' => 'Laboratorio no encontrado'], 404);
         }
 
         $capacidad = $laboratory->equipment_count;
-
-        // Equipos que se deben reservar (puedes cambiarlo a 4)
         $equipos_reservados = 5;
-
-        // Capacidad real disponible
         $capacidad_disponible = max(0, $capacidad - $equipos_reservados);
 
-        // Orden enviado desde el frontend
+        // Evaluación del grupo
+        $evaluationId = $group->evaluation_id;
+
+        // Orden enviado
         $orden = $request->order_type ?? 'apellido';
 
-        // Obtener estudiantes no asignados aún
-        if ($orden === 'apellido') {
-            $students = Student::orderBy('paternal_surname', 'ASC')->get();
-        } else {
-            $students = Student::orderBy('id', 'ASC')->get();
-        }
+        $orderColumn = match ($orden) {
+            'id_desc' => ['id', 'DESC'],
+            'id_asc'  => ['id', 'ASC'],
+            default   => ['paternal_surname', 'ASC'],
+        };
 
-        // Limitar cantidad según capacidad disponible
-        $studentsToAssign = $students->take($capacidad_disponible);
+        // Obtener estudiantes NO asignados aún a ningún grupo de esta evaluación
+        $students = Student::whereDoesntHave('groups', function ($q) use ($evaluationId) {
+            $q->where('evaluation_id', $evaluationId);
+        })
+            ->orderBy($orderColumn[0], $orderColumn[1])
+            ->take($capacidad_disponible)
+            ->get();
 
-        // Limpiar asignaciones previas del grupo
+        // Limpiar asignaciones previas SOLO del grupo actual
         $group->students()->detach();
 
-        // Asignar estudiantes al grupo
-        foreach ($studentsToAssign as $student) {
+        // Asignar a los estudiantes seleccionados
+        foreach ($students as $student) {
             $group->students()->attach($student->id);
         }
 
-        // Actualizar cantidad final
-        $group->total_students = $studentsToAssign->count();
+        // Guardar cantidad final
+        $group->total_students = $students->count();
         $group->save();
 
         return response()->json([
