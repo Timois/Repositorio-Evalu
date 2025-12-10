@@ -235,7 +235,7 @@ Route::controller(LaboratoriesController::class)->prefix('laboratories')->group(
 });
 
 Route::controller(GroupsController::class)->prefix('groups')->group(function () {
-    Route::post("/save", "create")->middleware('auth:persona', 'permission:crear-grupos');
+    Route::post("/save", "createAutoGroups")->middleware('auth:persona', 'permission:crear-grupos');
     Route::get("/list", "find")->middleware('auth:persona', 'permission:ver-grupos');
     Route::get("/listByEvaluation/{id}", "findGroupsByEvaluation")->middleware('auth:persona', 'permission:ver-grupos-por-evaluacion');
     Route::get("/find/{id}", 'findById')->middleware('auth:persona', 'permission:ver-grupos-por-id');

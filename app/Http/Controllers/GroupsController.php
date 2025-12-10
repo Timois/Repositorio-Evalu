@@ -99,73 +99,111 @@ class GroupsController extends Controller
 
         return response()->json(['message' => 'Estado del grupo actualizado correctamente.', 'group' => $group]);
     }
-    public function create(ValidationGroup $request)
+    public function createAutoGroups(Request $request)
     {
         DB::beginTransaction();
-
         try {
-            $start = Carbon::parse($request->start_time);
-            $end   = Carbon::parse($request->end_time);
 
-            if ($end->lessThanOrEqualTo($start)) {
-                return response()->json([
-                    'message' => 'La fecha/hora de fin debe ser mayor que la de inicio.'
-                ], 422);
-            }
-
-            // Validación: laboratorio único
-            $laboratory = Laboratorie::find($request->laboratory_id);
-
-            if (!$laboratory) {
-                return response()->json([
-                    'message' => 'El laboratorio no existe.'
-                ], 404);
-            }
-
-            // Validar solapamiento
-            $exists = Group::where('laboratory_id', $laboratory->id)
-                ->where(function ($q) use ($start, $end) {
-                    $q->whereBetween('start_time', [$start, $end])
-                        ->orWhereBetween('end_time', [$start, $end])
-                        ->orWhere(function ($q2) use ($start, $end) {
-                            $q2->where('start_time', '<=', $start)
-                                ->where('end_time', '>=', $end);
-                        });
-                })
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => "Ya existe un grupo en el laboratorio '{$laboratory->name}' que se solapa con ese horario."
-                ], 409);
-            }
-
-            // Crear grupo único
-            $group = Group::create([
-                'evaluation_id'  => $request->evaluation_id,
-                'laboratory_id'  => $laboratory->id,
-                'name'           => $request->name,
-                'description'    => $request->description ?? '',
-                'total_students' => 0,
-                'start_time'     => $start,
-                'end_time'       => $end,
+            // 1. Validación inicial
+            $request->validate([
+                'evaluation_id' => 'required|integer',
+                'laboratories'  => 'required|array|min:1',
+                'start_time'    => 'required|date_format:Y-m-d H:i:s',
             ]);
+
+            // 2. Obtener estudiantes inscritos al examen
+            $evaluationId = $request->evaluation_id;
+            $totalStudents = StudentTest::where('evaluation_id', $evaluationId)->count();
+
+            if ($totalStudents === 0) {
+                return response()->json(['message' => 'No hay estudiantes registrados.'], 400);
+            }
+
+            // 3. Obtener la evaluación y su duración
+            $evaluation = Evaluation::find($evaluationId);
+
+            if (!$evaluation) {
+                return response()->json(['message' => 'La evaluación no existe.'], 404);
+            }
+
+            $duration = $evaluation->time; // minutos
+
+            // 4. Obtener laboratorios seleccionados
+            $labsIds = $request->laboratories;
+            $laboratories = Laboratorie::whereIn('id', $labsIds)->get();
+
+            if ($laboratories->count() === 0) {
+                return response()->json(['message' => 'No se encontraron laboratorios.'], 404);
+            }
+
+            // 5. Preparar capacidades
+            $capacities = [];
+            foreach ($laboratories as $lab) {
+                $capacities[] = [
+                    'id' => $lab->id,
+                    'name' => $lab->name,
+                    'capacity' => $lab->equipment_count
+                ];
+            }
+
+            // 6. Horario inicial
+            $currentStart = Carbon::parse($request->start_time)->timezone('America/La_Paz');
+            $currentEnd   = $currentStart->copy()->addMinutes($duration);
+
+            // Tiempo extra entre grupos
+            $prepTime = 15; // minutos extra entre turnos
+
+            // 7. Crear grupos automáticos
+            $groupsCreated = [];
+            $remaining = $totalStudents;
+
+            $groupNumber = 1;
+            $turnNumber = 1;
+            while ($remaining > 0) {
+
+                foreach ($capacities as $lab) {
+
+                    if ($remaining <= 0) break;
+
+                    // Cantidad de estudiantes asignados a este grupo
+                    $size = min($remaining, $lab['capacity']);
+
+                    $group = Group::create([
+                        'evaluation_id'  => $evaluationId,
+                        'laboratory_id'  => $lab['id'],
+                        'name'           => "GRUPO {$groupNumber}",
+                        'description'    => "Turno {$turnNumber} ({$currentStart->format('H:i')} - {$currentEnd->format('H:i')})",
+                        'total_students' => $size,
+                        'start_time'     => $currentStart->copy(),
+                        'end_time'       => $currentEnd->copy(),
+                    ]);
+
+                    $groupsCreated[] = $group;
+
+                    $remaining -= $size;
+                    $groupNumber++;
+                }
+
+                // Avanzar al siguiente turno con tiempo extra incluido
+                $currentStart->addMinutes($duration + $prepTime);
+                $currentEnd->addMinutes($duration + $prepTime);
+            }
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Grupo creado correctamente.',
-                'group'   => $group->load('lab')
+                'message' => 'Grupos generados correctamente.',
+                'groups'  => $groupsCreated
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
-                'message' => 'Error interno del servidor.',
+                'message' => 'Error interno',
                 'error'   => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function update(ValidationGroup $request, string $id)
     {
