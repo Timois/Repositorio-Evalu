@@ -99,19 +99,11 @@ class GroupsController extends Controller
 
         return response()->json(['message' => 'Estado del grupo actualizado correctamente.', 'group' => $group]);
     }
-    public function createAutoGroups(Request $request)
+    public function createAutoGroups(ValidationGroup $request)
     {
         DB::beginTransaction();
         try {
-
-            // 1. Validación inicial
-            $request->validate([
-                'evaluation_id' => 'required|integer',
-                'laboratories'  => 'required|array|min:1',
-                'start_time'    => 'required|date_format:Y-m-d H:i:s',
-            ]);
-
-            // 2. Obtener estudiantes inscritos al examen
+            // 1. Obtener estudiantes inscritos al examen
             $evaluationId = $request->evaluation_id;
             $totalStudents = StudentTest::where('evaluation_id', $evaluationId)->count();
 
@@ -119,7 +111,7 @@ class GroupsController extends Controller
                 return response()->json(['message' => 'No hay estudiantes registrados.'], 400);
             }
 
-            // 3. Obtener la evaluación y su duración
+            // 2. Obtener la evaluación y su duración
             $evaluation = Evaluation::find($evaluationId);
 
             if (!$evaluation) {
@@ -128,42 +120,71 @@ class GroupsController extends Controller
 
             $duration = $evaluation->time; // minutos
 
-            // 4. Obtener laboratorios seleccionados
+            // 3. Obtener laboratorios seleccionados
             $labsIds = $request->laboratories;
-            $laboratories = Laboratorie::whereIn('id', $labsIds)->get();
+            $laboratories = Laboratorie::whereIn('id', $labsIds)->get(); 
 
             if ($laboratories->count() === 0) {
                 return response()->json(['message' => 'No se encontraron laboratorios.'], 404);
             }
 
-            // 5. Preparar capacidades
+            // 4. Preparar capacidades (dejando 5 equipos libres)
+            // return response()->json([
+            //     $totalStudents, $laboratories, 5
+            // ]);
+            $available = GroupsController::calculateGroups($totalStudents, $laboratories, 5);
+            
             $capacities = [];
             foreach ($laboratories as $lab) {
+                $realCapacity = max($lab->equipment_count - $available, 0); // Capacidad operativa real
+
+                if ($realCapacity <= 0) continue; // saltar laboratorios con menos de 5 equipos
+
                 $capacities[] = [
                     'id' => $lab->id,
                     'name' => $lab->name,
-                    'capacity' => $lab->equipment_count
+                    'capacity' => $realCapacity
                 ];
             }
-
-            // 6. Horario inicial
+            if (empty($capacities)) {
+                return response()->json(['message' => 'Los laboratorios seleccionados no tienen capacidad suficiente (mínimo 5 equipos reservados).'], 400);
+            }
+            
+            // 5. Horario inicial
             $currentStart = Carbon::parse($request->start_time)->timezone('America/La_Paz');
             $currentEnd   = $currentStart->copy()->addMinutes($duration);
-
-            // Tiempo extra entre grupos
+            
             $prepTime = 15; // minutos extra entre turnos
-
-            // 7. Crear grupos automáticos
             $groupsCreated = [];
             $remaining = $totalStudents;
-
             $groupNumber = 1;
             $turnNumber = 1;
+            
+            // 6. Crear grupos automáticos
             while ($remaining > 0) {
-
                 foreach ($capacities as $lab) {
-
                     if ($remaining <= 0) break;
+
+                    // --- VALIDACIÓN DE SOLAPAMIENTO ---
+                    $overlap = Group::where('laboratory_id', $lab['id'])
+                        ->where(function ($q) use ($currentStart, $currentEnd) {
+                            $q->whereBetween('start_time', [$currentStart, $currentEnd])
+                                ->orWhereBetween('end_time', [$currentStart, $currentEnd])
+                                ->orWhere(function ($inner) use ($currentStart, $currentEnd) {
+                                    $inner->where('start_time', '<=', $currentStart)
+                                        ->where('end_time', '>=', $currentEnd);
+                                });
+                        })
+                        ->exists();
+
+                    if ($overlap) {
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => "Conflicto de horario: el laboratorio '{$lab['name']}' ya tiene un grupo en el rango " .
+                                $currentStart->format('H:i') . " - " . $currentEnd->format('H:i')
+                        ], 409);
+                    }
+                    // --- FIN VALIDACIÓN SOLAPAMIENTO ---
 
                     // Cantidad de estudiantes asignados a este grupo
                     $size = min($remaining, $lab['capacity']);
@@ -179,7 +200,6 @@ class GroupsController extends Controller
                     ]);
 
                     $groupsCreated[] = $group;
-
                     $remaining -= $size;
                     $groupNumber++;
                 }
@@ -187,8 +207,16 @@ class GroupsController extends Controller
                 // Avanzar al siguiente turno con tiempo extra incluido
                 $currentStart->addMinutes($duration + $prepTime);
                 $currentEnd->addMinutes($duration + $prepTime);
+                $turnNumber++;
             }
-
+            // return response()->json([
+            //     'message' => 'Grupos calculados correctamente.',
+            //     'total_students' => $totalStudents,
+            //     'laboratories_count' => $laboratories->count(),
+            //     'calculated_groups' => $available,
+            //     'laboratories' => $laboratories
+            // ]);
+            
             DB::commit();
 
             return response()->json([
@@ -203,7 +231,6 @@ class GroupsController extends Controller
             ], 500);
         }
     }
-
 
     public function update(ValidationGroup $request, string $id)
     {
@@ -618,61 +645,150 @@ class GroupsController extends Controller
         ]);
     }
 
-    public function asignStudentsToGroup(Request $request, $groupId)
+    public function asignStudentsAuto(Request $request)
     {
-        $group = Group::find($groupId);
-        if (!$group) {
-            return response()->json(['message' => 'Grupo no encontrado'], 404);
+        DB::beginTransaction();
+
+        try {
+            $evaluationId = $request->evaluation_id;
+
+            // 1. Obtener todos los grupos generados para esta evaluación
+            $groups = Group::where('evaluation_id', $evaluationId)
+                ->orderBy('id', 'ASC')
+                ->get();
+
+            if ($groups->isEmpty()) {
+                return response()->json(['message' => 'No existen grupos creados para esta evaluación'], 404);
+            }
+
+            // 2. Orden enviado
+            $orderType = $request->order_type ?? 'apellido';
+
+            switch ($orderType) {
+                case 'id_asc':
+                    $students = Student::whereHas('studentTests', function ($q) use ($evaluationId) {
+                        $q->where('evaluation_id', $evaluationId);
+                    })
+                        ->orderBy('id', 'ASC')
+                        ->get();
+                    break;
+
+                case 'id_desc':
+                    $students = Student::whereHas('studentTests', function ($q) use ($evaluationId) {
+                        $q->where('evaluation_id', $evaluationId);
+                    })
+                        ->orderBy('id', 'DESC')
+                        ->get();
+                    break;
+
+                case 'random':
+                    $students = Student::whereHas('studentTests', function ($q) use ($evaluationId) {
+                        $q->where('evaluation_id', $evaluationId);
+                    })
+                        ->inRandomOrder()
+                        ->get();
+                    break;
+
+                default:
+                    // Orden alfabético por apellido paterno
+                    // Primero los que tienen apellido paterno, luego los que no
+                    $students = Student::whereHas('studentTests', function ($q) use ($evaluationId) {
+                        $q->where('evaluation_id', $evaluationId);
+                    })
+                        ->orderByRaw('paternal_surname IS NULL, paternal_surname ASC')
+                        ->orderBy('maternal_surname', 'ASC')
+                        ->orderBy('name', 'ASC')
+                        ->get();
+                    break;
+            }
+
+            if ($students->isEmpty()) {
+                return response()->json(['message' => 'No hay estudiantes registrados a la evaluación'], 404);
+            }
+
+            // 3. Desasignar a todos los estudiantes de todos los grupos de esta evaluación
+            foreach ($groups as $group) {
+                $group->students()->detach();
+            }
+
+            // 4. Asignar estudiantes a grupos según capacidad
+            $index = 0;
+            $studentsCount = $students->count();
+            $available = 5;
+            foreach ($groups as $group) {
+                $labs = Laboratorie::find($group->laboratory_id);
+                return response()->json([
+                    "grupos" => $groups,
+                    "laboratorio" => $labs
+                ]);
+                $capacidad = $labs ? max($labs->equipment_count - $available, 0) : 0; // puedes mantener los 5 equipos reservados
+
+                $assigned = [];
+
+                for ($i = 0; $i < $capacidad && $index < $studentsCount; $i++) {
+                    $assigned[] = $students[$index]->id;
+                    $index++;
+                }
+
+                if (!empty($assigned)) {
+                    $group->students()->attach($assigned);
+                }
+
+                $group->total_students = count($assigned);
+                $group->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Estudiantes asignados correctamente a todos los grupos.',
+                'order_used' => $orderType,
+                'total_students_assigned' => $studentsCount
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error interno',
+                'error'   => $e->getMessage()
+            ], 500);
         }
+    }
 
-        // Obtener laboratorio
-        $laboratory = Laboratorie::find($group->laboratory_id);
-        if (!$laboratory) {
-            return response()->json(['message' => 'Laboratorio no encontrado'], 404);
+    public function calculateGroups($estudiantes, $laboratorios, $toleranciaMaxima)
+    {
+        // return [
+        //    "Estudiantes" => $estudiantes,
+        //     "laboratorios" =>$laboratorios,
+        //     "TOLERANCIA"=>$toleranciaMaxima
+        // ];
+        // $estudiantes = $listaEstudiantes->count();
+        // $laboratorios = $listaLaboratorios->count();
+        $capacidadTotal = 0; // 140
+        foreach ($laboratorios as $laboratorio) {
+            $capacidadTotal += $laboratorio->equipment_count;
         }
-
-        $capacidad = $laboratory->equipment_count;
-        $equipos_reservados = 5;
-        $capacidad_disponible = max(0, $capacidad - $equipos_reservados);
-
-        // Evaluación del grupo
-        $evaluationId = $group->evaluation_id;
-
-        // Orden enviado
-        $orden = $request->order_type ?? 'apellido';
-
-        $orderColumn = match ($orden) {
-            'id_desc' => ['id', 'DESC'],
-            'id_asc'  => ['id', 'ASC'],
-            default   => ['paternal_surname', 'ASC'],
-        };
-
-        // Obtener estudiantes NO asignados aún a ningún grupo de esta evaluación
-        $students = Student::whereDoesntHave('groups', function ($q) use ($evaluationId) {
-            $q->where('evaluation_id', $evaluationId);
-        })
-            ->orderBy($orderColumn[0], $orderColumn[1])
-            ->take($capacidad_disponible)
-            ->get();
-
-        // Limpiar asignaciones previas SOLO del grupo actual
-        $group->students()->detach();
-
-        // Asignar a los estudiantes seleccionados
-        foreach ($students as $student) {
-            $group->students()->attach($student->id);
+        
+        $toleranciaTotal = $toleranciaMaxima * $laboratorios->count(); // 15
+        $capacidadMaximaAdmitida = $capacidadTotal - $toleranciaTotal; // 140 - 20 = 120
+        $totalGrupos = 0;
+        $resto = $estudiantes % $capacidadMaximaAdmitida; // 198 % 120 = 78
+        $grupos = intdiv($estudiantes, $capacidadMaximaAdmitida); // 198 / 120 = 1
+        if ($resto >= $toleranciaTotal) {
+            return GroupsController::calculateGroups($estudiantes, $laboratorios, $toleranciaMaxima - 1);
+        } else {
+            $totalGrupos = $grupos + 1; // 1 + 1 = 2
+            return $totalGrupos;
+            // return [
+            //     'total_grupos' => $totalGrupos,
+            //     "capacidadTotal" => $capacidadTotal,
+            //     "toleranciaTotal" => $toleranciaTotal,
+            //     "calculoToleranciaTotal" => "{$toleranciaMaxima} * {$laboratorios->count()} = {$toleranciaTotal}",
+            //     "capacidadMaximaAdmitida" => $capacidadMaximaAdmitida,
+            //     "caluloCapacidadMaximaAdmitida" => "{$capacidadTotal} - {$toleranciaTotal} = {$capacidadMaximaAdmitida}",
+            //     "resto" => $resto,
+            //     "grupos" => $grupos,
+            //     "if" => "{$resto} >= {$toleranciaTotal} => {($resto >= $toleranciaTotal)}"
+            // ];
         }
-
-        // Guardar cantidad final
-        $group->total_students = $students->count();
-        $group->save();
-
-        return response()->json([
-            'message' => 'Estudiantes asignados automáticamente',
-            'total_students' => $group->total_students,
-            'capacidad_laboratorio' => $capacidad,
-            'equipos_reservados' => $equipos_reservados,
-            'capacidad_ocupada' => $capacidad_disponible
-        ]);
     }
 }

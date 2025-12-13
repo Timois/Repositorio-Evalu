@@ -149,7 +149,7 @@ Route::controller(ExcelImportController::class)->prefix('excel_import')->group(f
     Route::post("/save", "create")->middleware('auth:persona', 'permission:importar-excel');
     Route::get("/list/{id}", "find")->middleware('auth:persona', 'permission:ver-importaciones');
     Route::post("/edit/{id}", "findAndUpdate")->middleware('auth:persona', 'permission:editar-importaciones');
-    Route::delete("/delete/{id}", "destroy")->middleware('auth:persona','permission:eliminar-importacion');
+    Route::delete("/delete/{id}", "destroy")->middleware('auth:persona', 'permission:eliminar-importacion');
     Route::get("/findAreaByExcel/{id}", "findAreaByExcel")->middleware('auth:persona', 'permission:ver-areas-por-excel');
 });
 
@@ -247,7 +247,7 @@ Route::controller(GroupsController::class)->prefix('groups')->group(function () 
     Route::get("/resultsGroup/{id}", "listFinalResultsByGroup")->middleware('auth:persona', 'permission:ver-resultados-por-grupo');
     Route::put("updateStatusGroup/{id}", "updateStatusGroup");
     Route::get("/getStatusGroup/{id}", "getGroupStatus");
-    Route::post("/addStudentsToGroup/{groupId}", "asignStudentsToGroup")->middleware('auth:persona', 'permission:asignar-postulantes-a-grupos');
+    Route::post("/addStudentsToGroup", "asignStudentsAuto")->middleware('auth:persona', 'permission:asignar-postulantes-a-grupos');
 });
 Route::put("/groups/endGroup/{id}", [GroupsController::class, "finalizeGroupEvaluation"]);
 

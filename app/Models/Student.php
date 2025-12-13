@@ -40,7 +40,11 @@ class Student extends Model
             ->withTimestamps();
     }
     public function groups()
-    {   
+    {
         return $this->belongsToMany(Group::class)->withTimestamps();
+    }
+    public function studentTests()
+    {
+        return $this->hasMany(StudentTest::class, 'student_id');
     }
 }
