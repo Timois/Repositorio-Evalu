@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class StudentsImport implements ToCollection, WithHeadingRow
 {
@@ -29,7 +30,6 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows)
     {
-
         set_time_limit(300);
 
         // Validar cabeceras
@@ -47,6 +47,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
         foreach ($rows as $row) {
             $currentRow++;
+
             $rowResult = [
                 'fila' => $currentRow,
                 'ci' => $row['ci'],
@@ -55,7 +56,8 @@ class StudentsImport implements ToCollection, WithHeadingRow
             ];
 
             try {
-                // Validaciones de datos
+                /** ================= VALIDACIONES BÁSICAS ================= */
+
                 if (empty(trim($row['ci']))) {
                     $rowResult['mensajes'][] = "El CI es obligatorio";
                     $this->results[] = $rowResult;
@@ -68,35 +70,54 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                $paternalSurname = trim($row['apellido_paterno'] ?? '');
-                $maternalSurname = trim($row['apellido_materno'] ?? '');
-                $paternalSurname = strtolower($paternalSurname);
-                $maternalSurname = strtolower($maternalSurname);
+                $paternalSurname = strtolower(trim($row['apellido_paterno'] ?? ''));
+                $maternalSurname = strtolower(trim($row['apellido_materno'] ?? ''));
+
                 if (empty($paternalSurname) && empty($maternalSurname)) {
                     $rowResult['mensajes'][] = "Debe proporcionar al menos un apellido (paterno o materno)";
                     $this->results[] = $rowResult;
                     continue;
                 }
 
-                $birthdateFormatted = str_replace('/', '-', $row['fecha_de_nacimiento']);
-                if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $birthdateFormatted)) {
-                    $rowResult['mensajes'][] = "Formato de fecha inválido: " . $row['fecha_de_nacimiento'];
+                /** ================= NORMALIZAR FECHA ================= */
+
+                $rawDate = $row['fecha_de_nacimiento'];
+
+                try {
+                    if (is_numeric($rawDate)) {
+                        // Fecha serial de Excel
+                        $birthdateFormatted = Carbon::instance(
+                            ExcelDate::excelToDateTimeObject($rawDate)
+                        )->format('d-m-Y');
+                    } else {
+                        $rawDate = trim($rawDate);
+                        $rawDate = str_replace('/', '-', $rawDate);
+
+                        $birthdateFormatted = Carbon::createFromFormat('d-m-Y', $rawDate)
+                            ->format('d-m-Y');
+                    }
+                } catch (\Exception $e) {
+                    $rowResult['mensajes'][] = "Fecha de nacimiento inválida: {$rawDate}";
                     $this->results[] = $rowResult;
                     continue;
                 }
 
-                DB::transaction(function () use ($row, $birthdateFormatted, &$rowResult) {
-                    // Verificar si el estudiante ya existe
+                /** ================= TRANSACCIÓN ================= */
+
+                DB::transaction(function () use ($row, $birthdateFormatted, &$paternalSurname, &$maternalSurname, &$rowResult) {
+
                     $existingStudent = Student::where('ci', $row['ci'])->first();
 
                     if ($existingStudent) {
-                        // Verificar si ya está asociado a este examen
-                        if ($existingStudent->evaluations()->where('evaluation_id', $this->evaluationId)->exists()) {
+
+                        if ($existingStudent->evaluations()
+                            ->where('evaluation_id', $this->evaluationId)
+                            ->exists()
+                        ) {
                             $rowResult['mensajes'][] = "El estudiante ya está asociado a este examen";
-                            $rowResult['estado'] = 'error';
                             return;
                         }
-                        // Asociar evaluación al estudiante
+
                         $existingStudent->evaluations()->attach($this->evaluationId, [
                             'status' => 'pendiente',
                             'code' => 'TEMP',
@@ -109,62 +130,51 @@ class StudentsImport implements ToCollection, WithHeadingRow
                             'questions_order' => json_encode([]),
                         ]);
 
-                        // Obtener el registro student_test creado
                         $studentTest = StudentTest::where('student_id', $existingStudent->id)
                             ->where('evaluation_id', $this->evaluationId)
                             ->latest()
                             ->first();
 
-                        // Obtener evaluación con relaciones necesarias
                         $evaluation = Evaluation::with([
                             'academicManagementPeriod.academicManagementCareer.career',
-                            'academicManagementPeriod.academicManagementCareer.academicManagement', // <-- Agregado
+                            'academicManagementPeriod.academicManagementCareer.academicManagement',
                             'academicManagementPeriod.period'
                         ])->findOrFail($this->evaluationId);
 
                         $sigla = $evaluation->academicManagementPeriod->academicManagementCareer->career->initials;
-                        $periodName = $evaluation->academicManagementPeriod->period->level;
+                        $periodName = str_replace(' ', '', $evaluation->academicManagementPeriod->period->level);
                         $gestion = $evaluation->academicManagementPeriod->academicManagementCareer->academicManagement->year;
                         $title = str_replace(' ', '', $evaluation->title);
-                        $periodName = str_replace(' ', '', $periodName);
-                        $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
 
-                        // Actualizar el código
+                        $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
                         $studentTest->update(['code' => $code]);
 
                         $rowResult['estado'] = 'éxito';
-                        $rowResult['mensajes'][] = "Estudiante existente asignado al periodo y al examen";
+                        $rowResult['mensajes'][] = "Estudiante existente asignado al examen";
                         return;
                     }
+
+                    /** ================= CREAR ESTUDIANTE ================= */
 
                     $name = strtolower($row['nombre']);
-                    $paternalSurname = strtolower($row['apellido_paterno'] ?? '');
-                    $maternalSurname = strtolower($row['apellido_materno'] ?? '');
-                    if (empty($paternalSurname) && empty($maternalSurname)) {
-                        $rowResult['mensajes'][] = "Debe proporcionar al menos un apellido (paterno o materno)";
-                        $this->results[] = $rowResult;
-                        return;
-                    }
-                    // Procesar fecha y contraseña
+
                     $birthdateNumbers = Carbon::createFromFormat('d-m-Y', $birthdateFormatted)->format('dmY');
-                    $ciNumbers = preg_replace('/[^0-9]/', '', $row['ci']);
-                    $generatedPassword = $ciNumbers . $birthdateNumbers;
-                    $hashedPassword = Hash::make($generatedPassword);
+                    $ciNumbers = preg_replace('/\D/', '', $row['ci']);
+                    $password = Hash::make($ciNumbers . $birthdateNumbers);
 
+                    $phone = trim($row['telefono'] ?? '');
 
-                    // Crear estudiante
                     $student = Student::create([
                         'ci' => $row['ci'],
                         'name' => $name,
                         'paternal_surname' => $paternalSurname ?: null,
                         'maternal_surname' => $maternalSurname ?: null,
-                        'phone_number' => trim($row['telefono']),
+                        'phone_number' => $phone !== '' ? $phone : null,
                         'birthdate' => $birthdateFormatted,
-                        'password' => $hashedPassword,
+                        'password' => $password,
                         'status' => 'inactivo',
                     ]);
 
-                    // Asociar evaluación al estudiante
                     $student->evaluations()->attach($this->evaluationId, [
                         'status' => 'pendiente',
                         'code' => 'TEMP',
@@ -177,47 +187,44 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         'questions_order' => json_encode([]),
                     ]);
 
-                    // Obtener el registro student_test creado
                     $studentTest = StudentTest::where('student_id', $student->id)
                         ->where('evaluation_id', $this->evaluationId)
                         ->latest()
                         ->first();
 
-                    // Obtener evaluación con relaciones necesarias
                     $evaluation = Evaluation::with([
                         'academicManagementPeriod.academicManagementCareer.career',
-                        'academicManagementPeriod.academicManagementCareer.academicManagement', // <-- Agregado
+                        'academicManagementPeriod.academicManagementCareer.academicManagement',
                         'academicManagementPeriod.period'
                     ])->findOrFail($this->evaluationId);
 
                     $sigla = $evaluation->academicManagementPeriod->academicManagementCareer->career->initials;
-                    $periodName = $evaluation->academicManagementPeriod->period->level;
+                    $periodName = str_replace(' ', '', $evaluation->academicManagementPeriod->period->level);
                     $gestion = $evaluation->academicManagementPeriod->academicManagementCareer->academicManagement->year;
                     $title = str_replace(' ', '', $evaluation->title);
-                    $periodName = str_replace(' ', '', $periodName);
-                    $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
 
-                    // Actualizar el código
+                    $code = strtoupper("{$title}-{$sigla}-{$periodName}/{$gestion}-{$studentTest->id}");
                     $studentTest->update(['code' => $code]);
 
-
                     $rowResult['estado'] = 'éxito';
-                    $rowResult['mensajes'][] = "Registro creado, asignado al periodo y al examen";
+                    $rowResult['mensajes'][] = "Registro creado y asignado al examen";
                 });
             } catch (Exception $e) {
-                $rowResult['mensajes'][] = "Error: " . $e->getMessage();
+                $rowResult['mensajes'][] = "Error interno: " . $e->getMessage();
             }
 
             $this->results[] = $rowResult;
-            // Al final de la importación, actualizar el total de estudiantes calificados
-            $uniqueCount = StudentTest::where('evaluation_id', $this->evaluationId)
-                ->distinct('student_id')
-                ->count('student_id');
-
-            Evaluation::where('id', $this->evaluationId)
-                ->update(['qualified_students' => $uniqueCount]);
         }
+
+        // Actualizar total de estudiantes
+        $uniqueCount = StudentTest::where('evaluation_id', $this->evaluationId)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        Evaluation::where('id', $this->evaluationId)
+            ->update(['qualified_students' => $uniqueCount]);
     }
+
 
     public function getResults()
     {
