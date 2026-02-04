@@ -17,7 +17,7 @@ class ValidationStudent extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'paternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
-            'phone_number' => ['required', 'integer'],
+            'phone_number' => ['nullable', 'integer'],
             'birthdate' => ['required', 'date', 'before:today'],
             'evaluation_id' => ['required', 'exists:evaluations,id'],
         ];
@@ -48,7 +48,6 @@ class ValidationStudent extends FormRequest
             'ci.required' => 'El CI es obligatorio.',
             'ci.regex' => 'El CI debe tener un formato válido (números, letras y caracteres especiales permitidos).',
             'name.required' => 'El nombre es obligatorio.',
-            'phone_number.required' => 'El número de teléfono es obligatorio.',
             'phone_number.integer' => 'El número de teléfono debe ser un número entero.',
             'phone_number.max' => 'La longitud máxima del número de teléfono es de 20 caracteres.',
             'phone_number.unique' => 'Este número de teléfono ya está registrado.',
