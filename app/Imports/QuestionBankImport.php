@@ -7,6 +7,7 @@ use App\Models\QuestionBank;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Facades\DB;
+
 class QuestionBankImport implements ToCollection
 {
     protected $excelImportId;
@@ -50,6 +51,12 @@ class QuestionBankImport implements ToCollection
         }
 
         $headers = $data[0][0];
+
+        $headers = array_filter($headers, function ($h) {
+            return $h !== null && trim($h) !== '';
+        });
+        $headers = array_values($headers);
+
         $missingColumns = array_diff($this->requiredColumns, $headers);
         if (!empty($missingColumns)) {
             $messages[] = "Faltan columnas: " . implode(', ', $missingColumns);
