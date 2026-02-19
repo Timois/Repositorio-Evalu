@@ -61,6 +61,7 @@ class ResultsController extends Controller
         ]);
     }
 
+
     public function saveResultsCurve(Request $request, $evaluationId)
     {
         $evaluation = Evaluation::find($evaluationId);
@@ -74,7 +75,7 @@ class ResultsController extends Controller
             'results' => 'required|array',
             'results.*.student_test_id' => 'required|integer|exists:student_tests,id',
             'results.*.qualification' => 'required|numeric|min:0|max:100',
-            'results.*.status' => 'required|string|in:admitido,no_admitido',
+            'results.*.status' => 'required|string|in:admitido,no admitido,no se presento',
         ]);
 
         foreach ($validated['results'] as $resultData) {

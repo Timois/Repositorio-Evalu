@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('incorrect_answers')->nullable();   // respuestas incorrectas que hizo el estudiante
             $table->string('not_answered')->nullable();   // respuestas no respondidas que hizo el estudiante
             $table->json('questions_order')->nullable();
-            $table->enum('status', ['pendiente', 'completado'])->default('pendiente'); // Estado de la prueba
+            $table->enum('status', ['pendiente', 'en_progreso', 'completado'])->default('pendiente'); // Estado de la prueba
             $table->string('session_token')->nullable()->unique(); // Token de sesión para la prueba
             $table->timestamps();
         });
@@ -72,7 +72,7 @@ return new class extends Migration
             $table->foreignId('student_test_id')->constrained('student_tests', 'id')->onDelete('cascade'); // Relación con la prueba
             $table->double('qualification'); // Puntaje obtenido en la prueba
             $table->string('exam_duration');     // Duracion de la prueba
-            $table->enum('status', ['admitido', 'no_admitido', 'no_se_presento'])->default('evaluado');
+            $table->enum('status', ['admitido', 'no admitido', 'no se presento'])->default('evaluado');
             $table->timestamps();
         });
 
