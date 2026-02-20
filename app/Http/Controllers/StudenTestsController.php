@@ -118,6 +118,7 @@ class StudenTestsController extends Controller
 
         return response()->json([
             'total_students' => $report->count(),
+            'evaluation_title' => $studentTests->first()->evaluation->title ?? 'N/A',
             'students' => $report,
         ]);
     }
