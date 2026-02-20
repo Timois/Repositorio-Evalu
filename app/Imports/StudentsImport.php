@@ -158,9 +158,8 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
                     $name = strtolower($row['nombre']);
 
-                    $birthdateNumbers = Carbon::createFromFormat('d-m-Y', $birthdateFormatted)->format('dmY');
                     $ciNumbers = preg_replace('/\D/', '', $row['ci']);
-                    $password = Hash::make($ciNumbers . $birthdateNumbers);
+                    $password = Hash::make($ciNumbers);
 
                     $phone = trim($row['telefono'] ?? '');
 
