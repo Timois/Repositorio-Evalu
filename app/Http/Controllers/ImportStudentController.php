@@ -104,7 +104,7 @@ class ImportStudentController extends Controller
                     'paternal_surname' => $request->paternal_surname,
                     'maternal_surname' => $request->maternal_surname,
                     'phone_number' => $request->phone_number,   
-                    'birthdate' => Carbon::parse($request->birthdate),
+                    'birthdate' => null,
                     'password' => Hash::make(($request->ci),
                 ),
                 ]);

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('paternal_surname')->nullable();
             $table->string('maternal_surname')->nullable();
             $table->string('phone_number')->nullable()->unique();
-            $table->date('birthdate');
+            $table->date('birthdate')->nullable();
             $table->string('password');
             $table->enum('status',['activo','inactivo'])->default('inactivo');
             $table->timestamps();

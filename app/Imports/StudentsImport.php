@@ -5,7 +5,6 @@ namespace App\Imports;
 use App\Models\Evaluation;
 use App\Models\Student;
 use App\Models\StudentTest;
-use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class StudentsImport implements ToCollection, WithHeadingRow
 {
-    protected $requiredColumns = ['ci', 'nombre', 'apellido_paterno', 'apellido_materno', 'fecha_de_nacimiento', 'telefono'];
+    protected $requiredColumns = ['ci', 'nombre', 'apellido_paterno', 'apellido_materno', 'telefono'];
     protected $results = [];
     protected $evaluationId;
     public function __construct($evaluationId)
@@ -34,15 +33,17 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
         // Validar cabeceras
         $headers = $rows->first()->keys()->toArray();
-        if (count($headers) !== count($this->requiredColumns)) {
+
+        $missingColumns = array_diff($this->requiredColumns, $headers);
+
+        if (!empty($missingColumns)) {
             throw new Exception(json_encode([
                 'error' => true,
-                'message' => "El archivo no puede ser procesado. El número de columnas no coincide con el formato requerido.",
-                'expected' => $this->requiredColumns,
+                'message' => "Faltan columnas obligatorias en el archivo.",
+                'missing' => $missingColumns,
                 'received' => $headers
             ]));
         }
-
         $currentRow = 1;
 
         foreach ($rows as $row) {
@@ -79,32 +80,9 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                /** ================= NORMALIZAR FECHA ================= */
-
-                $rawDate = $row['fecha_de_nacimiento'];
-
-                try {
-                    if (is_numeric($rawDate)) {
-                        // Fecha serial de Excel
-                        $birthdateFormatted = Carbon::instance(
-                            ExcelDate::excelToDateTimeObject($rawDate)
-                        )->format('d-m-Y');
-                    } else {
-                        $rawDate = trim($rawDate);
-                        $rawDate = str_replace('/', '-', $rawDate);
-
-                        $birthdateFormatted = Carbon::createFromFormat('d-m-Y', $rawDate)
-                            ->format('d-m-Y');
-                    }
-                } catch (\Exception $e) {
-                    $rowResult['mensajes'][] = "Fecha de nacimiento inválida: {$rawDate}";
-                    $this->results[] = $rowResult;
-                    continue;
-                }
-
                 /** ================= TRANSACCIÓN ================= */
 
-                DB::transaction(function () use ($row, $birthdateFormatted, &$paternalSurname, &$maternalSurname, &$rowResult) {
+                DB::transaction(function () use ($row, &$paternalSurname, &$maternalSurname, &$rowResult) {
 
                     $existingStudent = Student::where('ci', $row['ci'])->first();
 
@@ -169,7 +147,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         'paternal_surname' => $paternalSurname ?: null,
                         'maternal_surname' => $maternalSurname ?: null,
                         'phone_number' => $phone !== '' ? $phone : null,
-                        'birthdate' => $birthdateFormatted,
+                        'birthdate' => null,
                         'password' => $password,
                         'status' => 'inactivo',
                     ]);

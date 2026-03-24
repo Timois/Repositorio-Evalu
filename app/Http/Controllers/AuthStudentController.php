@@ -41,8 +41,18 @@ class AuthStudentController extends Controller
             return response()->json(['error' => 'Contraseña incorrecta'], 401);
         }
 
-        // ✅ Actualizar estado a "activo"
+        // ✅ Actualizar estado del usuario
         $persona->update(['status' => 'activo']);
+
+        // ✅ Actualizar estado en student_tests (FORMA CORRECTA)
+        $persona->studentTests()->update([
+            'status' => 'en_progreso'
+        ]);
+
+        // Si quieres hacerlo solo para ciertos registros:
+        // $persona->studentTests()
+        //     ->where('status', 'pendiente')
+        //     ->update(['status' => 'en_progreso']);
 
         $rol = Role::where('name', 'postulante')->first();
         $token = Auth::guard('api')->login($persona);

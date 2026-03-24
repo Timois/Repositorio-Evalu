@@ -70,4 +70,8 @@ class UserStudent extends Authenticatable implements JWTSubject
         ];
     }
 
+    public function studentTests()
+    {
+        return $this->hasMany(StudentTest::class, 'student_id');
+    }
 }

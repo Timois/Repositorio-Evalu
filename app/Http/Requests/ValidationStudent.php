@@ -18,7 +18,7 @@ class ValidationStudent extends FormRequest
             'paternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'maternal_surname' => ['nullable', 'string', 'max:25'], // ahora nullable
             'phone_number' => ['nullable', 'integer'],
-            'birthdate' => ['required', 'date', 'before:today'],
+            'birthdate' => ['nullable', 'date', 'before:today'],
             'evaluation_id' => ['required', 'exists:evaluations,id'],
         ];
     }
@@ -51,7 +51,6 @@ class ValidationStudent extends FormRequest
             'phone_number.integer' => 'El número de teléfono debe ser un número entero.',
             'phone_number.max' => 'La longitud máxima del número de teléfono es de 20 caracteres.',
             'phone_number.unique' => 'Este número de teléfono ya está registrado.',
-            'birthdate.required' => 'La fecha de nacimiento es obligatoria.',
             'birthdate.date' => 'La fecha de nacimiento debe tener un formato válido (aaaa-mm-dd).',
             'birthdate.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
             'surname.required' => 'Debe ingresar al menos un apellido (paterno o materno).',
