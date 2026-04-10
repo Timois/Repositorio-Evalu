@@ -197,6 +197,7 @@ Route::controller(EvaluationController::class)->prefix('evaluations')->group(fun
     Route::get("/findEvaluationsBYCareer/{id}", 'findEvaluationsByCareer')->middleware('auth:persona', 'permission:ver-evaluaciones-por-carrera');
     Route::post("/unsubscribe", "remove")->middleware('auth:persona', 'permission:dar-baja-evaluaciones');
     Route::get("/listExmansByPeriod/{id}", "findEvaluationsByPeriod")->middleware('auth:persona', 'permission:ver-evaluaciones-por-periodo');
+    Route::put("/viewScore/{id}", "toggleViewScoreByEvaluation");
 });
 
 

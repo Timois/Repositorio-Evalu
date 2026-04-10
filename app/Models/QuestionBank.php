@@ -29,7 +29,7 @@ class QuestionBank extends Model
 
     public function areas(): BelongsTo
     {
-        return $this->belongsTo(Areas::class);
+        return $this->belongsTo(Areas::class, 'area_id');
     }
 
     public function excel_imports(): HasMany

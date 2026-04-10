@@ -210,22 +210,6 @@ class QuestionImagesImport implements ToCollection
                 }
             }
 
-            // Buscar si la pregunta ya existe
-            $exists = QuestionBank::where('question', $dataRow['pregunta'])
-                ->where('area_id', $areaId)
-                ->exists();
-
-            if ($exists) {
-                // Duplicada → registrar y salir
-                $this->duplicateDetails[] = [
-                    'row' => $index + 1,
-                    'pregunta' => $dataRow['pregunta'],
-                    'area' => $this->areaId,
-                    'motivo' => 'Pregunta duplicada en la base de datos',
-                ];
-                $this->messages[] = "Fila " . ($index + 1) . ": Pregunta duplicada, no registrada.";
-                return;
-            }
             // Crear la pregunta
             $question = QuestionBank::create([
                 'area_id'        => $this->areaId,

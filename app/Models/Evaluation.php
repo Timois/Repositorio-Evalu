@@ -21,7 +21,8 @@ class Evaluation extends Model
         'qualified_students',
         'status',
         'type',
-        'academic_management_period_id'
+        'academic_management_period_id',
+        'view_score',
     ];
     public function academicManagementPeriod()
     {
