@@ -6,7 +6,6 @@ use App\Http\Requests\ValidationEvaluation;
 use App\Models\AcademicManagementCareer;
 use App\Models\AcademicManagementPeriod;
 use App\Models\Evaluation;
-use Spatie\Permission\Models\Permission;
 
 class EvaluationController extends Controller
 {
@@ -28,6 +27,7 @@ class EvaluationController extends Controller
         $evaluation->type = $request->type;
         $evaluation->time = $request->time;
         $evaluation->status = 'activo';
+        $evaluation->view_score = $request->view_score;
         $evaluation->academic_management_period_id = $request->academic_management_period_id;
         $evaluation->save();
         return response()->json($evaluation);
@@ -37,37 +37,15 @@ class EvaluationController extends Controller
     public function findAndUpdate(ValidationEvaluation $request, string $id)
     {
         $evaluation = Evaluation::find($id);
+
         if (!$evaluation) {
-            return response()->json(["message" => "La evaluación con el id: " . $id . " no existe."], 404);
+            return response()->json([
+                "message" => "La evaluación con el id: {$id} no existe."
+            ], 404);
         }
-        if ($request->has('title')) {
-            $evaluation->title = $request->title;
-        }
-        if ($request->has('description')) {
-            $evaluation->description = $request->description;
-        }
-        if ($request->has('passing_score')) {
-            $evaluation->passing_score = $request->passing_score;
-        }
-        if ($request->has('date_of_realization')) {
-            $evaluation->date_of_realization = $request->date_of_realization;
-        }
-        if ($request->has('places')) {
-            $evaluation->places = $request->places;
-        }
-        if ($request->has('time')) {
-            $evaluation->time = $request->time;
-        }
-        if ($request->has('status')) {
-            $evaluation->status = $request->status;
-        }
-        if ($request->has('type')) {
-            $evaluation->type = $request->type;
-        }
-        if ($request->has('total_score')) {
-            $evaluation->total_score = $request->total_score;
-        }
-        $evaluation->save();
+
+        $evaluation->update($request->validated());
+
         return response()->json($evaluation);
     }
 
@@ -145,4 +123,5 @@ class EvaluationController extends Controller
 
         return response()->json($evaluations);
     }
+
 }

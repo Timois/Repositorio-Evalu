@@ -168,7 +168,8 @@ class LogsAnswerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'Respuestas guardadas correctamente.',
-                'score' => $totalScore
+                'score' => $totalScore,
+                'view_score' => optional($studentTest->evaluation)->view_score ?? false
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

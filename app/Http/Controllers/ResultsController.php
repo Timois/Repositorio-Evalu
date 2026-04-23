@@ -67,7 +67,9 @@ class ResultsController extends Controller
         $evaluation = Evaluation::find($evaluationId);
 
         if (!$evaluation) {
-            return response()->json(['message' => 'Evaluación no encontrada'], 404);
+            return response()->json([
+                'message' => 'Evaluación no encontrada'
+            ], 404);
         }
 
         $validated = $request->validate([
@@ -79,25 +81,46 @@ class ResultsController extends Controller
         ]);
 
         foreach ($validated['results'] as $resultData) {
-            $test = StudentTest::find($resultData['student_test_id']);
+
+            // 🔹 Traer el test con su estudiante
+            $test = StudentTest::with('student')->find($resultData['student_test_id']);
             if (!$test) continue;
 
-            $start = \Carbon\Carbon::parse($test->start_time);
-            $end = \Carbon\Carbon::parse($test->end_time);
-            $examDuration = $start->diff($end)->format('%H:%I:%S');
+            $student = $test->student;
 
+            $isInactive = $student && $student->status === 'inactivo';
+
+            if ($isInactive) {
+                $status = 'no se presento';
+                $qualification = 0;
+                $examDuration = '00:00:00';
+            } else {
+                $status = $resultData['status'];
+                $qualification = $resultData['qualification'];
+
+                $examDuration = '00:00:00';
+                if ($test->start_time && $test->end_time) {
+                    $start = \Carbon\Carbon::parse($test->start_time);
+                    $end = \Carbon\Carbon::parse($test->end_time);
+                    $examDuration = $start->diff($end)->format('%H:%I:%S');
+                }
+            }
+
+            // 💾 Guardar resultado
             Result::updateOrCreate(
                 ['student_test_id' => $test->id],
                 [
-                    'qualification' => $resultData['qualification'],
+                    'qualification' => $qualification,
                     'exam_duration' => $examDuration,
-                    'status' => $resultData['status'],
+                    'status' => $status,
                 ]
             );
         }
 
-        // También puedes actualizar la nota mínima usada
-        $evaluation->update(['passing_score' => $validated['min_score']]);
+        // 🔹 Guardar nota mínima de aprobación
+        $evaluation->update([
+            'passing_score' => $validated['min_score']
+        ]);
 
         return response()->json([
             'message' => 'Resultados actualizados según la curva correctamente ✅',

@@ -24,6 +24,9 @@ class Evaluation extends Model
         'academic_management_period_id',
         'view_score',
     ];
+    protected $casts = [
+        'view_score' => 'boolean',
+    ];
     public function academicManagementPeriod()
     {
         return $this->belongsTo(AcademicManagementPeriod::class, 'academic_management_period_id');

@@ -131,18 +131,27 @@ class StudentEvaluationController extends Controller
             return response()->json(['message' => 'No hay preguntas asignadas para esta prueba'], 404);
         }
 
-        $formattedQuestions = $studentQuestions->map(function ($sq) {
-            return [
-                'question_id'     => $sq->question->id,
-                'question'        => $sq->question->question,
-                'description'     => $sq->question->description,
-                'image'           => $sq->question->image,
-                'score_assigned'  => $sq->score_assigned,
-                'student_answer'  => $sq->student_answer,
-                'is_correct'      => $sq->is_correct,
-                'answers'         => $sq->question->bank_answers,
-            ];
-        });
+        $groupedQuestions = $studentQuestions
+            ->groupBy(function ($sq) {
+                return $sq->question->areas->name ?? 'Sin área';
+            })
+            ->map(function ($questions, $areaName) {
+                return [
+                    'area' => $areaName,
+                    'questions' => $questions->map(function ($sq) {
+                        return [
+                            'question_id'     => $sq->question->id,
+                            'question'        => $sq->question->question,
+                            'description'     => $sq->question->description,
+                            'image'           => $sq->question->image,
+                            'score_assigned'  => $sq->score_assigned,
+                            'student_answer'  => $sq->student_answer,
+                            'is_correct'      => $sq->is_correct,
+                            'answers'         => $sq->question->bank_answers,
+                        ];
+                    })->values()
+                ];
+            })->values();
 
         // 6️⃣ Retornar toda la información
         return response()->json([
@@ -154,7 +163,7 @@ class StudentEvaluationController extends Controller
             'end_time'           => $endTime->toIso8601String(),
             'current_time'       => $now->toIso8601String(),
             'remaining_seconds'  => $remainingSeconds,
-            'questions'          => $formattedQuestions,
+            'questions_by_area'  => $groupedQuestions,
         ]);
     }
 
